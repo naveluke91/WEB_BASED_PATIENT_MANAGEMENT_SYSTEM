@@ -1,0 +1,61 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Appointment
+@{
+    ViewData["Title"] = "New Appointment";
+    var tomorrow = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Appointments
+    </a>
+    <h1>New Appointment</h1>
+</div>
+
+<div class="content-card">
+    <form asp-action="Create" method="post" class="patient-form">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="PatientName" class="form-label"></label>
+                <input asp-for="PatientName" class="form-control" placeholder="Enter patient name" required />
+                <span asp-validation-for="PatientName" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="ContactNo" class="form-label"></label>
+                <input asp-for="ContactNo" class="form-control" placeholder="Enter contact number" required />
+                <span asp-validation-for="ContactNo" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="AppointmentDate" class="form-label"></label>
+                <input asp-for="AppointmentDate" class="form-control" type="date" id="apptDateInput" min="@tomorrow" required />
+                <span asp-validation-for="AppointmentDate" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="AppointmentTime" class="form-label"></label>
+                <select asp-for="AppointmentTime" class="form-select" id="apptTimeInput" required>
+                    <option value="">-- Select Time --</option>
+                    <option value="08:00">08:00 AM</option>
+                    <option value="09:00">09:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="13:00">01:00 PM</option>
+                    <option value="14:00">02:00 PM</option>
+                    <option value="15:00">03:00 PM</option>
+                    <option value="16:00">04:00 PM</option>
+                </select>
+                <span asp-validation-for="AppointmentTime" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn-primary-dark">
+                <i class="bi bi-check-lg"></i> Save Appointment
+            </button>
+            <a asp-action="Index" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>

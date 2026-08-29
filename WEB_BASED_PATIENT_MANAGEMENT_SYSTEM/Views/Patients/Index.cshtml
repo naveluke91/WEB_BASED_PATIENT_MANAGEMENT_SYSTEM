@@ -1,0 +1,355 @@
+@model IEnumerable<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>
+@{
+    ViewData["Title"] = "Patients";
+    var totalCount = Model.Count();
+}
+
+
+
+<!-- Page header with greeting, search, and profile -->
+<div class="page-header">
+    <h1>Patients</h1>
+    <p class="subtitle">Welcome back, Admin</p>
+
+    <div class="header-row">
+        <!-- Search patients by name, ID, or contact -->
+        <div class="search-box">
+            @*<i class="bi bi-search"></i>*@
+            <input type="text" id="patientSearch" placeholder="Search patients by name, ID or contact." />
+        </div>
+
+        <div class="header-actions">
+            <span class="user-name">Admin Name</span>
+        </div>
+    </div>
+</div>
+
+<!-- Patient list card -->
+<div class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-title">
+            @*<i class="bi bi-list-ul"></i>*@ Patient List
+        </h2>
+        <div class="card-actions">
+            <button class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalAddPatient">
+                + Add New Patient
+            </button>
+        </div>
+    </div>
+
+    <!-- Patient data table -->
+    <div class="table-responsive">
+        <table class="patient-table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Age</th>
+                    <th>Contact</th>
+                    <th>Age of Gestation (AOG)</th>
+                    <th>Estimated Date of Confinement (EDC)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="patientTableBody">
+                @foreach (var patient in Model)
+                {
+                    <tr class="patient-row"
+                        data-name="@patient.FullName.ToLower()"
+                        data-contact="@patient.ContactNo"
+                        data-id="@patient.Id">
+                        <td>@patient.FullName</td>
+                        <td>@patient.Age</td>
+                        <td>@patient.ContactNo</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(patient.AOG))
+                            {
+                                <span class="aog-highlight">@patient.AOG</span>
+                            }
+                        </td>
+                        <td>@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
+                        <td>
+                            <div class="action-btns">
+                                <!-- Edit patient -->
+                                <a asp-action="Edit" asp-route-id="@patient.Id"
+                                   class="action-btn" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <!-- Delete patient with JS confirm -->
+                                <form asp-action="Delete" asp-route-id="@patient.Id" method="post" onsubmit="confirmDelete(event, this);" style="display:inline;">
+                                    <button type="submit" class="action-btn delete-btn" title="Delete" style="border:none; background:none; padding:0;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                                <!-- View details in modal -->
+                                <button type="button" class="action-btn" title="View Details"
+                                        onclick="openPatientDetailsModal(@patient.Id)"
+                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Pagination — commented out for now
+    <div class="pagination-row">
+        <span id="paginationInfo">Showing 1 to @totalCount of @totalCount patients</span>
+        <div class="pagination-controls">
+            <button class="page-btn"><i class="bi bi-chevron-left"></i></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <span class="pagination-ellipsis">...</span>
+            <button class="page-btn">16</button>
+            <button class="page-btn"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+    *@
+</div>
+
+
+<!-- =====================================================================
+     MODAL — ADD NEW PATIENT
+     ===================================================================== -->
+<div class="modal fade" id="modalAddPatient" tabindex="-1" aria-labelledby="modalAddPatientLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalAddPatientLabel">Add New Patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="Create" asp-controller="Patients" method="post" id="formAddPatient">
+                @Html.AntiForgeryToken()
+                <div class="modal-body pt-3">
+                    <div class="row g-3">
+
+                        <!-- Full Name & Address -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="FullName" id="addFullName" class="form-control" placeholder="Enter full name" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Address <span class="text-danger">*</span></label>
+                            <input type="text" name="Address" id="addAddress" class="form-control" placeholder="Enter address" required />
+                        </div>
+
+                        <!-- DOB, Age, Marital Status -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Date of Birth <span class="text-danger">*</span></label>
+                            <input type="date" name="DateOfBirth" id="addDateOfBirth"
+                                   class="form-control"
+                                   min="@DateTime.Today.AddYears(-130).ToString("yyyy-MM-dd")"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Age</label>
+                            <input type="number" name="Age" id="addAge" class="form-control age-readonly" min="0" max="130" readonly />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Marital Status <span class="text-danger">*</span></label>
+                            <select name="MaritalStatus" id="addMaritalStatus" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                <option value="Single">Single</option>
+                                <option value="Married">Married</option>
+                                <option value="Widowed">Widowed</option>
+                                <option value="Separated">Separated</option>
+                            </select>
+                        </div>
+
+                        <!-- Religion, LMP, AOG -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Religion <span class="text-danger">*</span></label>
+                            <input type="text" name="Religion" id="addReligion" class="form-control" placeholder="Enter religion" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">LMP (Last Menstrual Period) <span class="text-danger">*</span></label>
+                            <input type="date" name="LMP" id="addLMP" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">AOG (Age of Gestation) <span class="text-danger">*</span></label>
+                            <input type="text" name="AOG" id="addAOG" class="form-control" placeholder="Enter weeks" required />
+                        </div>
+
+                        <!-- EDC, Menarche, Contact No -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">EDC (Estimated Date of Confinement) <span class="text-danger">*</span></label>
+                            <input type="date" name="EDC" id="addEDC" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Menarche <span class="text-danger">*</span></label>
+                            <input type="text" name="Menarche" id="addMenarche" class="form-control" placeholder="Age at first menstruation" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Contact No. <span class="text-danger">*</span></label>
+                            <input type="text" name="ContactNo" id="addContactNo" class="form-control" placeholder="Enter contact number" required />
+                        </div>
+
+                        <!-- Gravida, TFAL, Occupation -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Gravida <span class="text-danger">*</span></label>
+                            <input type="text" name="Gravida" id="addGravida" class="form-control" placeholder="Number of pregnancies" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">TFAL (Term, Full-term, Abortions, Living) <span class="text-danger">*</span></label>
+                            <input type="text" name="TFAL" id="addTFAL" class="form-control" placeholder="e.g. 2-1-0-1" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Occupation <span class="text-danger">*</span></label>
+                            <input type="text" name="Occupation" id="addOccupation" class="form-control" placeholder="Enter occupation" required />
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-dark">
+                        <i class="bi bi-check-lg"></i> Save Patient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     MODAL — VIEW PATIENT DETAILS
+     ===================================================================== -->
+<div class="modal fade" id="modalViewPatientDetails" tabindex="-1" aria-labelledby="modalViewPatientDetailsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalViewPatientDetailsLabel" style="font-size: 1.25rem;">Patient Details</h5>
+                    <p class="text-muted small mb-0" id="viewPatientHeaderSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3 px-4">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Full Name</label>
+                        <div class="detail-value" id="viewDetailFullName">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Address</label>
+                        <div class="detail-value" id="viewDetailAddress">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Date of Birth</label>
+                        <div class="detail-value" id="viewDetailDOB">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Age</label>
+                        <div class="detail-value" id="viewDetailAge">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Marital Status</label>
+                        <div class="detail-value" id="viewDetailMaritalStatus">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Religion</label>
+                        <div class="detail-value" id="viewDetailReligion">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>LMP (Last Menstrual Period)</label>
+                        <div class="detail-value" id="viewDetailLMP">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>AOG (Age of Gestation)</label>
+                        <div class="detail-value" id="viewDetailAOG">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>EDC (Estimated Date of Confinement)</label>
+                        <div class="detail-value" id="viewDetailEDC">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Menarche</label>
+                        <div class="detail-value" id="viewDetailMenarche">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Contact No.</label>
+                        <div class="detail-value" id="viewDetailContactNo">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Gravida</label>
+                        <div class="detail-value" id="viewDetailGravida">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>TFAL (Term, Full-term, Abortions, Living)</label>
+                        <div class="detail-value" id="viewDetailTFAL">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Occupation</label>
+                        <div class="detail-value" id="viewDetailOccupation">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-2 pb-4 px-4 justify-content-end">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/js/patient.js" asp-append-version="true"></script>
+    <script>
+        // Auto-calculate Age from Date of Birth in the Add modal
+        document.getElementById('addDateOfBirth').addEventListener('change', function () {
+            const dob = new Date(this.value);
+            if (!this.value) { document.getElementById('addAge').value = ''; return; }
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+            document.getElementById('addAge').value = age >= 0 ? age : '';
+        });
+
+        // Reset modal form on close
+        document.getElementById('modalAddPatient').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('formAddPatient').reset();
+            document.getElementById('addAge').value = '';
+        });
+
+        // Auto-open modal if redirect back after failed validation
+        @if (TempData["OpenAddModal"] != null)
+        {
+            <text>new bootstrap.Modal(document.getElementById('modalAddPatient')).show();</text>
+        }
+
+        // View Patient Details in Modal
+        async function openPatientDetailsModal(id) {
+            try {
+                const res = await fetch(`/Patients/GetById/${id}`);
+                if (!res.ok) throw new Error('Not found');
+                const p = await res.json();
+
+                document.getElementById('viewPatientHeaderSubtitle').textContent = p.fullName;
+                document.getElementById('viewDetailFullName').textContent      = p.fullName;
+                document.getElementById('viewDetailAddress').textContent       = p.address;
+                document.getElementById('viewDetailDOB').textContent           = p.dateOfBirth;
+                document.getElementById('viewDetailAge').textContent           = p.age;
+                document.getElementById('viewDetailMaritalStatus').textContent = p.maritalStatus;
+                document.getElementById('viewDetailReligion').textContent      = p.religion;
+                document.getElementById('viewDetailLMP').textContent           = p.lmp;
+                document.getElementById('viewDetailAOG').innerHTML             = p.aog !== '—' ? `<span class="aog-highlight">${p.aog}</span>` : '—';
+                document.getElementById('viewDetailEDC').textContent           = p.edc;
+                document.getElementById('viewDetailMenarche').textContent      = p.menarche;
+                document.getElementById('viewDetailContactNo').textContent     = p.contactNo;
+                document.getElementById('viewDetailGravida').textContent       = p.gravida;
+                document.getElementById('viewDetailTFAL').textContent          = p.tfal;
+                document.getElementById('viewDetailOccupation').textContent    = p.occupation;
+
+                new bootstrap.Modal(document.getElementById('modalViewPatientDetails')).show();
+            } catch (err) {
+                console.error('Failed to load patient details:', err);
+            }
+        }
+    </script>
+}

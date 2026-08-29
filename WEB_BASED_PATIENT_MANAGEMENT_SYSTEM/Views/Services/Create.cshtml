@@ -1,0 +1,113 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@{
+    ViewData["Title"] = "Add New Record";
+    var minimumDateOfBirth = DateTime.Today.AddYears(-130).ToString("yyyy-MM-dd");
+    var maximumDateOfBirth = DateTime.Today.ToString("yyyy-MM-dd");
+    var allPatients = ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient> ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>();
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
+    <h1>Add New Record</h1>
+</div>
+
+<form asp-action="Create" method="post" id="serviceForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="SelectedServices" id="selectedServicesInput" />
+    <input type="hidden" name="SelectedPatientId" id="selectedPatientIdInput" />
+
+    <!-- ── SELECT PATIENT ──────────────────────────────────────────────── -->
+    <div class="content-card mb-4">
+        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT PATIENT</h2>
+
+        <div id="patientSearchWrapper" style="position:relative; max-width: 360px;">
+            <span id="patientSearchIcon" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:#9ca3af; pointer-events:none;">
+                <i class="bi bi-search"></i>
+            </span>
+            <input type="text" id="patientSearchInput" class="form-control" placeholder="Search patient name..."
+                   autocomplete="off"
+                   style="padding-left: 2.25rem; border-radius: 8px; border: 1.5px solid #d1d5db; transition: border-color 0.2s;" />
+
+            <!-- Dropdown suggestions — positioned under the input -->
+            <div id="patientDropdown"
+                 style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:1050;
+                        background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+                        box-shadow:0 6px 20px rgba(0,0,0,0.12); overflow-y:auto; max-height:240px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Service Tiles ─────────────────────────────────────────────────── -->
+    <div class="content-card mb-4">
+        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT SERVICES</h2>
+
+        <div class="svc-section-label">General Services</div>
+        <div class="svc-grid svc-grid-general">
+            <div class="svc-tile svc-tile-wide" data-service="Normal Delivery Fee & Newborn Care Package" data-price="15000">
+                <span class="svc-name">Normal Delivery Fee &amp; Newborn Care Package</span>
+                <span class="svc-sub">(Including NBS &amp; Newborn Hearing Test)</span>
+                <span class="svc-price">PHP 15,000.00</span>
+            </div>
+            <div class="svc-tile" data-service="Prenatal" data-price="100">
+                <span class="svc-name">Prenatal</span>
+                <span class="svc-price">PHP 100.00</span>
+            </div>
+        </div>
+
+        <div class="svc-section-label mt-3">Family Planning</div>
+        <div class="svc-grid svc-grid-family">
+            <div class="svc-tile" data-service="Implant" data-price="0">
+                <span class="svc-name">Implant</span>
+                <span class="svc-price svc-free">Free</span>
+            </div>
+            <div class="svc-tile" data-service="Implant Removal" data-price="700">
+                <span class="svc-name">Implant Removal</span>
+                <span class="svc-price">PHP 700.00</span>
+            </div>
+            <div class="svc-tile" data-service="DEPO" data-price="200">
+                <span class="svc-name">DEPO</span>
+                <span class="svc-price">PHP 200.00</span>
+            </div>
+            <div class="svc-tile" data-service="NORIFAM" data-price="410">
+                <span class="svc-name">NORIFAM</span>
+                <span class="svc-price">PHP 410.00</span>
+            </div>
+            <div class="svc-tile" data-service="IUD Insertion" data-price="0">
+                <span class="svc-name">IUD Insertion</span>
+                <span class="svc-price svc-free">Free</span>
+            </div>
+            <div class="svc-tile" data-service="IUD Removal" data-price="600">
+                <span class="svc-name">IUD Removal</span>
+                <span class="svc-price">PHP 600.00</span>
+            </div>
+            <div class="svc-tile" data-service="Anti-Tetanus Injection" data-price="200">
+                <span class="svc-name">Anti-Tetanus Injection</span>
+                <span class="svc-price">PHP 200.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- PRENATAL RECORD PANEL — shows when Prenatal tile is selected          -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- NEWBORN CLINICAL CHART — shows when Normal Delivery Fee tile selected  -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- FAMILY PLANNING FORM 1 — shows when any FP tile is selected           -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+
+    <div class="form-actions">
+        <button type="submit" class="btn-primary-dark">Register Service</button>
+        <a asp-action="Index" class="btn-cancel">Cancel</a>
+    </div>
+</form>
+
+<partial name="_ServiceFormStyles" />
+
+@section Scripts {
+    <partial name="_ServiceFormScripts" />
+}

@@ -1,0 +1,53 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Appointment
+@{
+    ViewData["Title"] = "Delete Appointment";
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Appointments
+    </a>
+    <h1>Delete Appointment</h1>
+</div>
+
+<div class="content-card">
+    <p>Are you sure you want to delete this appointment?</p>
+
+    <div class="detail-grid detail-grid-spaced">
+        <div class="detail-item">
+            <label>Patient Name</label>
+            <div class="detail-value">@Model.PatientName</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Contact Number</label>
+            <div class="detail-value">@Model.ContactNo</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Date</label>
+            <div class="detail-value">@Model.AppointmentDate.ToString("MMMM dd, yyyy")</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Time</label>
+            <div class="detail-value">@Model.FormattedTime</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Status</label>
+            <div class="detail-value">
+                <span class="status-badge status-@Model.Status.ToLower()">@Model.Status</span>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Delete" method="post" class="form-actions mt-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn-primary-dark btn-delete-confirm">
+            <i class="bi bi-trash"></i> Confirm Delete
+        </button>
+        <a asp-action="Index" class="btn-cancel">Cancel</a>
+    </form>
+</div>

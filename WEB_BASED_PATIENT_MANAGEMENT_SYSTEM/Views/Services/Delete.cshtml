@@ -1,0 +1,48 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@{
+    ViewData["Title"] = "Delete Service Record";
+    var p = ViewBag.Patient as WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient;
+    int recordId = Model.RecordType == "Prenatal" ? Model.PrenatalRecord?.Id ?? 0 :
+                   Model.RecordType == "Newborn" ? Model.NewbornRecord?.Id ?? 0 :
+                   Model.FamilyPlanningRecord?.Id ?? 0;
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Services List
+    </a>
+    <h1>Delete Service Record</h1>
+</div>
+
+<div class="content-card">
+    <p>Are you sure you want to delete the following patient's <strong>@Model.RecordType</strong> service record?</p>
+
+    <!-- Summary of record being deleted -->
+    <div class="detail-grid detail-grid-spaced">
+        <div class="detail-item">
+            <label>Full Name</label>
+            <div class="detail-value">@(p?.FullName ?? "Patient")</div>
+        </div>
+        <div class="detail-item">
+            <label>Contact No.</label>
+            <div class="detail-value">@(p?.ContactNo ?? "—")</div>
+        </div>
+        <div class="detail-item">
+            <label>Age</label>
+            <div class="detail-value">@(p?.Age.ToString() ?? "—")</div>
+        </div>
+        <div class="detail-item">
+            <label>Address</label>
+            <div class="detail-value">@(p?.Address ?? "—")</div>
+        </div>
+    </div>
+
+    <form asp-action="Delete" asp-route-type="@Model.RecordType" method="post" class="form-actions mt-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@recordId" />
+        <button type="submit" class="btn-primary-dark btn-delete-confirm">
+            <i class="bi bi-trash"></i> Confirm Delete
+        </button>
+        <a asp-action="Index" class="btn-cancel">Cancel</a>
+    </form>
+</div>

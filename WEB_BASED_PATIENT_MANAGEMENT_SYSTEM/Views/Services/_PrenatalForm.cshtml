@@ -1,0 +1,442 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@{
+    var minimumDateOfBirth = DateTime.Today.AddYears(-130).ToString("yyyy-MM-dd");
+    var maximumDateOfBirth = DateTime.Today.ToString("yyyy-MM-dd");
+}
+        <!-- â”€â”€â”€ SECTION 1: PRENATAL RECORD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <h2 class="pn-main-title">PRENATAL RECORD</h2>
+
+        <!-- GENERAL DATA & HISTORY -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:3;">
+                <span class="pn-label">NAME:</span>
+                <input type="text" class="pn-input" id="prenatalNameInput" value="@(!string.IsNullOrEmpty(Model.PrenatalRecord?.PatientName) ? Model.PrenatalRecord.PatientName : ViewBag.Patient?.FullName)" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">DATE:</span>
+                <input type="date" class="pn-input" asp-for="PrenatalRecord.RecordDate" />
+            </div>
+        </div>
+
+        <!-- ADDRESS | AGE -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:3;">
+                <span class="pn-label">ADDRESS:</span>
+                <input type="text" class="pn-input" id="prenatalAddressInput" value="@(!string.IsNullOrEmpty(Model.PrenatalRecord?.Address) ? Model.PrenatalRecord.Address : ViewBag.Patient?.Address)" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">AGE:</span>
+                @{
+                    int? calcAge = null;
+                    if (Model.PrenatalRecord?.DateOfBirth != null) {
+                        calcAge = WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient.CalculateAge(Model.PrenatalRecord.DateOfBirth.Value);
+                    } else if (ViewBag.Patient != null) {
+                        calcAge = ViewBag.Patient.Age;
+                    }
+                }
+                <input type="number" class="pn-input" id="prenatalAgeInput" value="@calcAge" />
+            </div>
+        </div>
+
+        <!-- DATE OF BIRTH | MARITAL STATUS -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">DATE OF BIRTH:</span>
+                <input type="date" class="pn-input" id="prenatalDobInput" asp-for="PrenatalRecord.DateOfBirth" min="@minimumDateOfBirth" max="@maximumDateOfBirth" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">MARITAL STATUS:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.MaritalStatus" />
+            </div>
+        </div>
+
+        <!-- LMP | AOG | EDC | MENARCHE -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">LMP:</span>
+                <input type="date" class="pn-input" asp-for="PrenatalRecord.LMP" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">AOG:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.AOG" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">EDC:</span>
+                <input type="date" class="pn-input" asp-for="PrenatalRecord.EDC" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">MENARCHE:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Menarche" />
+            </div>
+        </div>
+
+        <!-- CONTACT | GRAVIDA | (TFAL) -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:2;">
+                <span class="pn-label">CONTACT:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.ContactNo" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">GRAVIDA:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Gravida" />
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">(TFAL):</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.TFAL" />
+            </div>
+        </div>
+
+        <!-- OCCUPATION -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">OCCUPATION:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Occupation" />
+            </div>
+        </div>
+
+        <!-- Visit Records Table -->
+        <div class="pn-visit-wrap">
+            <table class="pn-visit-table" id="visitTable">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>AOG</th>
+                        <th>WT</th>
+                        <th>BP</th>
+                        <th>TEMP</th>
+                        <th>FH</th>
+                        <th>FHT</th>
+                        <th>REMARKS</th>
+                    </tr>
+                </thead>
+                <tbody id="visitTableBody">
+                    @if (Model.PrenatalRecord?.PrenatalVisits != null && Model.PrenatalRecord.PrenatalVisits.Any())
+                    {
+                        for (int i = 0; i < Model.PrenatalRecord.PrenatalVisits.Count; i++)
+                        {
+                            <tr class="visit-row">
+                                <input type="hidden" name="PrenatalRecord.PrenatalVisits.Index" value="@i" />
+                                <td><input type="date" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].RecordDate" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].AOG" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].Weight" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].BloodPressure" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].Temperature" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].FundalHeight" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].FetalHeartTone" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="PrenatalRecord.PrenatalVisits[i].Remarks" /></td>
+                                @if (!Model.IsViewOnly)
+                                {
+                                    <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeVisitRow(this)" title="Remove row"><i class="bi bi-x"></i></button></td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="visit-row">
+                            <input type="hidden" name="PrenatalRecord.PrenatalVisits.Index" value="0" />
+                            <td><input type="date" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].RecordDate" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].AOG" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].Weight" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].BloodPressure" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].Temperature" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].FundalHeight" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].FetalHeartTone" /></td>
+                            <td><input type="text" class="pn-table-input" name="PrenatalRecord.PrenatalVisits[0].Remarks" /></td>
+                            @if (!Model.IsViewOnly)
+                            {
+                                <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeVisitRow(this)" title="Remove row"><i class="bi bi-x"></i></button></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.IsViewOnly)
+            {
+                <div class="pn-add-visit-row">
+                    <button type="button" class="btn-add-visit" id="addVisitBtn">+ Add Visit</button>
+                </div>
+            }
+        </div>
+
+        <hr class="pn-divider" />
+
+        <!-- â”€â”€â”€ SECTION 2: ANTENATAL RECORD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <!-- ———————————————————————————————————————————————————————— -->
+        <h2 class="pn-main-title">ANTENATAL RECORD</h2>
+
+        <!-- FAMILY # | DATE -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:3;">
+                <span class="pn-label">FAMILY #:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.FamilyNo" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">DATE:</span>
+                <input type="date" class="pn-input" asp-for="PrenatalRecord.AntenatalDate" />
+            </div>
+        </div>
+
+        <!-- NAME + AGE / WEIGHT / TEMP / BP — all inline on same row -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:2.5;">
+                <span class="pn-label">NAME:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.PatientName" />
+            </div>
+            <div class="pn-field" style="flex:0.9;">
+                <span class="pn-label">AGE:</span>
+                <input type="text" class="pn-input" id="ageDisplaySection2" />
+            </div>
+            <div class="pn-field" style="flex:1.1;">
+                <span class="pn-label">WEIGHT (kg):</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Weight" />
+            </div>
+            <div class="pn-field" style="flex:1.1;">
+                <span class="pn-label">TEMP (°C):</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Temperature" />
+            </div>
+            <div class="pn-field" style="flex:0.8;">
+                <span class="pn-label">BP:</span>
+                <input type="text" class="pn-input" />
+            </div>
+        </div>
+
+        <!-- HUSBAND'S NAME | Visit type | BLD TYPE -->
+        <div class="pn-row" style="align-items:center; gap:1.5rem;">
+            <div class="pn-field" style="flex:2;">
+                <span class="pn-label">HUSBAND'S NAME:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.HusbandName" />
+            </div>
+            <div style="display:flex; gap:1.5rem; align-items:center; padding-bottom:4px; white-space:nowrap;">
+                <label class="pn-radio-lbl"><input type="radio" asp-for="PrenatalRecord.VisitType" value="initial" /> INITIAL VISIT</label>
+                <label class="pn-radio-lbl"><input type="radio" asp-for="PrenatalRecord.VisitType" value="followup" /> FOLLOW-UP VISIT</label>
+            </div>
+            <div class="pn-field" style="flex:0.8; min-width:110px;">
+                <span class="pn-label">BLD. TYPE:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.BloodType" />
+            </div>
+        </div>
+
+        <!-- ADDRESS + G / T / P / A / L â€” all inline on same row -->
+        <div class="pn-row" style="margin-bottom:0.75rem;">
+            <div class="pn-field" style="flex:2.5;">
+                <span class="pn-label">ADDRESS:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.Address" />
+            </div>
+            <div class="pn-field" style="flex:0.6;">
+                <span class="pn-label">G:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.G" />
+            </div>
+            <div class="pn-field" style="flex:0.6;">
+                <span class="pn-label">T:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.T" />
+            </div>
+            <div class="pn-field" style="flex:0.6;">
+                <span class="pn-label">P:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.P" />
+            </div>
+            <div class="pn-field" style="flex:0.6;">
+                <span class="pn-label">A:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.A" />
+            </div>
+            <div class="pn-field" style="flex:0.6;">
+                <span class="pn-label">L:</span>
+                <input type="text" class="pn-input" asp-for="PrenatalRecord.L" />
+            </div>
+        </div>
+
+        <!-- ASSESS / CLASSIFY Table -->
+        <table class="pn-assess-table">
+            <thead>
+                <tr>
+                    <th>ASSESS</th>
+                    <th class="classify-col">CLASSIFY</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <!-- B2: Quick Check -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">QUICK CHECK: (B2) LOOK, LISTEN and FEEL</div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="Is the woman being wheeled or carried" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("Is the woman being wheeled or carried") == true ? "checked" : "") /> Is the woman being wheeled or carried or</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="Bleeding vaginally" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("Bleeding vaginally") == true ? "checked" : "") /> Bleeding vaginally</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="Convulsing" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("Convulsing") == true ? "checked" : "") /> Convulsing</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="Looking very ill" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("Looking very ill") == true ? "checked" : "") /> Looking very ill</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="In severe pain" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("In severe pain") == true ? "checked" : "") /> In severe pain</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="In labour" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("In labour") == true ? "checked" : "") /> In labour</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B2_QuickCheck_Checkboxes" value="Delivery is imminent" @(Model.PrenatalRecord.B2_QuickCheck_Checkboxes?.Contains("Delivery is imminent") == true ? "checked" : "") /> Delivery is imminent</label>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.B2_QuickCheck_Classify"></textarea></td>
+                </tr>
+
+                <!-- B3: RAM -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">RAPID ASSESSMENT MANAGAMENT (RAM) (B3)</div>
+                        <div class="pn-assess-sub">CHECK: AIRWAY and BREATHING</div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Very difficult breathing" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Very difficult breathing") == true ? "checked" : "") /> Very difficult breathing or</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Central cyanosis" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Central cyanosis") == true ? "checked" : "") /> Central cyanosis</label>
+                        <div class="pn-assess-sub">CHECK: CIRCULATION (SHOCK)</div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Cold moist skin" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Cold moist skin") == true ? "checked" : "") /> Cold moist skin or</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Weak and fast pulse" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Weak and fast pulse") == true ? "checked" : "") /> Weak and fast pulse</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Check blood pressure" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Check blood pressure") == true ? "checked" : "") /> Check blood pressure</label>
+                        <div class="pn-assess-sub">CHECK FOR THE FOLLOWING:</div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Fever (B6)" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Fever (B6)") == true ? "checked" : "") /> Fever (B6)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Convulsion (B6)" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Convulsion (B6)") == true ? "checked" : "") /> Convulsion (B6)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Vaginal bleeding (B4)" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Vaginal bleeding (B4)") == true ? "checked" : "") /> Vaginal bleeding (B4)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.B3_RAM_Checkboxes" value="Severe abdominal pain (B6)" @(Model.PrenatalRecord.B3_RAM_Checkboxes?.Contains("Severe abdominal pain (B6)") == true ? "checked" : "") /> Severe abdominal pain (B6)</label>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.B3_RAM_Classify"></textarea></td>
+                </tr>
+
+                <!-- Priority Signs -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">
+                            ANY PRIORITIES SIGNS?
+                            <label class="pn-radio-lbl ml-2"><input type="radio" asp-for="PrenatalRecord.PrioritySigns_YesNo" value="yes" /> YES</label>
+                            <label class="pn-radio-lbl"><input type="radio" asp-for="PrenatalRecord.PrioritySigns_YesNo" value="no" /> NO</label>
+                        </div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Labour pains or ruptured membranes" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Labour pains or ruptured membranes") == true ? "checked" : "") /> Labour pains or ruptured membranes</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Sever pallor" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Sever pallor") == true ? "checked" : "") /> Sever pallor</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Epigastric pain / abdominal pain" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Epigastric pain / abdominal pain") == true ? "checked" : "") /> Epigastric pain / abdominal pain</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Severe headache" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Severe headache") == true ? "checked" : "") /> Severe headache</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Blurred vision" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Blurred vision") == true ? "checked" : "") /> Blurred vision</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PrioritySigns_Checkboxes" value="Breathing difficulty" @(Model.PrenatalRecord.PrioritySigns_Checkboxes?.Contains("Breathing difficulty") == true ? "checked" : "") /> Breathing difficulty</label>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.PrioritySigns_Classify"></textarea></td>
+                </tr>
+
+                <!-- C2: ASK, CHECK, RECORD -->
+                <tr>
+                    <td colspan="2" class="pn-full-cell">
+                        <div class="pn-assess-title">ASK, CHECK, RECORD (C2) LOOK, LISTEN, FEEL</div>
+                        <div class="pn-assess-sub">FIRST VISIT:</div>
+                        <div class="pn-inline-field">How many months pregnant are you? (months/weeks) <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_MonthsPregnant" /></div>
+                        <div class="pn-inline-field">When was your last period? LMP: <input type="date" class="pn-inline-input" asp-for="PrenatalRecord.C2_LMP" /></div>
+                        <div class="pn-inline-field">When do you expect to deliver? EDC: <input type="date" class="pn-inline-input" asp-for="PrenatalRecord.C2_EDC" /></div>
+                        <div class="pn-inline-field">Have you had a baby before? If Yes: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_BabyBefore" /></div>
+                        <div class="pn-sub-heading">Check record for prior pregnancies or if there is no record ask about:</div>
+                        <div class="pn-inline-field">- Number of prior pregnancies/deliveries: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_PriorPregnancies" /></div>
+                        <div class="pn-inline-field">- Prior caesarian section, forceps or vacuum: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_PriorCaesarian" /></div>
+                        <div class="pn-inline-field">- Prior third degree tear: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_PriorTear" /></div>
+                        <div class="pn-inline-field">- Heavy bleeding during or after delivery: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_HeavyBleeding" /></div>
+                        <div class="pn-inline-field">- Convulsions: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_Convulsions" /></div>
+                        <div class="pn-inline-field">- Stillbirth or death in first delivery: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_Stillbirth" /></div>
+                        <div class="pn-inline-field">Do you smoke/drink alcohol/use any drugs? <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_SmokeDrinkDrugs" /></div>
+                        <div class="pn-assess-sub" style="margin-top:0.6rem;">ALL VISITS:</div>
+                        <div class="pn-inline-field">Check duration of pregnancy week: <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_PregnancyWeek" /></div>
+                        <div class="pn-inline-field">Where do you plan to deliver? <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_PlanDeliver" /></div>
+                        <div class="pn-inline-field">Any vaginal bleeding since last visit? <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_VaginalBleeding" /></div>
+                        <div class="pn-inline-field">Is the baby moving? (After 4 months.) <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_BabyMoving" /></div>
+                        <div class="pn-sub-heading">Check record for previous compilation &amp; Treatments received during this pregnancy:</div>
+                        <textarea class="pn-full-textarea" asp-for="PrenatalRecord.C2_PreviousComplications"></textarea>
+                        <div class="pn-row pn-inline-row">
+                            <div class="pn-inline-field">*T.T4: <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C2_TT4" /></div>
+                            <div class="pn-inline-field">*FHB: <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C2_FHB" /></div>
+                            <div class="pn-inline-field">* Feel for presentation: <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C2_Presentation" /></div>
+                        </div>
+                        <div class="pn-inline-field">Do you have any concerns? <input type="text" class="pn-inline-input" asp-for="PrenatalRecord.C2_Concerns" /></div>
+                    </td>
+                </tr>
+
+                <!-- Third Trimester -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">THIRD TRIMESTER</div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.ThirdTrimester_Checkboxes" value="Has she been counseled on family planning" @(Model.PrenatalRecord.ThirdTrimester_Checkboxes?.Contains("Has she been counseled on family planning") == true ? "checked" : "") /> Has she been counseled on family planning? If YES, does she want tubal ligation or IUD?</label>
+                        <div class="pn-bullet-list">
+                            <div>* Feel for obvious multiple pregnancy</div>
+                            <div>* Feel for transverse lie/ breech</div>
+                            <div>* Listen to fetal heart</div>
+                        </div>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.ThirdTrimester_Classify"></textarea></td>
+                </tr>
+
+                <!-- C3: Pre-eclampsia -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">CHECK FOR PRE-ECLAMPSIA (C3)</div>
+                        <div class="pn-two-col">
+                            <div>
+                                <div class="pn-assess-sub">ASK, CHECK, RECORD</div>
+                                <div class="pn-inline-field">Blood pressure at last visit: <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C3_PreEclampsia_BP" /></div>
+                            </div>
+                            <div>
+                                <div class="pn-assess-sub">LOOK, LISTEN, FEEL</div>
+                                <div>* Measure blood pressure in sitting position</div>
+                                <div>* If diastolic blood pressure is &gt;90mmHg, ask the woman if she has:</div>
+                                <div class="pn-indent">- severe headache,<br />- blurred vision<br />- epigastric pain and</div>
+                                <div>* Check protein in urine</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.C3_PreEclampsia_Classify"></textarea></td>
+                </tr>
+
+                <!-- C4: Anemia -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">CHECK FOR ANEMIA (C4)</div>
+                        <div class="pn-two-col">
+                            <div>
+                                <div class="pn-assess-sub">ASK, CHECK, RECORD</div>
+                                <div>Do you tire easily?</div>
+                                <div>Are you breathless (short breath) during routine household work?</div>
+                            </div>
+                            <div>
+                                <div class="pn-assess-sub">LOOK, LISTEN, FEEL</div>
+                                <div>On first visit:</div>
+                                <div class="pn-inline-field">* Measure hemoglobin on subsequent visits <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C4_Anemia_Hemoglobin" /></div>
+                                <div class="pn-inline-field">* Look for conjunctival pallor <input type="text" class="pn-inline-input pn-short" asp-for="PrenatalRecord.C4_Anemia_ConjunctivalPallor" /></div>
+                                <div>If pallor:</div>
+                                <div class="pn-indent">- Is it severe pallor?<br />- Some pallor?</div>
+                                <div>* Count number of breath in 1 minute.</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.C4_Anemia_Classify"></textarea></td>
+                </tr>
+
+                <!-- Volunteered Problem -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">
+                            DOES THE PATIENT HAVE ONE OF THE FF. OBSERVED SIGNS OR VOLUNTEERED PROBLEM?
+                            <label class="pn-radio-lbl ml-2"><input type="radio" asp-for="PrenatalRecord.PatientProblems_YesNo" value="yes" /> YES</label>
+                            <label class="pn-radio-lbl"><input type="radio" asp-for="PrenatalRecord.PatientProblems_YesNo" value="no" /> NO</label>
+                        </div>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="No fetal movement (C7)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("No fetal movement (C7)") == true ? "checked" : "") /> No fetal movement (C7)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Ruptured membrane and no labour (C7)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Ruptured membrane and no labour (C7)") == true ? "checked" : "") /> Ruptured membrane and no labour (C7)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Fever or burning in urination (C8)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Fever or burning in urination (C8)") == true ? "checked" : "") /> Fever or burning in urination (C8)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Vaginal discharge (C9)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Vaginal discharge (C9)") == true ? "checked" : "") /> Vaginal discharge (C9)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Coughing or difficulty in breathing (C11)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Coughing or difficulty in breathing (C11)") == true ? "checked" : "") /> Coughing or difficulty in breathing (C11)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Taking Anti-TB drugs (C11)" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Taking Anti-TB drugs (C11)") == true ? "checked" : "") /> Taking Anti-TB drugs (C11)</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Smoking, alcohol, or drug abuse" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Smoking, alcohol, or drug abuse") == true ? "checked" : "") /> Smoking, alcohol, or drug abuse or history of violence</label>
+                        <label class="pn-check-lbl"><input type="checkbox" name="PrenatalRecord.PatientProblems_Checkboxes" value="Signs suggesting HIV infection" @(Model.PrenatalRecord.PatientProblems_Checkboxes?.Contains("Signs suggesting HIV infection") == true ? "checked" : "") /> Signs suggesting HIV infection or other Sexually transmitted diseases.</label>
+                    </td>
+                    <td><textarea class="pn-classify" asp-for="PrenatalRecord.PatientProblems_Classify"></textarea></td>
+                </tr>
+
+                <!-- Assess for Other Problems -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">ASSESS FOR OTHER PROBLEMS:</div>
+                    </td>
+                    <td><textarea class="pn-classify" rows="4" asp-for="PrenatalRecord.AssessOtherProblems"></textarea></td>
+                </tr>
+
+                <!-- Develop Birth Plan -->
+                <tr>
+                    <td>
+                        <div class="pn-assess-title">DEVELOP A BIRTH AND EMERGENCY PLAN:</div>
+                    </td>
+                    <td><textarea class="pn-classify" rows="4" asp-for="PrenatalRecord.DevelopBirthPlan"></textarea></td>
+                </tr>
+
+            </tbody>
+        </table>
+
+

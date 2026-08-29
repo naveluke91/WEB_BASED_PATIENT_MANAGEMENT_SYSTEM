@@ -1,0 +1,1603 @@
+/* ============================================================
+   patients.css — Layout + patient pages (all styles in one file)
+   ============================================================ */
+
+:root {
+    --sidebar-bg: #f5f5f5;
+    --sidebar-width: 240px;
+    --primary-dark: #1a1a2e;
+    --primary-btn: #2d2d44;
+    --text-muted: #6c757d;
+    --border-color: #e0e0e0;
+    --badge-bg: #e9ecef;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Dashboard layout ---- */
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.sidebar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin: 4rem;
+    text-align: center;
+}
+
+.sidebar-nav {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.nav-item:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+}
+
+.nav-item.active {
+    background: #fff;
+    font-weight: 600;
+    box-shadow: var(--card-shadow);
+}
+
+.nav-item i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Services dropdown in sidebar */
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+
+.nav-chevron {
+    margin-left: auto;
+    font-size: 0.75rem;
+    width: auto;
+}
+
+.sidebar-dropdown {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    width: 100%;
+    padding: 0.35rem 0;
+    margin-top: 0.25rem;
+    position: static !important;
+    transform: none !important;
+}
+
+.sidebar-dropdown .dropdown-item {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+.sidebar-dropdown .dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.sidebar-promo {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+}
+
+.promo-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.promo-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.logout-link {
+    margin-top: auto;
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    padding: 2rem 2.5rem;
+    min-height: 100vh;
+}
+
+/* ---- Page header ---- */
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--primary-dark);
+}
+
+.page-header .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.search-box {
+    flex: 1;
+    max-width: 500px;
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #fff;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #aaa;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.search-box i {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.notification-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #333;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ---- Cards and buttons ---- */
+.content-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+}
+
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-primary-dark {
+    background: var(--primary-btn);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-primary-dark:hover {
+    background: var(--primary-dark);
+    color: #fff;
+}
+
+.btn-cancel {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    color: #333;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-cancel:hover {
+    background: #f8f8f8;
+    color: #333;
+}
+
+.btn-delete-confirm {
+    background: #dc3545;
+}
+
+.btn-delete-confirm:hover {
+    background: #bb2d3b;
+    color: #fff;
+}
+
+/* ---- Pagination ---- */
+.pagination-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pagination-ellipsis {
+    padding: 0 0.25rem;
+}
+
+.page-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.page-btn.active {
+    background: var(--primary-btn);
+    color: #fff;
+    border-color: var(--primary-btn);
+}
+
+.page-btn:hover:not(.active) {
+    background: #f0f0f0;
+}
+
+/* ---- Form pages ---- */
+.form-page-header {
+    margin-bottom: 1.5rem;
+}
+
+.form-page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.form-page-header .back-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-page-header .back-link:hover {
+    color: #333;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* ---- Patient table ---- */
+.patient-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.patient-table thead th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.patient-table tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+.patient-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.patient-row.hidden {
+    display: none;
+}
+
+/* AOG — normal text inside a light highlight box */
+/*.aog-highlight {
+    display: inline-block;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #333;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+}*/
+
+.action-btns {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    padding: 0.35rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.action-btn.delete-btn:hover {
+    color: #dc3545;
+}
+
+/* ---- Status Dropdown ---- */
+.status-td {
+    position: relative;
+}
+
+.status-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.table-responsive {
+    overflow: visible !important;
+}
+
+.content-card {
+    overflow: visible;
+}
+
+.status-dropdown-btn,
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.status-dropdown-btn {
+    cursor: pointer;
+}
+
+.status-arrow {
+    font-size: 0.6rem;
+    opacity: 0.7;
+}
+
+.status-pending    { background: #fff8e1; color: #e65100; border-color: #ffcc02; }
+.status-confirmed  { background: #e8f5e9; color: #2e7d32; border-color: #81c784; }
+.status-cancelled  { background: #fdecea; color: #c62828; border-color: #ef9a9a; }
+.status-rescheduled{ background: #e8f4fd; color: #1565c0; border-color: #90caf9; }
+
+.status-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 1050;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    min-width: 150px;
+    overflow: hidden;
+}
+
+.status-menu-item {
+    padding: 0.55rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.status-menu-item:hover         { background: #f5f5f5; }
+.status-menu-item.active        { font-weight: 700; }
+.status-menu-pending            { color: #e65100; }
+.status-menu-confirm            { color: #2e7d32; }
+.status-menu-cancelled          { color: #c62828; }
+.status-menu-reschedule         { color: #1565c0; }
+
+/* ---- In Process toggle button ---- */
+.inprocess-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.inprocess-active {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.inprocess-active:hover { background: #ffe0b2; }
+
+.inprocess-inactive {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.inprocess-inactive:hover { background: #c8e6c9; }
+
+.inprocess-disabled {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #bbb;
+    background: #f5f5f5;
+    cursor: not-allowed;
+    white-space: nowrap;
+}
+
+.btn-go-consultation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff !important;
+    background: #1e1b4b;
+    border-radius: 8px;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-go-consultation:hover {
+    background: #312e81;
+    color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 27, 75, 0.25);
+}
+
+/* ---- Confirm Appointment Modal ---- */
+.confirm-appt-modal .modal-content {
+    border-radius: 16px;
+}
+
+.confirm-choice-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.confirm-choice-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    transition: all 0.2s;
+}
+
+.confirm-choice-btn:hover,
+.confirm-choice-btn.active {
+    border-color: #7b1d3c;
+    background: #fdf0f4;
+    color: #7b1d3c;
+}
+
+.confirm-choice-btn.active {
+    box-shadow: 0 0 0 1px #7b1d3c;
+}
+
+/* ---- Selected patient display ---- */
+.selected-patient-info {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2e7d32;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+
+/* ---- Cebuano note ---- */
+.cebuano-note {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: #5d4037;
+}
+
+.cebuano-note strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+/* ---- Patient form ---- */
+.patient-form .form-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 0.35rem;
+}
+
+.patient-form .form-control,
+.patient-form .form-select {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.patient-form .form-control:focus,
+.patient-form .form-select:focus {
+    border-color: #aaa;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.age-readonly {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+}
+
+/* ---- View details ---- */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.detail-grid-spaced {
+    margin-top: 1rem;
+}
+
+.detail-item label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.25rem;
+}
+
+.detail-item .detail-value {
+    font-size: 0.95rem;
+    color: #333;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* ---- Service form sections (Prenatal / Antenatal) ---- */
+.form-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.visit-entry {
+    padding: 1rem 0;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.visit-entry:last-child {
+    border-bottom: none;
+}
+
+.checkbox-group .form-check {
+    padding-left: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 60px;
+        min-width: 60px;
+        padding: 1rem 0.5rem;
+    }
+
+    .sidebar .nav-item span,
+    .sidebar-promo {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 60px;
+        padding: 1rem;
+    }
+
+    .header-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   Kiosk Service Selection
+   ============================================================ */
+
+/* Section label separating tile groups */
+.kiosk-section-label {
+    grid-column: 1 / -1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0.5rem 0 0.25rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive tile grid */
+.kiosk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.85rem;
+    align-items: start;
+}
+
+/* Individual service tile */
+.kiosk-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.25rem 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.15s;
+    user-select: none;
+    min-height: 110px;
+}
+
+.kiosk-tile:hover {
+    border-color: #a0a0c0;
+    background: #f8f8ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Selected state */
+.kiosk-tile.selected {
+    border-color: var(--primary-dark);
+    background: #eef0f8;
+    box-shadow: 0 0 0 3px rgba(26,26,46,0.12);
+}
+
+.kiosk-tile.selected .kiosk-name {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+/* Icon inside tile */
+.kiosk-icon {
+    font-size: 1.6rem;
+    color: var(--text-muted);
+    transition: color 0.18s;
+}
+
+.kiosk-tile.selected .kiosk-icon {
+    color: var(--primary-dark);
+}
+
+/* Service name text */
+.kiosk-name {
+    font-size: 0.82rem;
+    color: #444;
+    line-height: 1.3;
+}
+
+/* Check badge (hidden by default, shown when selected) */
+.kiosk-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1rem;
+    color: var(--primary-dark);
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.kiosk-tile.selected .kiosk-check {
+    opacity: 1;
+}
+
+/* ============================================================
+   Services Summary Table (inside Create form)
+   ============================================================ */
+.services-summary-table tfoot .services-total-row td {
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--border-color);
+    border-bottom: none;
+}
+
+/* ============================================================
+   Services Availed — Index table display
+   ============================================================ */
+.service-list-inline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.service-badge {
+    display: inline-block;
+    background: #eef0f8;
+    color: var(--primary-dark);
+    border: 1px solid #c5c8e0;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.65rem;
+    white-space: nowrap;
+}
+
+.price-tag {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+}
+
+
+/* ============================================================
+   APPOINTMENTS PAGE
+   ============================================================ */
+
+/* ---------- Page header ---------- */
+.appt-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.appt-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin: 0 0 0.15rem;
+}
+
+.appt-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.appt-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* ---------- Search ---------- */
+.appt-search-box {
+    position: relative;
+}
+
+.appt-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.appt-search-box input {
+    padding: 0.5rem 1rem 0.5rem 2.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    width: 220px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+}
+
+.appt-search-box input:focus {
+    outline: none;
+    border-color: #999;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Buttons ---------- */
+.appt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.appt-btn:active {
+    transform: scale(0.97);
+}
+
+.appt-btn-primary {
+    background: #7b1d3c;
+    color: #fff;
+}
+
+.appt-btn-primary:hover {
+    background: #621630;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(123, 29, 60, 0.3);
+}
+
+.appt-btn-secondary {
+    background: #fff;
+    color: #7b1d3c;
+    border: 1.5px solid #7b1d3c;
+}
+
+.appt-btn-secondary:hover {
+    background: #fdf0f3;
+    color: #7b1d3c;
+}
+
+.appt-btn-ghost {
+    background: #f5f5f5;
+    color: #555;
+    border: 1px solid var(--border-color);
+}
+
+.appt-btn-ghost:hover {
+    background: #eaeaea;
+    color: #333;
+}
+
+/* ---------- Alert banners ---------- */
+.appt-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.appt-alert-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.appt-alert-error {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #9f1239;
+}
+
+/* ---------- Card ---------- */
+.appt-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+}
+
+.appt-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    flex-wrap: wrap;
+}
+
+.appt-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #f4f4f6;
+    color: #555;
+    border: 1px solid #e0e0e6;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.appt-badge-scheduled {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+/* ---------- Table ---------- */
+.appt-table-wrapper {
+    overflow-x: auto;
+}
+
+.appt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.appt-table thead th {
+    text-align: left;
+    padding: 0.9rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: #fafafa;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.appt-table tbody td {
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid #f2f2f5;
+    vertical-align: middle;
+}
+
+.appt-row:last-child td {
+    border-bottom: none;
+}
+
+.appt-row:hover {
+    background: #fafafe;
+}
+
+/* ---------- Patient cell ---------- */
+.appt-patient-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.appt-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7b1d3c 0%, #a83260 100%);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.appt-contact-link {
+    color: #7b1d3c;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.appt-contact-link:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Date / Time chips ---------- */
+.appt-date-chip,
+.appt-time-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    background: #f5f5f8;
+    border: 1px solid #e4e4ec;
+    border-radius: 6px;
+    padding: 0.2rem 0.6rem;
+    white-space: nowrap;
+    color: #444;
+}
+
+.appt-time-chip {
+    background: #f0f7ff;
+    border-color: #c7dffe;
+    color: #1e40af;
+    font-weight: 500;
+}
+
+/* ---------- Service tag ---------- */
+.appt-service-tag {
+    background: #eef0f8;
+    color: var(--primary-dark);
+    border: 1px solid #c5c8e0;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.65rem;
+    white-space: nowrap;
+}
+
+.appt-no-service {
+    color: #ccc;
+}
+
+/* ---------- Status badges ---------- */
+.appt-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.appt-status-scheduled {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.appt-status-completed {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.appt-status-cancelled {
+    background: #fff1f2;
+    color: #9f1239;
+    border: 1px solid #fecdd3;
+}
+
+/* ---------- Action buttons ---------- */
+.appt-action-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.appt-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    background: none;
+}
+
+.appt-edit-btn {
+    color: #2563eb;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.appt-edit-btn:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.appt-delete-btn {
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fff1f2;
+}
+
+.appt-delete-btn:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+/* ---------- Empty state ---------- */
+.appt-empty-row td {
+    padding: 3rem 1rem !important;
+}
+
+.appt-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-muted);
+}
+
+.appt-empty-state i {
+    font-size: 2.5rem;
+    opacity: 0.35;
+}
+
+.appt-empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ---------- Modal ---------- */
+.appt-modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.appt-modal-header {
+    background: linear-gradient(135deg, #7b1d3c 0%, #a83260 100%);
+    color: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 1.1rem 1.5rem;
+}
+
+.appt-modal-header .modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.appt-modal-header .btn-close {
+    filter: invert(1);
+    opacity: 0.8;
+}
+
+.appt-modal-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.appt-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* ---------- Form layout inside modal ---------- */
+.appt-form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.appt-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.appt-col-6 {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 200px;
+}
+
+.appt-form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #444;
+}
+
+.appt-required {
+    color: #dc2626;
+}
+
+.appt-optional {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.appt-form-input,
+.appt-form-select,
+.appt-form-textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+    color: #333;
+}
+
+.appt-form-input:focus,
+.appt-form-select:focus,
+.appt-form-textarea:focus {
+    outline: none;
+    border-color: #a04060;
+    box-shadow: 0 0 0 3px rgba(123, 29, 60, 0.12);
+}
+
+.appt-form-textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+/* ---------- Existing appointment tip ---------- */
+.appt-existing-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    color: #78350f;
+    margin-top: 0.5rem;
+}
+
+.appt-existing-tip i {
+    font-size: 1.1rem;
+    color: #d97706;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .appt-page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .appt-header-right {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .appt-search-box input {
+        width: 100%;
+    }
+
+    .appt-col-6 {
+        flex: 1 1 100%;
+    }
+
+    .appt-table thead th:nth-child(5),
+    .appt-table tbody td:nth-child(5) {
+        display: none;
+    }
+}
+
+/* ---- Appointment alert banners ---- */
+.appt-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.appt-alert-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.appt-alert-error {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #9f1239;
+}
+
+/* ---- Existing Appointment Modal — Search ---- */
+.appt-exist-search-wrap {
+    position: relative;
+}
+
+.appt-exist-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.appt-exist-search-input {
+    padding-left: 2.2rem !important;
+}
+
+/* Suggestions dropdown */
+.appt-exist-suggestions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 100%;        /* directly below the input */
+    left: 0;
+    right: 0;         /* same width as parent wrap */
+    width: 100%;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.appt-exist-suggestion-item {
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #2d3748;
+    transition: background 0.15s;
+}
+
+.appt-exist-suggestion-item:hover {
+    background: #f1f5f9;
+    color: #1a202c;
+}
+
+.appt-exist-suggestion-empty {
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-style: italic;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* History section header */
+.appt-exist-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+}
+
+.appt-exist-history-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.appt-exist-history-count {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Mini history table */
+.appt-exist-history-table-wrap {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.appt-exist-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.appt-exist-history-table thead {
+    background: #f8f9fa;
+}
+
+.appt-exist-history-table thead th {
+    padding: 0.45rem 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.appt-exist-history-table tbody td {
+    padding: 0.45rem 0.75rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.appt-exist-history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.appt-exist-empty {
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    padding: 1rem 0.75rem !important;
+}

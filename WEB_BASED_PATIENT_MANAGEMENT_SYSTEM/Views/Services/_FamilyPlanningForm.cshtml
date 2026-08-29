@@ -1,0 +1,518 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+
+        <!-- SIDE A header -->
+        <div class="fp-header-row">
+            <span class="fp-side">SIDE A</span>
+            <span class="fp-ver">ver. 3.0</span>
+        </div>
+        <h2 class="pn-main-title">FAMILY PLANNING (FP) FORM 1</h2>
+        <div style="text-align:center; font-size:0.82rem; font-weight:600; margin-bottom:0.5rem;">FAMILY PLANNING CLIENT ASSESSMENT RECORD</div>
+        <div style="font-size:0.78rem; margin-bottom:0.75rem; color:#374151;">Instructions: Make sure that the client is not pregnant. Completely fill out or check the needed information.</div>
+
+        <!-- NAME OF CLIENT label + name row -->
+        <div style="display:flex; align-items:flex-start; width:100%; margin-bottom:0.5rem; flex-wrap:wrap;">
+            <div class="pn-label" style="font-weight:700; margin-right:0.75rem; margin-top:2px; flex-shrink:0;">NAME OF CLIENT:</div>
+            <div class="fp-name-row" style="margin-bottom:0; flex-wrap:wrap;">
+            <div class="fp-name-col" style="width:140px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientLastName" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Last Name</span>
+            </div>
+            <div class="fp-name-col" style="width:140px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientGivenName" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Given Name</span>
+            </div>
+            <div class="fp-name-col" style="width:60px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientMI" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">MI</span>
+            </div>
+            <div class="fp-name-col" style="width:120px;">
+                <input type="date" class="pn-input" asp-for="FamilyPlanningRecord.ClientDateOfBirth" id="fpDobInput" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Date of Birth</span>
+            </div>
+            <div class="fp-name-col" style="width:60px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientAge" id="fpAgeInput" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Age</span>
+            </div>
+            <div class="fp-name-col" style="width:120px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientEducation" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Education</span>
+            </div>
+            <div class="fp-name-col" style="width:120px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ClientOccupation" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Occupation</span>
+            </div>
+            </div>
+        </div>
+
+        <!-- ADDRESS -->
+        <div style="display:flex; align-items:flex-start; width:100%; margin-bottom:0.5rem; flex-wrap:wrap;">
+            <div class="pn-label" style="font-weight:700; margin-right:0.75rem; margin-top:2px; flex-shrink:0;">ADDRESS:</div>
+            <div class="fp-name-row" style="margin-bottom:0; flex-wrap:wrap;">
+            <div class="fp-name-col" style="width:80px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AddressNo" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">No.</span>
+            </div>
+            <div class="fp-name-col" style="width:160px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AddressStreet" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Street</span>
+            </div>
+            <div class="fp-name-col" style="width:160px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AddressBarangay" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Barangay</span>
+            </div>
+            <div class="fp-name-col" style="width:160px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AddressMunicipality" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Municipality/City</span>
+            </div>
+            <div class="fp-name-col" style="width:140px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AddressProvince" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Province</span>
+            </div>
+            </div>
+        </div>
+        <div class="pn-row" style="margin-top:0.4rem;">
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">Contact No.:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ContactNo" />
+            </div>
+            <div class="pn-field" style="flex:1.5;">
+                <span class="pn-label">Civil Status:</span>
+                <select class="pn-input" asp-for="FamilyPlanningRecord.CivilStatus" style="border-bottom:1.5px solid #374151; border-top:none; border-left:none; border-right:none; background:transparent; cursor:pointer;">
+                    <option value="">--</option>
+                    <option>Single</option>
+                    <option>Married</option>
+                    <option>Widowed</option>
+                    <option>Separated</option>
+                    <option>Live-in</option>
+                </select>
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">Religion:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.Religion" />
+            </div>
+        </div>
+
+        <!-- NAME OF SPOUSE -->
+        <div style="display:flex; align-items:flex-start; width:100%; margin-bottom:0.5rem; flex-wrap:wrap;">
+            <div class="pn-label" style="font-weight:700; margin-right:0.75rem; margin-top:2px; flex-shrink:0;">NAME OF SPOUSE:</div>
+            <div class="fp-name-row" style="margin-bottom:0; flex-wrap:wrap;">
+            <div class="fp-name-col" style="width:140px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.SpouseLastName" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Last Name</span>
+            </div>
+            <div class="fp-name-col" style="width:140px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.SpouseGivenName" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Given Name</span>
+            </div>
+            <div class="fp-name-col" style="width:60px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.SpouseMI" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">MI</span>
+            </div>
+            <div class="fp-name-col" style="width:120px;">
+                <input type="date" class="pn-input" asp-for="FamilyPlanningRecord.SpouseDateOfBirth" id="fpSpouseDobInput" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Date of Birth</span>
+            </div>
+            <div class="fp-name-col" style="width:60px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.SpouseAge" id="fpSpouseAgeInput" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Age</span>
+            </div>
+            <div class="fp-name-col" style="width:120px;">
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.SpouseOccupation" style="width:100%; text-align:center;" />
+                <span class="fp-col-lbl">Occupation</span>
+            </div>
+            </div>
+        </div>
+
+        <!-- LIVING CHILDREN / MORE CHILDREN / INCOME -->
+        <div class="pn-row" style="margin-top:0.5rem; flex-wrap:wrap; gap:1.5rem;">
+            <div class="pn-field">
+                <span class="pn-label">NO. OF LIVING CHILDREN:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.NoOfLivingChildren" style="width:60px;" />
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+                <span class="pn-label">PLAN TO HAVE MORE CHILDREN?</span>
+                <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.PlanMoreChildren" value="yes" /> Yes</label>
+                <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.PlanMoreChildren" value="no" /> No</label>
+            </div>
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">AVERAGE MONTHLY INCOME:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.AverageMonthlyIncome" />
+            </div>
+        </div>
+
+        <!-- TYPE OF CLIENT + METHOD BOX -->
+        <div class="fp-client-box">
+            <div class="fp-client-left">
+                <div class="pn-label" style="font-weight:700; margin-bottom:6px;">Type of Client:</div>
+                <label class="pn-check-lbl"><input type="radio" asp-for="FamilyPlanningRecord.TypeOfClient" value="new" /> New Acceptor</label>
+                <label class="pn-check-lbl"><input type="radio" asp-for="FamilyPlanningRecord.TypeOfClient" value="current" /> Current User</label>
+                <label class="pn-check-lbl"><input type="radio" asp-for="FamilyPlanningRecord.TypeOfClient" value="changing" /> Changing Method</label>
+                <label class="pn-check-lbl"><input type="radio" asp-for="FamilyPlanningRecord.TypeOfClient" value="clinic" /> Changing Clinic</label>
+                <label class="pn-check-lbl"><input type="radio" asp-for="FamilyPlanningRecord.TypeOfClient" value="dropout" /> Dropout Restart</label>
+                <div style="margin-top:8px; font-size:0.79rem;">
+                    Reason for FP:
+                    <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.ReasonForFP" value="spacing" @(Model.FamilyPlanningRecord.ReasonForFP?.Contains("spacing") == true ? "checked" : "") /> spacing</label>
+                    <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.ReasonForFP" value="limiting" @(Model.FamilyPlanningRecord.ReasonForFP?.Contains("limiting") == true ? "checked" : "") /> limiting</label>
+                    <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.ReasonForFP" value="others" @(Model.FamilyPlanningRecord.ReasonForFP?.Contains("others") == true ? "checked" : "") /> others specify <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.ReasonForFP_Others" style="width:90px; margin-left:4px;" /></label>
+                </div>
+                <div style="font-size:0.79rem;">
+                    Reason:
+                    <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.ReasonChanging" value="medical condition" @(Model.FamilyPlanningRecord.ReasonChanging?.Contains("medical condition") == true ? "checked" : "") /> medical condition</label>
+                    <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.ReasonChanging" value="side-effects" @(Model.FamilyPlanningRecord.ReasonChanging?.Contains("side-effects") == true ? "checked" : "") /> side-effects</label>
+                </div>
+            </div>
+            <div class="fp-client-right">
+                <div class="pn-label" style="font-weight:700; margin-bottom:6px;">Method currently used (for Changing Method):</div>
+                <div class="fp-method-grid">
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="COC" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("COC") == true ? "checked" : "") /> COC</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="IUD" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("IUD") == true ? "checked" : "") /> IUD</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="BOM/CMM" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("BOM/CMM") == true ? "checked" : "") /> BOM/CMM</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="SDM" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("SDM") == true ? "checked" : "") /> SDM</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="POP" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("POP") == true ? "checked" : "") /> POP</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="Interval" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("Interval") == true ? "checked" : "") /> Interval</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="BBT" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("BBT") == true ? "checked" : "") /> BBT</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="STM" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("STM") == true ? "checked" : "") /> STM</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="Injectable" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("Injectable") == true ? "checked" : "") /> Injectable</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="Post-Partum" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("Post-Partum") == true ? "checked" : "") /> Post-Partum</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="LAM" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("LAM") == true ? "checked" : "") /> LAM</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="Implant" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("Implant") == true ? "checked" : "") /> Implant</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="Condom" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("Condom") == true ? "checked" : "") /> Condom</label>
+                    <div></div><div></div><div></div>
+                    <div style="grid-column:1/-1; display:flex; align-items:center; gap:5px; font-size:0.79rem;">
+                        <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.MethodCurrentlyUsed" value="others" @(Model.FamilyPlanningRecord.MethodCurrentlyUsed?.Contains("others") == true ? "checked" : "") /> others, specify:</label>
+                        <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.MethodCurrentlyUsed_Others" style="width:140px;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- I. MEDICAL HISTORY -->
+        <div class="fp-section-hdr">I. MEDICAL HISTORY</div>
+        <div style="font-size:0.8rem; margin-bottom:0.5rem;">Does the client have any of the following?</div>
+        <table class="fp-yn-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Yes</th>
+                    <th>No</th>
+                </tr>
+            </thead>
+                <tr>
+                    <td>• severe headaches / migraine</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_SevereHeadaches" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_SevereHeadaches" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• history of stroke / heart attack / hypertension</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_StrokeHeartHypertension" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_StrokeHeartHypertension" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• non-traumatic hematoma / frequent bruising or gum bleeding</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_HematomaBruising" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_HematomaBruising" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• current or history of breast cancer / breast mass</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_BreastCancerMass" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_BreastCancerMass" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• severe chest pain</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_SevereChestPain" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_SevereChestPain" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• cough for more than 14 days</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Cough14Days" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Cough14Days" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• jaundice</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Jaundice" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Jaundice" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• unexplained vaginal bleeding</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_UnexplainedVaginalBleeding" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_UnexplainedVaginalBleeding" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• abnormal vaginal discharge</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_AbnormalVaginalDischarge" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_AbnormalVaginalDischarge" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• intake of phenobarbital (anti-seizure) or rifampicin (anti-TB)</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_PhenobarbitalRifampicin" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_PhenobarbitalRifampicin" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• Is the client a SMOKER?</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Smoker" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_Smoker" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• With Disability? <span style="font-size:0.75rem;">(If YES please specify: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.MH_DisabilitySpecify" style="width:130px;" />)</span></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_WithDisability" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.MH_WithDisability" value="no" /></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- II. OBSTETRICAL HISTORY -->
+        <div class="fp-section-hdr">II. OBSTETRICAL HISTORY</div>
+        <div class="pn-row" style="flex-wrap:wrap; gap:1rem;">
+            <div style="font-size:0.8rem;">Number of pregnancies G: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.OH_Gravida" style="width:50px;" /> &nbsp; P: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.OH_Para" style="width:50px;" /></div>
+        </div>
+        <div style="font-size:0.8rem; margin:4px 0;">
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.OH_FullTerm" value="yes" @(Model.FamilyPlanningRecord.OH_FullTerm?.Contains("yes") == true ? "checked" : "") /> Full term</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.OH_Premature" value="yes" @(Model.FamilyPlanningRecord.OH_Premature?.Contains("yes") == true ? "checked" : "") /> Premature</label>&nbsp;
+            Abortion: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.OH_Abortion" style="width:60px;" />&nbsp;&nbsp;
+            Living children: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.OH_LivingChildren" style="width:60px;" />
+        </div>
+        <div class="pn-row" style="margin-top:4px;">
+            <div class="pn-field">
+                <span class="pn-label">Date of last delivery:</span>
+                <input type="date" class="pn-input" asp-for="FamilyPlanningRecord.OH_DateOfLastDelivery" />
+            </div>
+        </div>
+        <div style="font-size:0.8rem; margin:4px 0;">
+            Type of last delivery: &nbsp;
+            <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.OH_TypeOfLastDelivery" value="vaginal" /> Vaginal</label>&nbsp;
+            <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.OH_TypeOfLastDelivery" value="cs" /> Caesarean Section</label>
+        </div>
+        <div class="pn-row" style="flex-wrap:wrap; gap:1.5rem; margin-top:4px;">
+            <div class="pn-field">
+                <span class="pn-label">Last menstrual period:</span>
+                <input type="date" class="pn-input" asp-for="FamilyPlanningRecord.OH_LastMenstrualPeriod" />
+            </div>
+            <div class="pn-field">
+                <span class="pn-label">Previous menstrual period:</span>
+                <input type="date" class="pn-input" asp-for="FamilyPlanningRecord.OH_PreviousMenstrualPeriod" />
+            </div>
+        </div>
+        <div style="font-size:0.8rem; margin:4px 0;">
+            Menstrual flow: &nbsp;
+            <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.OH_MenstrualFlow" value="scanty" /> Scanty (1-2 pads/day)</label>&nbsp;
+            <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.OH_MenstrualFlow" value="moderate" /> Moderate (3-5 pads/day)</label>&nbsp;
+            <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.OH_MenstrualFlow" value="heavy" /> Heavy (&gt;5 pads/day)</label>
+        </div>
+        <div style="font-size:0.8rem; margin:4px 0;">
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.OH_Dysmenorrhea" value="yes" @(Model.FamilyPlanningRecord.OH_Dysmenorrhea?.Contains("yes") == true ? "checked" : "") /> Dysmenorrhea</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.OH_HydatidiformMole" value="yes" @(Model.FamilyPlanningRecord.OH_HydatidiformMole?.Contains("yes") == true ? "checked" : "") /> Hydatidiform mole (within last 12 months)</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.OH_EctopicPregnancy" value="yes" @(Model.FamilyPlanningRecord.OH_EctopicPregnancy?.Contains("yes") == true ? "checked" : "") /> History of ectopic pregnancy</label>
+        </div>
+
+        <!-- III. STI RISKS -->
+        <div class="fp-section-hdr">III. RISKS FOR SEXUALLY TRANSMITTED INFECTIONS</div>
+        <div style="font-size:0.8rem; margin-bottom:0.4rem;">Does the client's partner have any of the following?</div>
+        <table class="fp-sti-table">
+            <thead>
+                <tr>
+                    <th>Condition</th>
+                    <th>Yes</th>
+                    <th>No</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>• abnormal discharge from the genital area</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_AbnormalDischarge" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_AbnormalDischarge" value="no" /></td>
+                    <td style="font-size:0.78rem;">If YES, indicate if from: <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.STI_AbnormalDischarge_Loc" value="vagina" /> Vagina</label> <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.STI_AbnormalDischarge_Loc" value="penis" /> Penis</label></td>
+                </tr>
+                <tr>
+                    <td>• sores or ulcers in the genital area</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_SoresUlcers" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_SoresUlcers" value="no" /></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>• pain or burning sensation in the genital area</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_PainBurning" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_PainBurning" value="no" /></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>• history of treatment for sexually transmitted infections</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_HistoryTreatment" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_HistoryTreatment" value="no" /></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>• HIV / AIDS / Pelvic inflammatory disease</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_HIV_PID" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.STI_HIV_PID" value="no" /></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- IV. VAW RISKS -->
+        <div class="fp-section-hdr">IV. RISKS FOR VIOLENCE AGAINST WOMEN (VAW)</div>
+        <table class="fp-yn-table">
+            <thead>
+                <tr><th></th><th>Yes</th><th>No</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>• unpleasant relationship with partner</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_UnpleasantRelationship" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_UnpleasantRelationship" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• partner does not approve of the visit to FP clinic</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_PartnerDisapprove" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_PartnerDisapprove" value="no" /></td>
+                </tr>
+                <tr>
+                    <td>• history of domestic violence or VAW</td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_HistoryDomesticViolence" value="yes" /></td>
+                    <td class="fp-yn-cell"><input type="radio" asp-for="FamilyPlanningRecord.VAW_HistoryDomesticViolence" value="no" /></td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size:0.8rem; margin-top:4px;">
+            Referred to:
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.VAW_ReferredTo" value="DSWD" @(Model.FamilyPlanningRecord.VAW_ReferredTo?.Contains("DSWD") == true ? "checked" : "") /> DSWD</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.VAW_ReferredTo" value="WCPU" @(Model.FamilyPlanningRecord.VAW_ReferredTo?.Contains("WCPU") == true ? "checked" : "") /> WCPU</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.VAW_ReferredTo" value="NGOs" @(Model.FamilyPlanningRecord.VAW_ReferredTo?.Contains("NGOs") == true ? "checked" : "") /> NGOs</label>&nbsp;
+            <label class="pn-check-lbl" style="display:inline-flex;"><input type="checkbox" name="FamilyPlanningRecord.VAW_ReferredTo" value="Others" @(Model.FamilyPlanningRecord.VAW_ReferredTo?.Contains("Others") == true ? "checked" : "") /> Others (Specify: <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.VAW_ReferredTo_Others" style="width:120px;" />)</label>
+        </div>
+
+        <!-- V. PHYSICAL EXAMINATION -->
+        <div class="fp-section-hdr">V. PHYSICAL EXAMINATION</div>
+        <div class="pn-row" style="flex-wrap:wrap; gap:1.2rem; margin-bottom:0.75rem; font-size:0.8rem;">
+            <div class="pn-field">
+                <span class="pn-label">Height:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.PE_Height" style="width:55px;" />
+                <span class="pn-label" style="margin-left:3px;">m</span>
+            </div>
+            <div class="pn-field">
+                <span class="pn-label">Weight:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.PE_Weight" style="width:55px;" />
+                <span class="pn-label" style="margin-left:3px;">kg</span>
+            </div>
+            <div class="pn-field">
+                <span class="pn-label">Blood pressure:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.PE_BloodPressure_Systolic" style="width:50px;" /> / <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.PE_BloodPressure_Diastolic" style="width:50px;" />
+                <span class="pn-label" style="margin-left:3px;">mmHg</span>
+            </div>
+            <div class="pn-field">
+                <span class="pn-label">Pulse rate:</span>
+                <input type="text" class="pn-input" asp-for="FamilyPlanningRecord.PE_PulseRate" style="width:55px;" />
+                <span class="pn-label" style="margin-left:3px;">/min</span>
+            </div>
+        </div>
+        <div class="fp-pe-two-col">
+            <!-- LEFT: SKIN / CONJUNCTIVA / NECK / BREAST / ABDOMEN -->
+            <div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">SKIN:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Skin" value="normal" @(Model.FamilyPlanningRecord.PE_Skin?.Contains("normal") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Skin" value="pale" @(Model.FamilyPlanningRecord.PE_Skin?.Contains("pale") == true ? "checked" : "") /> pale</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Skin" value="yellowish" @(Model.FamilyPlanningRecord.PE_Skin?.Contains("yellowish") == true ? "checked" : "") /> yellowish</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Skin" value="hematoma" @(Model.FamilyPlanningRecord.PE_Skin?.Contains("hematoma") == true ? "checked" : "") /> hematoma</label>
+                </div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">CONJUNCTIVA:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Conjunctiva" value="normal" @(Model.FamilyPlanningRecord.PE_Conjunctiva?.Contains("normal") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Conjunctiva" value="pale" @(Model.FamilyPlanningRecord.PE_Conjunctiva?.Contains("pale") == true ? "checked" : "") /> pale</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Conjunctiva" value="yellowish" @(Model.FamilyPlanningRecord.PE_Conjunctiva?.Contains("yellowish") == true ? "checked" : "") /> yellowish</label>
+                </div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">NECK:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Neck" value="mass" @(Model.FamilyPlanningRecord.PE_Neck?.Contains("mass") == true ? "checked" : "") /> mass</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Neck" value="neck mass" @(Model.FamilyPlanningRecord.PE_Neck?.Contains("neck mass") == true ? "checked" : "") /> neck mass</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Neck" value="enlarged lymph nodes" @(Model.FamilyPlanningRecord.PE_Neck?.Contains("enlarged lymph nodes") == true ? "checked" : "") /> enlarged lymph nodes</label>
+                </div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">BREAST:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Breast" value="normal" @(Model.FamilyPlanningRecord.PE_Breast?.Contains("normal") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Breast" value="mass" @(Model.FamilyPlanningRecord.PE_Breast?.Contains("mass") == true ? "checked" : "") /> mass</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Breast" value="nipple discharge" @(Model.FamilyPlanningRecord.PE_Breast?.Contains("nipple discharge") == true ? "checked" : "") /> nipple discharge</label>
+                </div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">ABDOMEN:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Abdomen" value="normal" @(Model.FamilyPlanningRecord.PE_Abdomen?.Contains("normal") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Abdomen" value="abdominal mass" @(Model.FamilyPlanningRecord.PE_Abdomen?.Contains("abdominal mass") == true ? "checked" : "") /> abdominal mass</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Abdomen" value="varicosities" @(Model.FamilyPlanningRecord.PE_Abdomen?.Contains("varicosities") == true ? "checked" : "") /> varicosities</label>
+                </div>
+            </div>
+            <!-- RIGHT: EXTREMITIES + PELVIC EXAMINATION -->
+            <div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">EXTREMITIES:</div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Extremities" value="normal" @(Model.FamilyPlanningRecord.PE_Extremities?.Contains("normal") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Extremities" value="edema" @(Model.FamilyPlanningRecord.PE_Extremities?.Contains("edema") == true ? "checked" : "") /> edema</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.PE_Extremities" value="varicosities" @(Model.FamilyPlanningRecord.PE_Extremities?.Contains("varicosities") == true ? "checked" : "") /> varicosities</label>
+                </div>
+                <div class="fp-pe-group">
+                    <div class="fp-pe-title">PELVIC EXAMINATION <span style="font-weight:400;font-size:0.76rem;">(For IUD Acceptors):</span></div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_Normal" value="yes" @(Model.FamilyPlanningRecord.Pelvic_Normal?.Contains("yes") == true ? "checked" : "") /> normal</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_Mass" value="yes" @(Model.FamilyPlanningRecord.Pelvic_Mass?.Contains("yes") == true ? "checked" : "") /> mass</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_AbnormalDischarge" value="yes" @(Model.FamilyPlanningRecord.Pelvic_AbnormalDischarge?.Contains("yes") == true ? "checked" : "") /> abnormal discharge</label>
+                    <div style="font-size:0.78rem; margin:4px 0 2px;">cervical abnormalities:</div>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_CervicalAbnormalities" value="warts" @(Model.FamilyPlanningRecord.Pelvic_CervicalAbnormalities?.Contains("warts") == true ? "checked" : "") /> warts</label>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_CervicalAbnormalities" value="polyp or cyst" @(Model.FamilyPlanningRecord.Pelvic_CervicalAbnormalities?.Contains("polyp or cyst") == true ? "checked" : "") /> polyp or cyst</label>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_CervicalAbnormalities" value="inflammation or erosion" @(Model.FamilyPlanningRecord.Pelvic_CervicalAbnormalities?.Contains("inflammation or erosion") == true ? "checked" : "") /> inflammation or erosion</label>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_CervicalAbnormalities" value="bloody discharge" @(Model.FamilyPlanningRecord.Pelvic_CervicalAbnormalities?.Contains("bloody discharge") == true ? "checked" : "") /> bloody discharge</label>
+                    <div style="font-size:0.78rem; margin:4px 0 2px;">cervical consistency:</div>
+                    <div style="display:flex; gap:1rem; padding-left:1rem;">
+                        <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.Pelvic_CervicalConsistency" value="firm" /> firm</label>
+                        <label class="pn-radio-lbl"><input type="radio" asp-for="FamilyPlanningRecord.Pelvic_CervicalConsistency" value="soft" /> soft</label>
+                    </div>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_CervicalTenderness" value="yes" @(Model.FamilyPlanningRecord.Pelvic_CervicalTenderness?.Contains("yes") == true ? "checked" : "") /> cervical tenderness</label>
+                    <label class="pn-check-lbl"><input type="checkbox" name="FamilyPlanningRecord.Pelvic_AdnexalMassTenderness" value="yes" @(Model.FamilyPlanningRecord.Pelvic_AdnexalMassTenderness?.Contains("yes") == true ? "checked" : "") /> adnexal mass / tenderness</label>
+                    <div style="font-size:0.78rem; margin:4px 0 2px;">uterine position:</div>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="radio" asp-for="FamilyPlanningRecord.Pelvic_UterinePosition" value="mid" /> mid</label>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="radio" asp-for="FamilyPlanningRecord.Pelvic_UterinePosition" value="ante" /> anteverted</label>
+                    <label class="pn-check-lbl" style="padding-left:1rem;"><input type="radio" asp-for="FamilyPlanningRecord.Pelvic_UterinePosition" value="retro" /> retrofixed</label>
+                    <div class="pn-field" style="margin-top:4px;">
+                        <span style="font-size:0.78rem;">uterine depth:</span>
+                        <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.Pelvic_UterineDepth" style="width:60px; margin:0 4px;" />
+                        <span style="font-size:0.78rem;">cm</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACKNOWLEDGEMENT -->
+        <div class="fp-ack-box">
+            <div class="fp-pe-title" style="margin-bottom:0.6rem;">ACKNOWLEDGEMENT:</div>
+            <div style="font-size:0.8rem; line-height:1.8;">
+                This is to certify that the Physician/Nurse/Midwife of the clinic has fully explained to me the different methods available in family planning and I freely choose the
+                <input type="text" id="fpMethodDisplay" asp-for="FamilyPlanningRecord.Ack_MethodAccepted" class="nb-blank" style="width:200px; font-weight:700; font-style:italic; text-align:center;" value="" readonly />
+                method.
+            </div>
+            <div class="nb-sig-row" style="margin-top:1.5rem;">
+                <div class="nb-sig-col">
+                    <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.Ack_ClientPrintedName" style="width:100%; text-align:center; font-weight:600;" />
+                    <div class="nb-sig-line" style="margin-top:2px;"></div>
+                    <div style="text-align:center; font-size:0.78rem; color:#4b5563;">Client Printed Name</div>
+                </div>
+                <div class="nb-sig-col">
+                    <input type="date" class="nb-blank" asp-for="FamilyPlanningRecord.Ack_ClientDate" style="width:100%; text-align:center;" />
+                    <div class="nb-sig-line" style="margin-top:2px;"></div>
+                    <div style="text-align:center; font-size:0.78rem; color:#4b5563;">Date</div>
+                </div>
+            </div>
+            <div style="font-size:0.8rem; margin-top:1rem; font-style:italic;">
+                For MW below 18 yrs. old: I hereby consent <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.Ack_ConsentName" style="width:260px;" /> to accept the Family Planning method.
+            </div>
+            <div class="nb-sig-row" style="margin-top:1.5rem;">
+                <div class="nb-sig-col">
+                    <input type="text" class="nb-blank" asp-for="FamilyPlanningRecord.Ack_ParentPrintedName" style="width:100%; text-align:center; font-weight:600;" />
+                    <div class="nb-sig-line" style="margin-top:2px;"></div>
+                    <div style="text-align:center; font-size:0.78rem; color:#4b5563;">Parent/Guardian Printed Name</div>
+                </div>
+                <div class="nb-sig-col">
+                    <input type="date" class="nb-blank" asp-for="FamilyPlanningRecord.Ack_ParentDate" style="width:100%; text-align:center;" />
+                    <div class="nb-sig-line" style="margin-top:2px;"></div>
+                    <div style="text-align:center; font-size:0.78rem; color:#4b5563;">Date</div>
+                </div>
+            </div>
+        </div>
+

@@ -1,0 +1,265 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ConsultationPageViewModel
+@{
+    ViewData["Title"] = "Consultation";
+}
+
+<div class="page-header">
+    <h1>Consultation</h1>
+    <p class="subtitle">Manage waiting, in-progress, and completed patient consultations.</p>
+
+    <div class="header-row">
+        <div class="search-box">
+            <input type="text" id="consultationSearch" placeholder="Search patient by name or contact..." />
+        </div>
+        <div class="header-actions">
+            <span class="user-name">Admin Name</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-title">Consultation</h2>
+        <div class="card-actions">
+            <button type="button" class="btn-primary-dark" aria-disabled="true">
+                <i class="bi bi-person-plus"></i>
+                Walk-In
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="patient-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Visit Type</th>
+                    <th>Service</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="consultationTableBody">
+                @if (!Model.Queue.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            No waiting or consultation records yet.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Queue)
+                    {
+                        var displayVisitType = item.AppointmentId.HasValue ? "Appointment" : "Walk-In";
+                        var hasSelectedService = new[]
+                        {
+                            "Normal Delivery Fee & Newborn Care Package", "Prenatal", "Implant",
+                            "Implant Removal", "DEPO", "NORIFAM", "IUD Insertion", "IUD Removal",
+                            "Anti-Tetanus Injection"
+                        }.Contains(item.ServiceType);
+                        var displayStatus = string.IsNullOrWhiteSpace(item.Status)
+                            ? (item.AppointmentId.HasValue ? "Waiting" : "In Progress")
+                            : item.Status;
+                        <tr class="patient-row" data-name="@item.PatientName.ToLower()" data-contact="@item.ContactNo">
+                            <td><span style="color:#7b1d3c; font-weight:600;">@item.PatientName</span></td>
+                            <td>@item.ContactNo</td>
+                            <td style="font-weight:600; color:#334155;">@displayVisitType</td>
+                            <td>@(hasSelectedService ? item.ServiceType : "-")</td>
+                            <td style="font-weight:600; color:#334155;">@displayStatus</td>
+                            <td>
+                                @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
+                                {
+                                    <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                            data-appointment-id="@item.AppointmentId"
+                                            data-patient-id="@item.PatientId"
+                                            data-patient-name="@item.PatientName"
+                                            data-service="@(item.ServiceType == "—" ? "" : item.ServiceType)"
+                                            data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
+                                        Start
+                                    </button>
+                                }
+                                else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
+                                {
+                                    <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">Continue</a>
+                                }
+                                else if (displayStatus == "Completed" && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
+                                {
+                                    <a asp-controller="Services" asp-action="Details" asp-route-id="@item.RecordId" asp-route-type="@item.RecordType" class="btn btn-sm btn-outline-secondary">View Record</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- The service is already registered in Services. Starting only needs confirmation. -->
+<div class="modal fade" id="beginConsultationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Begin" method="post" id="beginConsultationForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="appointmentId" id="beginAppointmentId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Start Consultation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="startConfirmationMessage" class="mb-0">Do you want to start this consultation?</p>
+                    <div id="appointmentPatientNotice" class="alert alert-light border small d-none mb-3"></div>
+
+                    <div class="mb-3 d-none">
+                        <label for="beginPatientId" class="form-label">Registered Patient <span class="text-danger">*</span></label>
+                        <select name="patientId" id="beginPatientId" class="form-select" required>
+                            <option value="">Select patient</option>
+                            @foreach (var patient in Model.Patients)
+                            {
+                                <option value="@patient.Id">@patient.FullName — @patient.ContactNo</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2 d-none">
+                        <label for="beginServiceType" class="form-label">Service <span class="text-danger">*</span></label>
+                        <select name="serviceType" id="beginServiceType" class="form-select" required>
+                            <option value="">Select service</option>
+                            <option value="Prenatal">Prenatal</option>
+                            <option value="Normal Delivery Fee &amp; Newborn Care Package">Normal Delivery Fee &amp; Newborn Care Package</option>
+                            <option value="Implant">Implant</option>
+                            <option value="Implant Removal">Implant Removal</option>
+                            <option value="DEPO">DEPO</option>
+                            <option value="NORIFAM">NORIFAM</option>
+                            <option value="IUD Insertion">IUD Insertion</option>
+                            <option value="IUD Removal">IUD Removal</option>
+                            <option value="Anti-Tetanus Injection">Anti-Tetanus Injection</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-primary">Yes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- The full service form is kept in Consultation, so a started encounter can be continued. -->
+<div class="modal fade" id="consultationServiceModal" tabindex="-1" aria-hidden="true" data-open="@(Model.OpenConsultation != null ? "true" : "false")">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" style="max-width:min(960px, calc(100vw - 32px));">
+        <div class="modal-content border-0 shadow-lg" style="max-height:90vh; border-radius:16px; overflow:hidden;">
+            @* The service header is intentionally not rendered; only the interview form belongs in this modal.
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">@(Model.OpenConsultation?.ServiceType ?? "Consultation Service Form")</h5>
+                    @if (Model.OpenConsultation?.Patient != null)
+                    {
+                        <small class="text-muted">@Model.OpenConsultation.Patient.FullName · @Model.OpenConsultation.VisitType · In Progress</small>
+                    }
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            *@
+            <div class="modal-body bg-light">
+                @if (Model.OpenConsultation != null)
+                {
+                    <form asp-action="SaveService" method="post" id="consultationServiceForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="consultationId" value="@Model.OpenConsultation.Id" />
+                        <input type="hidden" name="SelectedServices" id="selectedServicesInput" value="@Model.OpenConsultation.ServiceType" />
+                        <input type="hidden" name="SelectedPatientId" id="selectedPatientIdInput" value="@Model.OpenConsultation.PatientId" />
+                        <!-- These hidden elements let the shared service-form script
+                             load the registered patient's basic information. -->
+                        <div class="d-none" aria-hidden="true">
+                            <input type="text" id="patientSearchInput" autocomplete="off" />
+                            <div id="patientDropdown"></div>
+                        </div>
+
+                        <div class="content-card mb-4 pn-card" id="prenatalRecordPanel"
+                             style="display:@(Model.OpenConsultation.ServiceType == "Prenatal" ? "block" : "none");">
+                            <partial name="~/Views/Services/_PrenatalForm.cshtml" model="Model.ServiceForm" />
+                        </div>
+                        <div class="content-card mb-4 pn-card" id="newbornPanel"
+                             style="display:@(Model.OpenConsultation.ServiceType == "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
+                            <partial name="~/Views/Services/_NewbornForm.cshtml" model="Model.ServiceForm" />
+                        </div>
+                        <div class="content-card mb-4 pn-card" id="familyPlanningPanel"
+                             style="display:@(Model.OpenConsultation.ServiceType != "Prenatal" && Model.OpenConsultation.ServiceType != "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
+                            <partial name="~/Views/Services/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pb-3">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Save Later</button>
+                            <button type="submit" class="btn btn-primary">Complete &amp; Save Record</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Services/_ServiceFormStyles.cshtml" />
+
+<style>
+    /* The interview form still scrolls with the wheel/touchpad, but its side
+       scrollbar stays hidden. */
+    #consultationServiceModal .modal-body {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    #consultationServiceModal .modal-body::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+</style>
+
+@section Scripts {
+    <partial name="~/Views/Services/_ServiceFormScripts.cshtml" />
+    <script>
+        document.getElementById('consultationSearch')?.addEventListener('input', function () {
+            const query = this.value.toLowerCase().trim();
+            document.querySelectorAll('#consultationTableBody .patient-row').forEach(function (row) {
+                const name = (row.dataset.name || '').toLowerCase();
+                const contact = (row.dataset.contact || '').toLowerCase();
+                row.style.display = (name.includes(query) || contact.includes(query)) ? '' : 'none';
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const beginModalElement = document.getElementById('beginConsultationModal');
+            const appointmentId = document.getElementById('beginAppointmentId');
+            const patientSelect = document.getElementById('beginPatientId');
+            const serviceSelect = document.getElementById('beginServiceType');
+            const confirmationMessage = document.getElementById('startConfirmationMessage');
+
+            function configureBeginModal(button) {
+                appointmentId.value = button.dataset.appointmentId || '';
+                patientSelect.value = button.dataset.patientId || '';
+                serviceSelect.value = button.dataset.service || '';
+                const patientName = button.dataset.patientName || 'this patient';
+                const serviceName = button.dataset.service || 'selected service';
+                confirmationMessage.textContent = `Do you want to start the ${serviceName} consultation for ${patientName}?`;
+            }
+
+            // Bootstrap opens the modal through the data-bs attributes.  Using its
+            // show event keeps Walk-In usable even when another page script fails.
+            beginModalElement.addEventListener('show.bs.modal', function (event) {
+                if (event.relatedTarget) configureBeginModal(event.relatedTarget);
+            });
+
+            const serviceModalElement = document.getElementById('consultationServiceModal');
+            if (serviceModalElement.dataset.open === 'true') {
+                new bootstrap.Modal(serviceModalElement).show();
+            }
+        });
+    </script>
+}

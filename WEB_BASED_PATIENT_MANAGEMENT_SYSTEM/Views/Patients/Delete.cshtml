@@ -1,0 +1,44 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient
+@{
+    ViewData["Title"] = "Delete Patient";
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Patient List
+    </a>
+    <h1>Delete Patient</h1>
+</div>
+
+<div class="content-card">
+    <p>Are you sure you want to delete the following patient record?</p>
+
+    <!-- Summary of patient being deleted -->
+    <div class="detail-grid detail-grid-spaced">
+        <div class="detail-item">
+            <label>Full Name</label>
+            <div class="detail-value">@Model.FullName</div>
+        </div>
+        <div class="detail-item">
+            <label>Contact No.</label>
+            <div class="detail-value">@Model.ContactNo</div>
+        </div>
+        <div class="detail-item">
+            <label>Age</label>
+            <div class="detail-value">@Model.Age</div>
+        </div>
+        <div class="detail-item">
+            <label>Address</label>
+            <div class="detail-value">@Model.Address</div>
+        </div>
+    </div>
+
+    <form asp-action="Delete" method="post" class="form-actions">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn-primary-dark btn-delete-confirm">
+            <i class="bi bi-trash"></i> Confirm Delete
+        </button>
+        <a asp-action="Index" class="btn-cancel">Cancel</a>
+    </form>
+</div>

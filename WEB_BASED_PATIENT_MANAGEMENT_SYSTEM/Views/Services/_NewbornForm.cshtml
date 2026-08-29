@@ -1,0 +1,288 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+
+        <!-- â”€â”€â”€ NEWBORN CLINICAL CHART â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <h2 class="pn-main-title">NEWBORN CLINICAL CHART</h2>
+
+        <!-- CASE NO. -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">CASE NO.:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.CaseNo" />
+            </div>
+        </div>
+
+        <!-- DATE & TIME OF ADMISSION -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">DATE &amp; TIME OF ADMISSION:</span>
+                <input type="datetime-local" class="pn-input" asp-for="NewbornRecord.DateTimeOfAdmission" />
+            </div>
+        </div>
+
+        <!-- BABY'S NAME | WT | GENDER -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:3;">
+                <span class="pn-label">BABY'S NAME:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.BabyName" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">WT.:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.Weight" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">GENDER:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.Gender" />
+            </div>
+        </div>
+
+        <!-- DATE & TIME DELIVERED | BED # -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:3;">
+                <span class="pn-label">DATE &amp; TIME DELIVERED:</span>
+                <input type="datetime-local" class="pn-input" asp-for="NewbornRecord.DateTimeDelivered" />
+            </div>
+            <div class="pn-field" style="flex:1.2;">
+                <span class="pn-label">BED #:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.BedNo" />
+            </div>
+        </div>
+
+        <!-- MOTHER'S NAME -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">MOTHER'S NAME:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MotherName" />
+            </div>
+        </div>
+
+        <!-- ADDRESS -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">ADDRESS:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MotherAddress" />
+            </div>
+        </div>
+
+        <!-- PLACENTA OUT -->
+        <div class="pn-row" style="align-items:center;">
+            <span class="pn-label" style="white-space:nowrap;">PLACENTA OUT:</span>
+            <label class="pn-radio-lbl" style="margin-left:1rem;"><input type="radio" asp-for="NewbornRecord.PlacentaOut" value="complete" /> Complete</label>
+            <label class="pn-radio-lbl" style="margin-left:1.5rem;"><input type="radio" asp-for="NewbornRecord.PlacentaOut" value="incomplete" /> Incomplete</label>
+        </div>
+
+        <!-- APGAR SCORE -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">APGAR SCORE:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.ApgarScore" />
+            </div>
+        </div>
+
+        <!-- MEASUREMENT -->
+        <div class="pn-row" style="align-items:center;">
+            <span class="pn-label" style="white-space:nowrap; font-weight:700;">MEASUREMENT:</span>
+            <div class="pn-field" style="flex:0.8; margin-left:1rem;">
+                <span class="pn-label">HEAD:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MeasurementHead" />
+            </div>
+            <div class="pn-field" style="flex:0.8;">
+                <span class="pn-label">CHEST:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MeasurementChest" />
+            </div>
+            <div class="pn-field" style="flex:0.8;">
+                <span class="pn-label">ABDOMEN:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MeasurementAbdomen" />
+            </div>
+            <div class="pn-field" style="flex:0.8;">
+                <span class="pn-label">LENGTH:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.MeasurementLength" />
+            </div>
+        </div>
+
+        <!-- DIAGNOSIS -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">DIAGNOSIS:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.Diagnosis" />
+            </div>
+        </div>
+
+        <!-- DATE & TIME OF DISCHARGE -->
+        <div class="pn-row">
+            <div class="pn-field" style="flex:1;">
+                <span class="pn-label">DATE &amp; TIME OF DISCHARGE:</span>
+                <input type="datetime-local" class="pn-input" asp-for="NewbornRecord.DateTimeOfDischarge" />
+            </div>
+        </div>
+
+        <!-- Vitals Table -->
+        <div class="pn-visit-wrap" style="margin-top:1rem;">
+            <table class="pn-visit-table" id="newbornVitalsTable">
+                <thead>
+                    <tr>
+                        <th style="width:28%;">DATE &amp; TIME</th>
+                        <th>HR</th>
+                        <th>RR</th>
+                        <th>TEMPERATURE</th>
+                        @if (!Model.IsViewOnly)
+                        {
+                            <th style="width:32px; border:none; background:transparent;"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody id="newbornVitalsBody">
+                    @if (Model.NewbornRecord?.Vitals != null && Model.NewbornRecord.Vitals.Any())
+                    {
+                        for (int i = 0; i < Model.NewbornRecord.Vitals.Count; i++)
+                        {
+                            <tr class="nb-vitals-row">
+                                <input type="hidden" name="NewbornRecord.Vitals.Index" value="@i" />
+                                <td><input type="datetime-local" class="pn-table-input" asp-for="NewbornRecord.Vitals[i].DateTime" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="NewbornRecord.Vitals[i].HeartRate" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="NewbornRecord.Vitals[i].RespiratoryRate" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="NewbornRecord.Vitals[i].Temperature" /></td>
+                                @if (!Model.IsViewOnly)
+                                {
+                                    <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeNbRow(this,'newbornVitalsBody','nb-vitals-row')"><i class="bi bi-x"></i></button></td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="nb-vitals-row">
+                            <input type="hidden" name="NewbornRecord.Vitals.Index" value="0" />
+                            <td><input type="datetime-local" class="pn-table-input" name="NewbornRecord.Vitals[0].DateTime" /></td>
+                            <td><input type="text" class="pn-table-input" name="NewbornRecord.Vitals[0].HeartRate" /></td>
+                            <td><input type="text" class="pn-table-input" name="NewbornRecord.Vitals[0].RespiratoryRate" /></td>
+                            <td><input type="text" class="pn-table-input" name="NewbornRecord.Vitals[0].Temperature" /></td>
+                            @if (!Model.IsViewOnly)
+                            {
+                                <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeNbRow(this,'newbornVitalsBody','nb-vitals-row')"><i class="bi bi-x"></i></button></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.IsViewOnly)
+            {
+                <div class="pn-add-visit-row">
+                    <button type="button" class="btn-add-visit" id="addNbVitalsBtn">+ Add Row</button>
+                </div>
+            }
+        </div>
+
+        <hr class="pn-divider" />
+
+        <!-- Medications & Prophylaxis -->
+        <div class="pn-assess-title" style="margin-bottom:0.5rem;">MEDICATIONS &amp; PROPHYLAXIS GIVEN:</div>
+        <div class="pn-visit-wrap">
+            <table class="pn-visit-table" id="newbornMedsTable">
+                <thead>
+                    <tr>
+                        <th style="width:28%;">DATE &amp; TIME</th>
+                        <th>MEDICINES/VACCINES GIVEN/PROPHYLAXIS</th>
+                        @if (!Model.IsViewOnly)
+                        {
+                            <th style="width:32px; border:none; background:transparent;"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody id="newbornMedsBody">
+                    @if (Model.NewbornRecord?.Medications != null && Model.NewbornRecord.Medications.Any())
+                    {
+                        for (int i = 0; i < Model.NewbornRecord.Medications.Count; i++)
+                        {
+                            <tr class="nb-meds-row">
+                                <input type="hidden" name="NewbornRecord.Medications.Index" value="@i" />
+                                <td><input type="datetime-local" class="pn-table-input" asp-for="NewbornRecord.Medications[i].DateTime" /></td>
+                                <td><input type="text" class="pn-table-input" asp-for="NewbornRecord.Medications[i].MedicineGiven" /></td>
+                                @if (!Model.IsViewOnly)
+                                {
+                                    <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeNbRow(this,'newbornMedsBody','nb-meds-row')"><i class="bi bi-x"></i></button></td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="nb-meds-row">
+                            <input type="hidden" name="NewbornRecord.Medications.Index" value="0" />
+                            <td><input type="datetime-local" class="pn-table-input" name="NewbornRecord.Medications[0].DateTime" /></td>
+                            <td><input type="text" class="pn-table-input" name="NewbornRecord.Medications[0].MedicineGiven" /></td>
+                            @if (!Model.IsViewOnly)
+                            {
+                                <td class="td-remove"><button type="button" class="visit-remove-btn" onclick="removeNbRow(this,'newbornMedsBody','nb-meds-row')"><i class="bi bi-x"></i></button></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.IsViewOnly)
+            {
+                <div class="pn-add-visit-row">
+                    <button type="button" class="btn-add-visit" id="addNbMedsBtn">+ Add Row</button>
+                </div>
+            }
+        </div>
+
+        <hr class="pn-divider" />
+
+        <!-- â”€â”€â”€ CONSENT TO CARE FOR NEWBORN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="pn-row" style="margin-bottom:0.5rem;">
+            <div class="pn-field" style="flex:2;">
+                <span class="pn-label">NAME OF THE NEWBORN:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.BabyName" />
+            </div>
+            <div style="flex:1;"></div>
+            <div class="pn-field" style="flex:0.7;">
+                <span class="pn-label">BED NO.:</span>
+                <input type="text" class="pn-input" asp-for="NewbornRecord.BedNo" />
+            </div>
+        </div>
+
+        <h2 class="pn-main-title">CONSENT TO CARE FOR NEWBORN</h2>
+
+        <!-- Consent paragraph with blanks -->
+        <div class="nb-consent-text">
+            I,&nbsp;<span class="nb-blank-wrap"><input type="text" class="nb-blank" style="width:160px;" asp-for="NewbornRecord.ConsentClientName" /></span>,&nbsp;
+            age&nbsp;<span class="nb-blank-wrap"><input type="number" class="nb-blank" style="width:40px;" asp-for="NewbornRecord.ConsentClientAge" /></span>&nbsp;
+            years of age, resident of&nbsp;<span class="nb-blank-wrap"><input type="text" class="nb-blank" style="width:180px;" asp-for="NewbornRecord.ConsentClientAddress" /></span>&nbsp;
+            (Civil Status)&nbsp;<span class="nb-blank-wrap"><input type="text" class="nb-blank" style="width:120px;" asp-for="NewbornRecord.ConsentCivilStatus" /></span>,&nbsp;
+            the&nbsp;<span class="nb-blank-wrap"><input type="text" class="nb-blank" style="width:100px;" asp-for="NewbornRecord.ConsentRelationship" /></span>&nbsp;of the newborn, give my full consent to the attending health care provider to attend to/care for the newborn. The health care providers properly explained to me the procedure to be done. I am also informed that prior to our discharge, I am obliged to settle my financial obligations stated below;
+        </div>
+
+        <!-- Care Package Table -->
+        <table class="nb-pkg-table">
+            <tbody>
+                <tr>
+                    <td>NEWBORN CARE PACKAGE (Zero Billing)</td>
+                    <td class="nb-pkg-price">-Zero Billing-</td>
+                </tr>
+                <tr>
+                    <td>NEWBORN CARE PACKAGE (Cash basis)</td>
+                    <td class="nb-pkg-price"><strong>Php 5,000.00</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Signatures -->
+        <div class="nb-sig-row" style="display:flex; justify-content:space-between; margin-top:2rem;">
+            <div class="nb-sig-col" style="width:45%;">
+                <div class="pn-label">Mother/Guardian's Printed Name:</div>
+                <input type="text" asp-for="NewbornRecord.ConsentClientName" style="width:100%; border:none; border-bottom:1px solid #1a1a1a; outline:none; background:transparent; font-family:inherit; font-size:1rem; padding:4px 0;" />
+                <div class="pn-field" style="margin-top:0.5rem; display:flex; align-items:center;">
+                    <span class="pn-label" style="margin-right:0.5rem;">Date:</span>
+                    <input type="date" class="pn-input" style="width:130px; border-bottom:1px solid #1a1a1a; padding-bottom:0;" asp-for="NewbornRecord.ConsentClientDate" />
+                </div>
+            </div>
+            <div class="nb-sig-col" style="width:45%;">
+                <div class="pn-label">Midwife's Printed Name:</div>
+                <input type="text" asp-for="NewbornRecord.ConsentMidwifeName" style="width:100%; border:none; border-bottom:1px solid #1a1a1a; outline:none; background:transparent; font-family:inherit; font-size:1rem; padding:4px 0;" />
+                <div class="pn-field" style="margin-top:0.5rem; display:flex; align-items:center;">
+                    <span class="pn-label" style="margin-right:0.5rem;">Date:</span>
+                    <input type="date" class="pn-input" style="width:130px; border-bottom:1px solid #1a1a1a; padding-bottom:0;" asp-for="NewbornRecord.ConsentMidwifeDate" />
+                </div>
+            </div>
+        </div>
+

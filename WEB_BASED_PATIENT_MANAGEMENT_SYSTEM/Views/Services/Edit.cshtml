@@ -1,0 +1,53 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@{
+    ViewData["Title"] = "Edit Service Record";
+    var p = ViewBag.Patient as WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient;
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
+    <h1>Edit Service Record</h1>
+    <p class="subtitle">Updating record for @(p?.FullName ?? "Patient")</p>
+</div>
+
+<form asp-action="Edit" method="post" id="serviceForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="RecordType" />
+
+    <!-- We must include the primary keys so they get posted back -->
+    @if (Model.RecordType == "Prenatal")
+    {
+        <input type="hidden" asp-for="PrenatalRecord.Id" />
+        <input type="hidden" asp-for="PrenatalRecord.PatientId" />
+        <div class="content-card mb-4 pn-card" id="prenatalRecordPanel">
+            <partial name="_PrenatalForm" />
+        </div>
+    }
+    else if (Model.RecordType == "Newborn")
+    {
+        <input type="hidden" asp-for="NewbornRecord.Id" />
+        <input type="hidden" asp-for="NewbornRecord.PatientId" />
+        <div class="content-card mb-4 pn-card" id="newbornPanel">
+            <partial name="_NewbornForm" />
+        </div>
+    }
+    else if (Model.RecordType == "Family Planning")
+    {
+        <input type="hidden" asp-for="FamilyPlanningRecord.Id" />
+        <input type="hidden" asp-for="FamilyPlanningRecord.PatientId" />
+        <div class="content-card mb-4 pn-card" id="familyPlanningPanel">
+            <partial name="_FamilyPlanningForm" />
+        </div>
+    }
+
+    <div class="form-actions" style="display:flex; gap:1rem; margin-top:2rem;">
+        <button type="submit" class="btn-primary-dark" style="padding:0.75rem 2rem; border-radius:0.5rem; font-weight:600; border:none; background:#1e293b; color:white; cursor:pointer;">Save Changes</button>
+        <a asp-action="Index" class="btn-cancel" style="padding:0.75rem 2rem; border-radius:0.5rem; font-weight:600; text-decoration:none; color:#4b5563; background:#f3f4f6;">Cancel</a>
+    </div>
+</form>
+
+<partial name="_ServiceFormStyles" />
+
+@section Scripts {
+    <partial name="_ServiceFormScripts" />
+}

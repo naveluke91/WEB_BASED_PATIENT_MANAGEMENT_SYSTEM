@@ -1,0 +1,54 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Appointment
+@{
+    ViewData["Title"] = "Appointment Details";
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Appointments
+    </a>
+    <h1>Appointment Details</h1>
+    <p class="subtitle">@Model.PatientName</p>
+</div>
+
+<div class="content-card">
+    <div class="detail-grid">
+        <div class="detail-item">
+            <label>Patient Name</label>
+            <div class="detail-value">@Model.PatientName</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Contact Number</label>
+            <div class="detail-value">@Model.ContactNo</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Date</label>
+            <div class="detail-value">@Model.AppointmentDate.ToString("MMMM dd, yyyy")</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Time</label>
+            <div class="detail-value">@Model.FormattedTime</div>
+        </div>
+
+        <div class="detail-item">
+            <label>Status</label>
+            <div class="detail-value">
+                <span class="status-badge status-@Model.Status.ToLower()">@Model.Status</span>
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <label>Linked Patient Record</label>
+            <div class="detail-value">
+                @(Model.Patient != null ? Model.Patient.FullName : "Not linked to registered patient")
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions mt-4">
+        <a asp-action="Index" class="btn-cancel">Back to List</a>
+    </div>
+</div>

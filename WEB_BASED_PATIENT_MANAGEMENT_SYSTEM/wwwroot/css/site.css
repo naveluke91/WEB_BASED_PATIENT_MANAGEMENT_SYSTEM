@@ -1,0 +1,44 @@
+/* ============================================================
+   site.css — Global base styles
+   ============================================================ */
+
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fafafa;
+}
+
+/* Focus ring for form controls and buttons */
+.btn:focus,
+.btn:active:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Validation error text */
+.text-danger {
+    font-size: 0.8rem;
+}
+
+/* Success alert after CRUD operations */
+.alert-success {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}

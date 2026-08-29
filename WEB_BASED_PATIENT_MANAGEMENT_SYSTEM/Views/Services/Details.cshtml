@@ -1,0 +1,41 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@{
+    ViewData["Title"] = "View Service Record";
+    var p = ViewBag.Patient as WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient;
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
+    <h1>View Service Record</h1>
+    <p class="subtitle">Viewing details for @(p?.FullName ?? "Patient")</p>
+</div>
+
+<form id="serviceForm">
+    <!-- fieldset disabled makes everything inside it read-only/disabled -->
+    <fieldset disabled="disabled" style="border: none; padding: 0; margin: 0;">
+        @if (Model.RecordType == "Prenatal")
+        {
+            <div class="content-card mb-4 pn-card" id="prenatalRecordPanel">
+                <partial name="_PrenatalForm" />
+            </div>
+        }
+        else if (Model.RecordType == "Newborn")
+        {
+            <div class="content-card mb-4 pn-card" id="newbornPanel">
+                <partial name="_NewbornForm" />
+            </div>
+        }
+        else if (Model.RecordType == "Family Planning")
+        {
+            <div class="content-card mb-4 pn-card" id="familyPlanningPanel">
+                <partial name="_FamilyPlanningForm" />
+            </div>
+        }
+    </fieldset>
+
+    <div class="form-actions" style="display:flex; gap:1rem; margin-top:2rem;">
+        <a asp-action="Index" class="btn-cancel" style="padding:0.75rem 2rem; border-radius:0.5rem; font-weight:600; text-decoration:none; color:#4b5563; background:#f3f4f6;">Back to List</a>
+    </div>
+</form>
+
+<partial name="_ServiceFormStyles" />
