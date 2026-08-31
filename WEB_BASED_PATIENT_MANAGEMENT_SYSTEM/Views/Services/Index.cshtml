@@ -1,19 +1,6 @@
-@model IEnumerable<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceRecordViewModel>
+@model IEnumerable<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Service>
 @{
     ViewData["Title"] = "Services";
-
-    var servicePrices = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Normal Delivery Fee & Newborn Care Package"] = 15000m,
-        ["Prenatal"]                                   = 100m,
-        ["Implant"]                                    = 0m,
-        ["Implant Removal"]                            = 700m,
-        ["DEPO"]                                       = 200m,
-        ["NORIFAM"]                                    = 410m,
-        ["IUD Insertion"]                              = 0m,
-        ["IUD Removal"]                                = 600m,
-        ["Anti-Tetanus Injection"]                     = 200m
-    };
 }
 
 <div class="page-header">
@@ -31,6 +18,10 @@
 </div>
 
 <div class="content-card">
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success mx-4 mt-4 mb-0">@successMessage</div>
+    }
     @if (TempData["ErrorMessage"] is string errorMessage)
     {
         <div class="alert alert-danger mx-4 mt-4 mb-0">@errorMessage</div>
@@ -57,72 +48,37 @@
                 </tr>
             </thead>
             <tbody id="servicesTableBody">
-                @foreach (var record in Model)
+                @foreach (var service in Model)
                 {
-                    var serviceNames = string.IsNullOrWhiteSpace(record.ServiceName)
-                        ? new List<string>()
-                        : record.ServiceName.Split(',').Select(s => s.Trim()).ToList();
-
-                    decimal totalPrice = serviceNames
-                        .Where(s => servicePrices.ContainsKey(s))
-                        .Sum(s => servicePrices[s]);
-
-                    <tr class="patient-row"
-                        data-name="@(record.PatientName?.ToLower() ?? "")"
-                        data-id="@record.RecordId">
-                        <td>
-                            <div style="font-weight: 500;">@record.PatientName</div>
-                        </td>
-                        <td>
-                            @if (serviceNames.Any())
-                            {
-                                <span>@string.Join(", ", serviceNames)</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td>
-                            @if (serviceNames.Any())
-                            {
-                                <span>₱ @totalPrice.ToString("N2")</span>
-                            }
-                            else
-                            {
-                                <span>—</span>
-                            }
-                        </td>
+                    <tr class="patient-row" data-name="@(service.Patient?.FullName?.ToLowerInvariant() ?? string.Empty)">
+                        <td><div style="font-weight: 500;">@(service.Patient?.FullName ?? "Unknown")</div></td>
+                        <td>@service.ServiceName</td>
+                        <td>&#8369; @service.Price.ToString("N2")</td>
                         <td>
                             <div class="action-btns">
-                                @if (record.IsLocked)
-                                {
-                                    <button type="button" class="action-btn opacity-50" title="Service cannot be edited after consultation is completed"
-                                            disabled style="border:none; background:none; padding:0.35rem; cursor:not-allowed;">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button type="button" class="action-btn js-edit-service" title="Edit"
-                                            data-record-id="@record.RecordId"
-                                            data-record-type="@record.RecordType"
-                                            data-patient-name="@record.PatientName"
-                                            data-service-name="@record.ServiceName"
-                                            style="border:none; background:none; padding:0.35rem; cursor:pointer;">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                }
-                                <form asp-action="Delete" asp-route-id="@record.RecordId" asp-route-type="@record.RecordType" method="post" onsubmit="confirmDelete(event, this);" style="display:inline;">
-                                    <button type="submit" class="action-btn delete-btn" title="Delete" style="border:none; background:none; padding:0;">
+                                <button type="button" class="action-btn js-edit-service" title="Edit"
+                                        data-bs-toggle="modal" data-bs-target="#editServiceModal"
+                                        data-service-id="@service.Id"
+                                        data-patient-id="@service.PatientId"
+                                        data-patient-name="@(service.Patient?.FullName ?? "Unknown")"
+                                        data-service-name="@service.ServiceName"
+                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form asp-action="Delete" asp-route-id="@service.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Delete this service registration?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="action-btn delete-btn border-0 bg-transparent" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                                 <button type="button" class="action-btn js-view-service" title="View Details"
-                                        data-patient-name="@record.PatientName"
-                                        data-service-name="@record.ServiceName"
-                                        data-service-price="PHP @totalPrice.ToString("N2")"
-                                        data-registration-date="@record.Date.ToString("MMMM dd, yyyy")"
+                                        data-bs-toggle="modal" data-bs-target="#viewServiceModal"
+                                        data-service-id="@service.Id"
+                                        data-patient-id="@service.PatientId"
+                                        data-patient-name="@(service.Patient?.FullName ?? "Unknown")"
+                                        data-service-name="@service.ServiceName"
+                                        data-service-price="@service.Price.ToString("N2")"
                                         style="border:none; background:none; padding:0.35rem; cursor:pointer;">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -136,102 +92,17 @@
 </div>
 
 <partial name="_RegisterServiceModal" />
-<partial name="_ServiceRecordModals" />
-<partial name="_ServiceFormStyles" />
+<partial name="_ServiceActionModals" />
+<partial name="_ServiceRegistrationStyles" />
 
 @section Scripts {
-    <partial name="_ServiceFormScripts" />
+    <partial name="_ServiceRegistrationScripts" />
+    <partial name="_ServiceActionModalScripts" />
     <script>
-        document.getElementById('servicesSearch').addEventListener('input', function () {
-            const q = this.value.toLowerCase();
+        document.getElementById('servicesSearch')?.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
             document.querySelectorAll('#servicesTableBody .patient-row').forEach(function (row) {
-                row.style.display = (row.dataset.name || '').includes(q) ? '' : 'none';
-            });
-        });
-
-        document.getElementById('serviceForm')?.addEventListener('submit', function (event) {
-            const patientId = document.getElementById('selectedPatientIdInput').value;
-            const service = document.getElementById('selectedServicesInput').value;
-            const error = document.getElementById('serviceRegistrationError');
-
-            if (!patientId || !service) {
-                event.preventDefault();
-                error.textContent = !patientId
-                    ? 'Please select a registered patient.'
-                    : 'Please select a service.';
-                error.classList.remove('d-none');
-            }
-        });
-
-        document.getElementById('addServiceModal')?.addEventListener('hidden.bs.modal', function () {
-            document.getElementById('serviceRegistrationError').classList.add('d-none');
-            document.getElementById('selectedServicesInput').value = '';
-            document.querySelectorAll('#addServiceModal .svc-tile').forEach(function (tile) {
-                tile.classList.remove('selected');
-            });
-            if (window.clearPatientSelection) window.clearPatientSelection();
-        });
-
-        const servicePrices = {
-            'Normal Delivery Fee & Newborn Care Package': 'PHP 15,000.00',
-            'Prenatal': 'PHP 100.00',
-            'Implant': 'Free',
-            'Implant Removal': 'PHP 700.00',
-            'DEPO': 'PHP 200.00',
-            'NORIFAM': 'PHP 410.00',
-            'IUD Insertion': 'Free',
-            'IUD Removal': 'PHP 600.00',
-            'Anti-Tetanus Injection': 'PHP 200.00'
-        };
-
-        const editServiceModalElement = document.getElementById('editServiceModal');
-        const editServiceModal = editServiceModalElement
-            ? bootstrap.Modal.getOrCreateInstance(editServiceModalElement)
-            : null;
-        const editSelectedService = document.getElementById('editSelectedService');
-
-        function updateEditServicePrice() {
-            const serviceName = editSelectedService?.value || '';
-            document.getElementById('editServicePrice').textContent = servicePrices[serviceName] || '—';
-        }
-
-        editSelectedService?.addEventListener('change', updateEditServicePrice);
-
-        document.querySelectorAll('.js-edit-service').forEach(function (button) {
-            button.addEventListener('click', function () {
-                document.getElementById('editServiceRecordId').value = button.dataset.recordId || '';
-                document.getElementById('editServiceRecordType').value = button.dataset.recordType || '';
-                document.getElementById('editServicePatientName').value = button.dataset.patientName || '';
-                editSelectedService.value = button.dataset.serviceName || '';
-                document.getElementById('editServiceError').classList.add('d-none');
-                updateEditServicePrice();
-                editServiceModal?.show();
-            });
-        });
-
-        document.getElementById('editServiceRegistrationForm')?.addEventListener('submit', function (event) {
-            if (editSelectedService.value) return;
-
-            event.preventDefault();
-            const error = document.getElementById('editServiceError');
-            error.textContent = 'Please select a service.';
-            error.classList.remove('d-none');
-        });
-
-        const viewServiceModalElement = document.getElementById('viewServiceModal');
-        const viewServiceModal = viewServiceModalElement
-            ? bootstrap.Modal.getOrCreateInstance(viewServiceModalElement)
-            : null;
-
-        document.querySelectorAll('.js-view-service').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const patientName = button.dataset.patientName || '—';
-                document.getElementById('viewServiceSubtitle').textContent = patientName;
-                document.getElementById('viewServicePatient').textContent = patientName;
-                document.getElementById('viewServiceName').textContent = button.dataset.serviceName || '—';
-                document.getElementById('viewServicePrice').textContent = button.dataset.servicePrice || '—';
-                document.getElementById('viewServiceDate').textContent = button.dataset.registrationDate || '—';
-                viewServiceModal?.show();
+                row.style.display = row.dataset.name.includes(query) ? '' : 'none';
             });
         });
     </script>

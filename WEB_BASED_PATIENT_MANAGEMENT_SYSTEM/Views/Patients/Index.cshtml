@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Patients";
     var totalCount = Model.Count();
+    var openEditPatientId = TempData["OpenEditModalId"]?.ToString();
 }
 
 
@@ -26,6 +27,15 @@
 
 <!-- Patient list card -->
 <div class="content-card">
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success mx-4 mt-4 mb-0">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger mx-4 mt-4 mb-0">@errorMessage</div>
+    }
+
     <div class="card-header-row">
         <h2 class="card-title">
             @*<i class="bi bi-list-ul"></i>*@ Patient List
@@ -69,11 +79,12 @@
                         <td>@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
                         <td>
                             <div class="action-btns">
-                                <!-- Edit patient -->
-                                <a asp-action="Edit" asp-route-id="@patient.Id"
-                                   class="action-btn" title="Edit">
+                                <!-- Edit patient in modal -->
+                                <button type="button" class="action-btn" title="Edit"
+                                        onclick="openPatientEditModal(@patient.Id)"
+                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
                                     <i class="bi bi-pencil"></i>
-                                </a>
+                                </button>
 
                                 <!-- Delete patient with JS confirm -->
                                 <form asp-action="Delete" asp-route-id="@patient.Id" method="post" onsubmit="confirmDelete(event, this);" style="display:inline;">
@@ -219,6 +230,8 @@
 <!-- =====================================================================
      MODAL — VIEW PATIENT DETAILS
      ===================================================================== -->
+<partial name="_EditPatientModal" />
+
 <div class="modal fade" id="modalViewPatientDetails" tabindex="-1" aria-labelledby="modalViewPatientDetailsLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
@@ -321,6 +334,70 @@
         @if (TempData["OpenAddModal"] != null)
         {
             <text>new bootstrap.Modal(document.getElementById('modalAddPatient')).show();</text>
+        }
+
+        function calculateEditAge(dateOfBirth) {
+            if (!dateOfBirth) return '';
+
+            const parts = dateOfBirth.split('-');
+            if (parts.length !== 3) return '';
+
+            const dob = new Date(parts[0], parts[1] - 1, parts[2]);
+            const today = new Date();
+            if (Number.isNaN(dob.getTime()) || dob > today) return '';
+
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+
+            return age >= 0 && age <= 130 ? age : '';
+        }
+
+        function setEditFieldValue(id, value) {
+            document.getElementById(id).value = value ?? '';
+        }
+
+        // Fetch the existing patient data before showing the edit modal.
+        async function openPatientEditModal(id) {
+            try {
+                const response = await fetch(`/Patients/GetById/${encodeURIComponent(id)}`);
+                if (!response.ok) throw new Error('Patient not found');
+
+                const patient = await response.json();
+                const normalize = value => value === '\u2014' ? '' : (value ?? '');
+                const form = document.getElementById('formEditPatient');
+
+                form.action = `/Patients/Edit/${encodeURIComponent(patient.id)}`;
+                setEditFieldValue('editId', patient.id);
+                setEditFieldValue('editFullName', patient.fullName);
+                setEditFieldValue('editAddress', patient.address);
+                setEditFieldValue('editDateOfBirth', patient.dateOfBirthRaw);
+                setEditFieldValue('editAge', patient.age);
+                setEditFieldValue('editMaritalStatus', normalize(patient.maritalStatus));
+                setEditFieldValue('editReligion', normalize(patient.religion));
+                setEditFieldValue('editLMP', patient.lmpRaw);
+                setEditFieldValue('editAOG', patient.aogRaw);
+                setEditFieldValue('editEDC', patient.edcRaw);
+                setEditFieldValue('editMenarche', patient.menarcheRaw);
+                setEditFieldValue('editContactNo', patient.contactNoRaw);
+                setEditFieldValue('editGravida', patient.gravidaRaw);
+                setEditFieldValue('editTFAL', patient.tfalRaw);
+                setEditFieldValue('editOccupation', patient.occupationRaw);
+                document.getElementById('editPatientSubtitle').textContent = patient.fullName;
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditPatient')).show();
+            } catch (error) {
+                console.error('Failed to load patient for editing:', error);
+            }
+        }
+
+        document.getElementById('editDateOfBirth').addEventListener('change', function () {
+            document.getElementById('editAge').value = calculateEditAge(this.value);
+        });
+
+        @if (!string.IsNullOrWhiteSpace(openEditPatientId))
+        {
+            <text>openPatientEditModal(Number('@openEditPatientId'));</text>
         }
 
         // View Patient Details in Modal

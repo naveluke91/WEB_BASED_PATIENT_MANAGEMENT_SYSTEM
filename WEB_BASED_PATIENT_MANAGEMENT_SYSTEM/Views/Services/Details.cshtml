@@ -1,41 +1,31 @@
-@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ServiceFormViewModel
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Service
 @{
-    ViewData["Title"] = "View Service Record";
-    var p = ViewBag.Patient as WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient;
+    ViewData["Title"] = "Service Details";
 }
 
 <div class="form-page-header">
     <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
-    <h1>View Service Record</h1>
-    <p class="subtitle">Viewing details for @(p?.FullName ?? "Patient")</p>
+    <h1>Service Details</h1>
 </div>
 
-<form id="serviceForm">
-    <!-- fieldset disabled makes everything inside it read-only/disabled -->
-    <fieldset disabled="disabled" style="border: none; padding: 0; margin: 0;">
-        @if (Model.RecordType == "Prenatal")
-        {
-            <div class="content-card mb-4 pn-card" id="prenatalRecordPanel">
-                <partial name="_PrenatalForm" />
-            </div>
-        }
-        else if (Model.RecordType == "Newborn")
-        {
-            <div class="content-card mb-4 pn-card" id="newbornPanel">
-                <partial name="_NewbornForm" />
-            </div>
-        }
-        else if (Model.RecordType == "Family Planning")
-        {
-            <div class="content-card mb-4 pn-card" id="familyPlanningPanel">
-                <partial name="_FamilyPlanningForm" />
-            </div>
-        }
-    </fieldset>
-
-    <div class="form-actions" style="display:flex; gap:1rem; margin-top:2rem;">
-        <a asp-action="Index" class="btn-cancel" style="padding:0.75rem 2rem; border-radius:0.5rem; font-weight:600; text-decoration:none; color:#4b5563; background:#f3f4f6;">Back to List</a>
+<div class="content-card" style="max-width: 760px;">
+    <div class="detail-grid detail-grid-spaced p-4">
+        <div class="detail-item">
+            <label>Patient</label>
+            <div class="detail-value">@(Model.Patient?.FullName ?? "Unknown")</div>
+        </div>
+        <div class="detail-item">
+            <label>Service</label>
+            <div class="detail-value">@Model.ServiceName</div>
+        </div>
+        <div class="detail-item">
+            <label>Price</label>
+            <div class="detail-value">&#8369; @Model.Price.ToString("N2")</div>
+        </div>
     </div>
-</form>
 
-<partial name="_ServiceFormStyles" />
+    <div class="form-actions px-4 pb-4">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-dark">Edit</a>
+        <a asp-action="Index" class="btn-cancel ms-2">Back to List</a>
+    </div>
+</div>

@@ -15,8 +15,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
         {
         }
 
-        // Representasyon sa Patients table sa database
+        // Representasyon sa Patient table sa database
         public DbSet<Patient> Patients { get; set; }
+
+        // Representasyon sa Service table sa database
+        public DbSet<Service> Services { get; set; }
 
         // Representasyon sa PrenatalRecords table sa database
         public DbSet<PrenatalRecord> PrenatalRecords { get; set; }
@@ -51,6 +54,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .WithMany(p => p.FamilyPlanningRecords)
                 .HasForeignKey(r => r.PatientId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // Usa ka Patient mahimong makapili ug daghang Services (one-to-many relationship).
+            modelBuilder.Entity<Service>()
+                .HasOne(s => s.Patient)
+                .WithMany(p => p.Services)
+                .HasForeignKey(s => s.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Appointment -> Patient relationship (optional FK)
             modelBuilder.Entity<Appointment>()

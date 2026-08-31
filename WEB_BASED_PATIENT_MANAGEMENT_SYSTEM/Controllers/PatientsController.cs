@@ -207,7 +207,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(patient);
+            // The edit form is displayed in the Index modal, so reopen it after validation fails.
+            TempData["OpenEditModalId"] = id;
+            TempData["ErrorMessage"] = "Please fill in all required fields correctly.";
+            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -231,80 +234,26 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            // 1. Get all patients except the one to be deleted, ordered by current Id
-            var remainingPatients = _context.Patients
-                .Where(p => p.Id != id)
-                .OrderBy(p => p.Id)
-                .ToList();
+            var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
+            if (patient == null) return NotFound();
 
-            // 2. Get all prenatal records except those belonging to the deleted patient
-            var remainingRecords = _context.PrenatalRecords
-                .Where(r => r.PatientId != id)
-                .OrderBy(r => r.Id)
-                .ToList();
+            var hasRelatedRecords =
+                _context.Services.Any(s => s.PatientId == id) ||
+                _context.PrenatalRecords.Any(r => r.PatientId == id) ||
+                _context.NewbornRecords.Any(r => r.PatientId == id) ||
+                _context.FamilyPlanningRecords.Any(r => r.PatientId == id) ||
+                _context.Appointments.Any(a => a.PatientId == id) ||
+                _context.Consultations.Any(c => c.PatientId == id);
 
-            // 3. Clear both tables completely
-            _context.PrenatalRecords.RemoveRange(_context.PrenatalRecords);
-            _context.Patients.RemoveRange(_context.Patients);
-            _context.SaveChanges();
-
-            // 4. Reseed identity to 0 so the next insert starts at 1
-            _context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('Patients', RESEED, 0);");
-            _context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('PrenatalRecords', RESEED, 0);");
-
-            // 5. Re-insert patients and map old ID to new ID
-            var idMap = new Dictionary<int, int>();
-            foreach (var patient in remainingPatients)
+            if (hasRelatedRecords)
             {
-                int oldId = patient.Id;
-                var newPatient = new Patient
-                {
-                    FullName = patient.FullName,
-                    Address = patient.Address,
-                    Age = patient.Age,
-                    MaritalStatus = patient.MaritalStatus,
-                    DateOfBirth = patient.DateOfBirth,
-                    Religion = patient.Religion,
-                    LMP = patient.LMP,
-                    AOG = patient.AOG,
-                    EDC = patient.EDC,
-                    Menarche = patient.Menarche,
-                    ContactNo = patient.ContactNo,
-                    Gravida = patient.Gravida,
-                    TFAL = patient.TFAL,
-                    Occupation = patient.Occupation
-                };
-                _context.Patients.Add(newPatient);
-                _context.SaveChanges(); // Save changes immediately to get the new sequential Id populated
-
-                idMap[oldId] = newPatient.Id;
+                TempData["ErrorMessage"] = "Cannot delete this patient because they have related service, consultation, or appointment records.";
+                return RedirectToAction(nameof(Index));
             }
 
-            // 6. Re-insert prenatal records with mapped PatientId
-            foreach (var record in remainingRecords)
-            {
-                int? newPatientId = null;
-                if (record.PatientId.HasValue && idMap.ContainsKey(record.PatientId.Value))
-                {
-                    newPatientId = idMap[record.PatientId.Value];
-                }
-
-                var newRecord = new PrenatalRecord
-                {
-                    PatientId = newPatientId,
-                    RecordDate = record.RecordDate,
-                    AOG = record.AOG,
-                    Weight = record.Weight,
-                    BloodPressure = record.BloodPressure,
-                    Temperature = record.Temperature,
-                    FundalHeight = record.FundalHeight,
-                    FetalHeartTone = record.FetalHeartTone,
-                    Remarks = record.Remarks,
-                    SelectedServices = record.SelectedServices
-                };
-                _context.PrenatalRecords.Add(newRecord);
-            }
+            _context.Patients.Remove(patient);
             _context.SaveChanges();
+            TempData["SuccessMessage"] = $"Ang pasyente nga \"{patient.FullName}\" natangtang na.";
 
             return RedirectToAction(nameof(Index));
         }

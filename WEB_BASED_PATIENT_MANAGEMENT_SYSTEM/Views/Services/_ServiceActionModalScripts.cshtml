@@ -1,0 +1,107 @@
+<script>
+    (() => {
+        const editModalElement = document.getElementById('editServiceModal');
+        const viewModalElement = document.getElementById('viewServiceModal');
+        const editForm = document.getElementById('editServiceForm');
+        const editId = document.getElementById('editServiceId');
+        const editPatientId = document.getElementById('editPatientId');
+        const editServiceName = document.getElementById('editSelectedServiceInput');
+        const editError = document.getElementById('editServiceError');
+        const viewEditButton = document.getElementById('viewServiceEditButton');
+
+        if (!editModalElement || !viewModalElement || !editForm || !editId || !editPatientId || !editServiceName || !editError) {
+            return;
+        }
+
+        const editTiles = Array.from(editModalElement.querySelectorAll('.svc-tile'));
+        let viewedService = null;
+
+        function getServiceFromButton(button) {
+            return {
+                id: button.dataset.serviceId || '',
+                patientId: button.dataset.patientId || '',
+                patientName: button.dataset.patientName || 'Unknown',
+                serviceName: button.dataset.serviceName || '',
+                price: button.dataset.servicePrice || ''
+            };
+        }
+
+        function selectEditService(serviceName) {
+            editServiceName.value = serviceName || '';
+            editTiles.forEach(tile => {
+                const isSelected = tile.dataset.service === serviceName;
+                tile.classList.toggle('selected', isSelected);
+                tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            });
+        }
+
+        function populateEditModal(service) {
+            editId.value = service.id;
+            editPatientId.value = service.patientId;
+            selectEditService(service.serviceName);
+            editError.classList.add('d-none');
+            editError.textContent = '';
+        }
+
+        editModalElement.addEventListener('show.bs.modal', event => {
+            if (event.relatedTarget) {
+                populateEditModal(getServiceFromButton(event.relatedTarget));
+            }
+        });
+
+        editTiles.forEach(tile => {
+            tile.addEventListener('click', () => selectEditService(tile.dataset.service));
+        });
+
+        editForm.addEventListener('submit', event => {
+            if (editPatientId.value && editServiceName.value) {
+                return;
+            }
+
+            event.preventDefault();
+            editError.textContent = 'Please select a registered patient and one service.';
+            editError.classList.remove('d-none');
+        });
+
+        editModalElement.addEventListener('hidden.bs.modal', () => {
+            editForm.reset();
+            editId.value = '';
+            selectEditService('');
+            editError.classList.add('d-none');
+            editError.textContent = '';
+        });
+
+        viewModalElement.addEventListener('show.bs.modal', event => {
+            if (!event.relatedTarget) {
+                return;
+            }
+
+            viewedService = getServiceFromButton(event.relatedTarget);
+            document.getElementById('viewServiceSubtitle').textContent = viewedService.patientName;
+            document.getElementById('viewServicePatient').textContent = viewedService.patientName;
+            document.getElementById('viewServiceName').textContent = viewedService.serviceName || '—';
+            document.getElementById('viewServicePrice').textContent = viewedService.price ? `₱ ${viewedService.price}` : '—';
+            viewEditButton?.removeAttribute('disabled');
+        });
+
+        viewModalElement.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('viewServiceSubtitle').textContent = '';
+            document.getElementById('viewServicePatient').textContent = '—';
+            document.getElementById('viewServiceName').textContent = '—';
+            document.getElementById('viewServicePrice').textContent = '—';
+            viewEditButton?.setAttribute('disabled', 'disabled');
+        });
+
+        viewEditButton?.addEventListener('click', () => {
+            if (!viewedService) {
+                return;
+            }
+
+            const serviceToEdit = viewedService;
+            viewModalElement.addEventListener('hidden.bs.modal', () => {
+                populateEditModal(serviceToEdit);
+                bootstrap.Modal.getOrCreateInstance(editModalElement).show();
+            }, { once: true });
+        });
+    })();
+</script>

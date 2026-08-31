@@ -85,9 +85,9 @@
                                 {
                                     <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">Continue</a>
                                 }
-                                else if (displayStatus == "Completed" && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
+                                else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
                                 {
-                                    <a asp-controller="Services" asp-action="Details" asp-route-id="@item.RecordId" asp-route-type="@item.RecordType" class="btn btn-sm btn-outline-secondary">View Record</a>
+                                    <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="btn btn-sm btn-outline-secondary">View Record</a>
                                 }
                             </td>
                         </tr>

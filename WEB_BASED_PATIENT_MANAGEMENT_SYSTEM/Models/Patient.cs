@@ -6,9 +6,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
     /// <summary>
     /// Representasyon sa usa ka pasyente sa sistema.
     /// Naglangkob sa personal, obstetric, ug contact information sa matag pasyente.
-    /// Kini nga klase mao ang Table nga gitawag og "Patients" sa database.
+    /// Kini nga klase mao ang Table nga gitawag og "Patient" sa database.
     /// </summary>
-    [Table("Patients")]
+    [Table("Patient")]
     public class Patient
     {
         /// <summary>
@@ -147,6 +147,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public ICollection<NewbornRecord> NewbornRecords { get; set; } = new List<NewbornRecord>();
 
         public ICollection<FamilyPlanningRecord> FamilyPlanningRecords { get; set; } = new List<FamilyPlanningRecord>();
+
+        /// <summary>
+        /// Lista sa mga service nga gipili sa pasyente.
+        /// </summary>
+        public ICollection<Service> Services { get; set; } = new List<Service>();
 
         /// <summary>
         /// Kalkulahon ang edad sa pasyente base sa iyang petsa sa pagkatawo.

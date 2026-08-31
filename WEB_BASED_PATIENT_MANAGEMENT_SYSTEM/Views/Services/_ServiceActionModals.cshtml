@@ -1,0 +1,114 @@
+@{
+    var patients = ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>
+                   ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>();
+}
+
+<div class="modal fade" id="viewServiceModal" tabindex="-1" aria-labelledby="viewServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:620px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="modal-title fw-bold" id="viewServiceModalLabel">Service Details</h5>
+                    <p class="text-muted small mb-0" id="viewServiceSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body pt-3 px-4 pb-2">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Patient</label>
+                        <div class="detail-value" id="viewServicePatient">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Selected Service</label>
+                        <div class="detail-value" id="viewServiceName">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Price</label>
+                        <div class="detail-value" id="viewServicePrice">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-3 pb-4 px-4">
+                <button type="button" id="viewServiceEditButton" class="btn-primary-dark" data-bs-dismiss="modal" disabled>
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editServiceModal" tabindex="-1" aria-labelledby="editServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+            <form asp-controller="Services" asp-action="Edit" method="post" id="editServiceForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editServiceId" />
+                <input type="hidden" name="serviceName" id="editSelectedServiceInput" />
+
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="editServiceModalLabel">Edit Service</h5>
+                        <p class="text-muted small mb-0">Update the selected patient or service.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body pt-3 px-4 pb-2">
+                    <div id="editServiceError" class="alert alert-danger d-none mb-3"></div>
+
+                    <div class="mb-4" style="max-width:420px;">
+                        <label for="editPatientId" class="form-label small fw-semibold">
+                            Patient <span class="text-danger">*</span>
+                        </label>
+                        <select name="patientId" id="editPatientId" class="form-select" required>
+                            <option value="">-- Select registered patient --</option>
+                            @foreach (var patient in patients)
+                            {
+                                <option value="@patient.Id">@patient.FullName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT SERVICE</h2>
+
+                        <div class="svc-section-label">General Services</div>
+                        <div class="svc-grid svc-grid-general">
+                            <button type="button" class="svc-tile svc-tile-wide" data-service="Normal Delivery Fee &amp; Newborn Care Package" aria-pressed="false">
+                                <span class="svc-name">Normal Delivery Fee &amp; Newborn Care Package</span>
+                                <span class="svc-sub">(Including NBS &amp; Newborn Hearing Test)</span>
+                                <span class="svc-price">PHP 15,000.00</span>
+                            </button>
+                            <button type="button" class="svc-tile" data-service="Prenatal" aria-pressed="false">
+                                <span class="svc-name">Prenatal</span>
+                                <span class="svc-price">PHP 100.00</span>
+                            </button>
+                        </div>
+
+                        <div class="svc-section-label mt-3">Family Planning</div>
+                        <div class="svc-grid svc-grid-family">
+                            <button type="button" class="svc-tile" data-service="Implant" aria-pressed="false"><span class="svc-name">Implant</span><span class="svc-price svc-free">Free</span></button>
+                            <button type="button" class="svc-tile" data-service="Implant Removal" aria-pressed="false"><span class="svc-name">Implant Removal</span><span class="svc-price">PHP 700.00</span></button>
+                            <button type="button" class="svc-tile" data-service="DEPO" aria-pressed="false"><span class="svc-name">DEPO</span><span class="svc-price">PHP 200.00</span></button>
+                            <button type="button" class="svc-tile" data-service="NORIFAM" aria-pressed="false"><span class="svc-name">NORIFAM</span><span class="svc-price">PHP 410.00</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Insertion" aria-pressed="false"><span class="svc-name">IUD Insertion</span><span class="svc-price svc-free">Free</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Removal" aria-pressed="false"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP 600.00</span></button>
+                            <button type="button" class="svc-tile" data-service="Anti-Tetanus Injection" aria-pressed="false"><span class="svc-name">Anti-Tetanus Injection</span><span class="svc-price">PHP 200.00</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-3 pb-4 px-4">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-dark">
+                        <i class="bi bi-check-lg"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

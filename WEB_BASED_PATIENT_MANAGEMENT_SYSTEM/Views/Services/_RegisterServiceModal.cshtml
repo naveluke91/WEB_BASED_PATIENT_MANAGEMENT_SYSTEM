@@ -3,8 +3,8 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
             <form asp-controller="Services" asp-action="Create" method="post" id="serviceForm">
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="SelectedServices" id="selectedServicesInput" />
-                <input type="hidden" name="SelectedPatientId" id="selectedPatientIdInput" />
+                <input type="hidden" name="serviceName" id="selectedServicesInput" />
+                <input type="hidden" name="patientId" id="selectedPatientIdInput" />
 
                 <div class="modal-header border-0 pb-0 pt-4 px-4">
                     <h5 class="modal-title fw-bold">Add Service</h5>

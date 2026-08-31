@@ -20,11 +20,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             "Anti-Tetanus Injection"
         };
 
-        private sealed record RegisteredService(
-            string ServiceName,
-            string RecordType,
-            int RecordId,
-            DateTime Date);
+        // A service is selected in the Services module.  The clinical record is
+        // deliberately not created until the consultation begins.
+        private sealed record RegisteredService(string ServiceName);
 
         private readonly ApplicationDbContext _context;
 
@@ -67,7 +65,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 .ToList();
 
             // Older consultations may not carry a service value yet. In that
-            // case, use the latest service record registered for the patient.
+            // case, use the latest selected service registered for the patient.
             foreach (var queueItem in queue)
             {
                 if (!AvailableServices.Contains(queueItem.ServiceType)
@@ -141,63 +139,46 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return View(model);
         }
 
+        // Completed clinical forms belong to Consultation, not the Service
+        // selection list. This action shows the exact record linked to the
+        // completed consultation in read-only mode.
+        [HttpGet]
+        public IActionResult ViewRecord(int id)
+        {
+            var consultation = _context.Consultations
+                .Include(c => c.Patient)
+                .FirstOrDefault(c => c.Id == id && c.Status == "Completed");
+
+            if (consultation == null)
+            {
+                return NotFound();
+            }
+
+            var model = new ConsultationPageViewModel
+            {
+                OpenConsultation = consultation,
+                Patients = _context.Patients.OrderBy(p => p.FullName).ToList()
+            };
+
+            LoadRegisteredServiceForm(model);
+            return View(model);
+        }
+
         private Dictionary<int, RegisteredService> GetLatestServiceByPatientId()
         {
-            var records = new List<(int PatientId, string ServiceName, string RecordType, DateTime Date, int RecordId)>();
-
-            records.AddRange(_context.PrenatalRecords
-                .Where(r => r.PatientId.HasValue)
-                .Select(r => new
-                {
-                    PatientId = r.PatientId!.Value,
-                    ServiceName = string.IsNullOrWhiteSpace(r.SelectedServices) ? "Prenatal" : r.SelectedServices!,
-                    Date = r.RecordDate ?? DateTime.MinValue,
-                    RecordId = r.Id
-                })
+            // There is intentionally no registration-date column in Service.
+            // Its identity value provides the deterministic order for the
+            // latest service selected by each patient.
+            return _context.Services
+                .AsNoTracking()
+                .Where(s => !string.IsNullOrWhiteSpace(s.ServiceName)
+                    && AvailableServices.Contains(s.ServiceName))
+                .OrderByDescending(s => s.Id)
                 .AsEnumerable()
-                .Select(r => (r.PatientId, r.ServiceName, "Prenatal", r.Date, r.RecordId)));
-
-            records.AddRange(_context.NewbornRecords
-                .Where(r => r.PatientId.HasValue)
-                .Select(r => new
-                {
-                    PatientId = r.PatientId!.Value,
-                    ServiceName = "Normal Delivery Fee & Newborn Care Package",
-                    Date = r.DateTimeOfAdmission ?? DateTime.MinValue,
-                    RecordId = r.Id
-                })
-                .AsEnumerable()
-                .Select(r => (r.PatientId, r.ServiceName, "Newborn", r.Date, r.RecordId)));
-
-            records.AddRange(_context.FamilyPlanningRecords
-                .Where(r => r.PatientId.HasValue && !string.IsNullOrWhiteSpace(r.SelectedService))
-                .Select(r => new
-                {
-                    PatientId = r.PatientId!.Value,
-                    ServiceName = r.SelectedService!,
-                    Date = r.RecordDate ?? DateTime.MinValue,
-                    RecordId = r.Id
-                })
-                .AsEnumerable()
-                .Select(r => (r.PatientId, r.ServiceName, "Family Planning", r.Date, r.RecordId)));
-
-            return records
-                .Where(r => AvailableServices.Contains(r.ServiceName))
-                .GroupBy(r => r.PatientId)
+                .GroupBy(s => s.PatientId)
                 .ToDictionary(
                     group => group.Key,
-                    group =>
-                    {
-                        var latest = group
-                            .OrderByDescending(r => r.Date)
-                            .ThenByDescending(r => r.RecordId)
-                            .First();
-                        return new RegisteredService(
-                            latest.ServiceName,
-                            latest.RecordType,
-                            latest.RecordId,
-                            latest.Date);
-                    });
+                    group => new RegisteredService(group.First().ServiceName));
         }
 
         private void LoadRegisteredServiceForm(ConsultationPageViewModel model)
@@ -253,7 +234,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         }
 
         // Starts the confirmed appointment after a Yes/No confirmation.
-        // The service comes from the patient's Services registration.
+        // The service comes from the patient's Service registration.  This is
+        // the point at which the matching clinical record is created.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Begin(int patientId, int? appointmentId)
@@ -303,25 +285,79 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 appointment.ServiceType = serviceType;
             }
 
-            var consultation = new Consultation
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                PatientId = patientId,
-                AppointmentId = appointmentId,
-                VisitType = visitType,
-                ServiceType = serviceType,
-                Status = "In Progress",
-                StartedAt = DateTime.Now,
-                RecordType = registeredService.RecordType,
-                RecordId = registeredService.RecordId
-            };
+                var clinicalRecord = CreateClinicalRecord(patientId, serviceType);
+                var consultation = new Consultation
+                {
+                    PatientId = patientId,
+                    AppointmentId = appointmentId,
+                    VisitType = visitType,
+                    ServiceType = serviceType,
+                    Status = "In Progress",
+                    StartedAt = DateTime.Now,
+                    RecordType = clinicalRecord.RecordType,
+                    RecordId = clinicalRecord.RecordId
+                };
 
-            _context.Consultations.Add(consultation);
-            _context.SaveChanges();
+                _context.Consultations.Add(consultation);
+                _context.SaveChanges();
+                transaction.Commit();
 
-            return RedirectToAction(nameof(Index), new { openConsultationId = consultation.Id });
+                return RedirectToAction(nameof(Index), new { openConsultationId = consultation.Id });
+            }
+            catch
+            {
+                transaction.Rollback();
+                TempData["ErrorMessage"] = "The consultation could not be started. Please try again.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
-        // Saves the existing service form and completes the linked consultation.
+        private (string RecordType, int RecordId) CreateClinicalRecord(int patientId, string serviceName)
+        {
+            if (serviceName == "Prenatal")
+            {
+                var record = new PrenatalRecord
+                {
+                    PatientId = patientId,
+                    RecordDate = DateTime.Today,
+                    SelectedServices = serviceName
+                };
+                _context.PrenatalRecords.Add(record);
+                _context.SaveChanges();
+                return ("Prenatal", record.Id);
+            }
+
+            if (serviceName == "Normal Delivery Fee & Newborn Care Package")
+            {
+                var record = new NewbornRecord
+                {
+                    PatientId = patientId
+                };
+                _context.NewbornRecords.Add(record);
+                _context.SaveChanges();
+                return ("Newborn", record.Id);
+            }
+
+            if (AvailableServices.Contains(serviceName))
+            {
+                var record = new FamilyPlanningRecord
+                {
+                    PatientId = patientId,
+                    RecordDate = DateTime.Today,
+                    SelectedService = serviceName
+                };
+                _context.FamilyPlanningRecords.Add(record);
+                _context.SaveChanges();
+                return ("Family Planning", record.Id);
+            }
+
+            throw new InvalidOperationException("The selected service is not supported.");
+        }
+
+        // Saves the clinical form created when the consultation began.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult SaveService(int consultationId, PrenatalRecord prenatalRecord,
@@ -353,7 +389,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                             && r.PatientId == consultation.PatientId)
                         : null;
                     if (existingRecord == null)
-                        throw new InvalidOperationException("Registered prenatal service record not found.");
+                        throw new InvalidOperationException("Consultation prenatal record not found.");
 
                     if (prenatalRecord.PrenatalVisits != null && prenatalRecord.PrenatalVisits.Count > 0)
                         prenatalRecord.PrenatalVisitsJson = System.Text.Json.JsonSerializer.Serialize(prenatalRecord.PrenatalVisits);
@@ -375,7 +411,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                             && r.PatientId == consultation.PatientId)
                         : null;
                     if (existingRecord == null)
-                        throw new InvalidOperationException("Registered newborn service record not found.");
+                        throw new InvalidOperationException("Consultation newborn record not found.");
 
                     if (newbornRecord.Vitals != null && newbornRecord.Vitals.Count > 0)
                         newbornRecord.VitalsJson = System.Text.Json.JsonSerializer.Serialize(newbornRecord.Vitals);
@@ -397,7 +433,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                             && r.PatientId == consultation.PatientId)
                         : null;
                     if (existingRecord == null)
-                        throw new InvalidOperationException("Registered family-planning service record not found.");
+                        throw new InvalidOperationException("Consultation family-planning record not found.");
 
                     familyPlanningRecord.Id = existingRecord.Id;
                     familyPlanningRecord.PatientId = consultation.PatientId;
