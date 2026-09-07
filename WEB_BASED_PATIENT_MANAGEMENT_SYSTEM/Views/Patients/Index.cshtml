@@ -87,7 +87,7 @@
                                 </button>
 
                                 <!-- Delete patient with JS confirm -->
-                                <form asp-action="Delete" asp-route-id="@patient.Id" method="post" onsubmit="confirmDelete(event, this);" style="display:inline;">
+                                <form asp-action="Delete" asp-route-id="@patient.Id" method="post" onsubmit="confirmDelete(event, this);" data-delete-message="Delete this patient and all related services, appointments, consultations, and medical records? This cannot be undone." style="display:inline;">
                                     <button type="submit" class="action-btn delete-btn" title="Delete" style="border:none; background:none; padding:0;">
                                         <i class="bi bi-trash"></i>
                                     </button>

@@ -9,16 +9,61 @@
         const search = document.getElementById('patientSearchInput');
         const dropdown = document.getElementById('patientDropdown');
         const patientId = document.getElementById('selectedPatientIdInput');
+        const appointmentGroup = document.getElementById('appointmentSelectionGroup');
+        const appointmentId = document.getElementById('selectedAppointmentIdInput');
         const serviceName = document.getElementById('selectedServicesInput');
         const error = document.getElementById('serviceRegistrationError');
         const modal = document.getElementById('addServiceModal');
 
-        if (!form || !search || !dropdown || !patientId || !serviceName || !error) return;
+        if (!form || !search || !dropdown || !patientId || !appointmentGroup || !appointmentId || !serviceName || !error) return;
 
         let selectedPatient = null;
+        let availableAppointments = [];
 
         function hideDropdown() {
             dropdown.style.display = 'none';
+        }
+
+        function resetAppointments() {
+            availableAppointments = [];
+            appointmentId.replaceChildren(new Option('-- Select a confirmed appointment --', ''));
+            appointmentId.value = '';
+            appointmentId.disabled = true;
+            appointmentGroup.classList.add('d-none');
+        }
+
+        function showAppointments(appointments) {
+            availableAppointments = appointments;
+            appointmentId.replaceChildren(new Option('-- Select a confirmed appointment --', ''));
+            appointmentGroup.classList.remove('d-none');
+            appointmentId.disabled = !appointments.length;
+
+            appointments.forEach(appointment => {
+                appointmentId.add(new Option(appointment.label, appointment.id));
+            });
+
+            if (appointments.length === 1) {
+                appointmentId.value = String(appointments[0].id);
+            }
+        }
+
+        async function loadAvailableAppointments(patient) {
+            resetAppointments();
+
+            try {
+                const response = await fetch(`@Url.Action("GetAvailableAppointments", "Services")?patientId=${encodeURIComponent(patient.id)}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok || selectedPatient?.id !== patient.id) return;
+
+                showAppointments(await response.json());
+            } catch {
+                if (selectedPatient?.id === patient.id) {
+                    appointmentGroup.classList.remove('d-none');
+                    appointmentId.disabled = true;
+                }
+            }
         }
 
         function choosePatient(patient) {
@@ -27,6 +72,7 @@
             search.value = patient.name;
             search.style.borderColor = '#16a34a';
             hideDropdown();
+            loadAvailableAppointments(patient);
         }
 
         function showPatients(matches) {
@@ -51,6 +97,7 @@
         search.addEventListener('input', () => {
             selectedPatient = null;
             patientId.value = '';
+            resetAppointments();
             search.style.borderColor = '#d1d5db';
             const query = search.value.trim().toLowerCase();
             showPatients(patients.filter(patient => patient.name.toLowerCase().includes(query)));
@@ -69,15 +116,18 @@
         });
 
         form.addEventListener('submit', event => {
-            if (selectedPatient && patientId.value && serviceName.value) return;
+            if (selectedPatient && patientId.value && appointmentId.value && serviceName.value) return;
             event.preventDefault();
-            error.textContent = 'Please select a registered patient and one service.';
+            error.textContent = availableAppointments.length
+                ? 'Please select a registered patient, confirmed appointment, and one service.'
+                : 'The selected patient has no available confirmed appointment for a service.';
             error.classList.remove('d-none');
         });
 
         modal?.addEventListener('hidden.bs.modal', () => {
             selectedPatient = null;
             patientId.value = '';
+            resetAppointments();
             serviceName.value = '';
             search.value = '';
             search.style.borderColor = '#d1d5db';

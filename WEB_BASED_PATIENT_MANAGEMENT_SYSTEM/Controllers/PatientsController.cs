@@ -227,8 +227,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         }
 
         /// <summary>
-        /// POST — I-delete ang pasyente (ug ang iyang mga prenatal records) gikan sa database.
-        /// Ang cascade delete sa DbContext mag-atiman sa related PrenatalRecords.
+        /// POST — I-delete ang pasyente ug tanan niyang related records gikan sa database.
         /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -237,23 +236,40 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
             if (patient == null) return NotFound();
 
-            var hasRelatedRecords =
-                _context.Services.Any(s => s.PatientId == id) ||
-                _context.PrenatalRecords.Any(r => r.PatientId == id) ||
-                _context.NewbornRecords.Any(r => r.PatientId == id) ||
-                _context.FamilyPlanningRecords.Any(r => r.PatientId == id) ||
-                _context.Appointments.Any(a => a.PatientId == id) ||
-                _context.Consultations.Any(c => c.PatientId == id);
-
-            if (hasRelatedRecords)
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                TempData["ErrorMessage"] = "Cannot delete this patient because they have related service, consultation, or appointment records.";
-                return RedirectToAction(nameof(Index));
-            }
+                // Remove every dependent record first. The database uses restrictive
+                // foreign keys for these tables, so the patient is removed last.
+                _context.Consultations.RemoveRange(_context.Consultations
+                    .Where(c => c.PatientId == id)
+                    .ToList());
+                _context.PrenatalRecords.RemoveRange(_context.PrenatalRecords
+                    .Where(r => r.PatientId == id)
+                    .ToList());
+                _context.NewbornRecords.RemoveRange(_context.NewbornRecords
+                    .Where(r => r.PatientId == id)
+                    .ToList());
+                _context.FamilyPlanningRecords.RemoveRange(_context.FamilyPlanningRecords
+                    .Where(r => r.PatientId == id)
+                    .ToList());
+                _context.Services.RemoveRange(_context.Services
+                    .Where(s => s.PatientId == id)
+                    .ToList());
+                _context.Appointments.RemoveRange(_context.Appointments
+                    .Where(a => a.PatientId == id)
+                    .ToList());
+                _context.SaveChanges();
 
-            _context.Patients.Remove(patient);
-            _context.SaveChanges();
-            TempData["SuccessMessage"] = $"Ang pasyente nga \"{patient.FullName}\" natangtang na.";
+                _context.Patients.Remove(patient);
+                _context.SaveChanges();
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                TempData["ErrorMessage"] = "The patient and related records could not be deleted. Please try again.";
+            }
 
             return RedirectToAction(nameof(Index));
         }

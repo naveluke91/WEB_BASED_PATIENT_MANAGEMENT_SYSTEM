@@ -20,10 +20,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             "Anti-Tetanus Injection"
         };
 
-        // A service is selected in the Services module.  The clinical record is
-        // deliberately not created until the consultation begins.
-        private sealed record RegisteredService(string ServiceName);
-
         private readonly ApplicationDbContext _context;
 
         public ConsultationController(ApplicationDbContext context)
@@ -35,8 +31,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // Started consultations, including walk-ins, are read from Consultations.
         public IActionResult Index(int? openConsultationId)
         {
-            var latestServiceByPatientId = GetLatestServiceByPatientId();
-
             var consultations = _context.Consultations
                 .Include(c => c.Patient)
                 .Include(c => c.Appointment)
@@ -64,17 +58,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 })
                 .ToList();
 
-            // Older consultations may not carry a service value yet. In that
-            // case, use the latest selected service registered for the patient.
-            foreach (var queueItem in queue)
-            {
-                if (!AvailableServices.Contains(queueItem.ServiceType)
-                    && latestServiceByPatientId.TryGetValue(queueItem.PatientId, out var registeredService))
-                {
-                    queueItem.ServiceType = registeredService.ServiceName;
-                }
-            }
-
             var appointmentIdsWithConsultation = consultations
                 .Where(c => c.AppointmentId.HasValue)
                 .Select(c => c.AppointmentId!.Value)
@@ -101,11 +84,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     SortDate = appointment.AppointmentDate.Date.Add(appointment.AppointmentTime)
                 };
 
-                // Services are selected and saved in the Services module, not
-                // in the appointment. Match through the registered PatientId.
-                queueItem.ServiceType = latestServiceByPatientId.TryGetValue(queueItem.PatientId, out var registeredService)
-                    ? registeredService.ServiceName
-                    : "-";
                 queue.Add(queueItem);
             }
 
@@ -162,23 +140,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             LoadRegisteredServiceForm(model);
             return View(model);
-        }
-
-        private Dictionary<int, RegisteredService> GetLatestServiceByPatientId()
-        {
-            // There is intentionally no registration-date column in Service.
-            // Its identity value provides the deterministic order for the
-            // latest service selected by each patient.
-            return _context.Services
-                .AsNoTracking()
-                .Where(s => !string.IsNullOrWhiteSpace(s.ServiceName)
-                    && AvailableServices.Contains(s.ServiceName))
-                .OrderByDescending(s => s.Id)
-                .AsEnumerable()
-                .GroupBy(s => s.PatientId)
-                .ToDictionary(
-                    group => group.Key,
-                    group => new RegisteredService(group.First().ServiceName));
         }
 
         private void LoadRegisteredServiceForm(ConsultationPageViewModel model)
@@ -253,37 +214,32 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var registeredServices = GetLatestServiceByPatientId();
-            if (!registeredServices.TryGetValue(patientId, out var registeredService))
+            var appointment = _context.Appointments.FirstOrDefault(a => a.Id == appointmentId.Value);
+            if (appointment == null || appointment.Status != "Confirmed" || appointment.PatientId != patientId)
             {
-                TempData["ErrorMessage"] = "The patient must have a registered service before starting consultation.";
+                TempData["ErrorMessage"] = "Only a confirmed appointment for the selected patient can be started.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var serviceType = registeredService.ServiceName;
-
-            Appointment? appointment = null;
-            var visitType = "Walk-In";
-
-            if (appointmentId.HasValue)
+            var existingConsultation = _context.Consultations.FirstOrDefault(c => c.AppointmentId == appointmentId.Value);
+            if (existingConsultation != null)
             {
-                appointment = _context.Appointments.FirstOrDefault(a => a.Id == appointmentId.Value);
-                if (appointment == null || appointment.Status != "Confirmed" || appointment.PatientId != patientId)
-                {
-                    TempData["ErrorMessage"] = "Only a confirmed appointment for the selected patient can be started.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var existingConsultation = _context.Consultations.FirstOrDefault(c => c.AppointmentId == appointmentId.Value);
-                if (existingConsultation != null)
-                {
-                    return RedirectToAction(nameof(Index), new { openConsultationId = existingConsultation.Id });
-                }
-
-                visitType = "Appointment";
-                appointment.InProcess = true;
-                appointment.ServiceType = serviceType;
+                return RedirectToAction(nameof(Index), new { openConsultationId = existingConsultation.Id });
             }
+
+            // The service belongs to this appointment, not to every appointment
+            // of the same patient. A new appointment must never inherit a prior
+            // service selected for that patient.
+            var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
+            if (!AvailableServices.Contains(serviceType))
+            {
+                TempData["ErrorMessage"] = "Please select a service for this appointment before starting consultation.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            const string visitType = "Appointment";
+            appointment.InProcess = true;
+            appointment.ServiceType = serviceType;
 
             using var transaction = _context.Database.BeginTransaction();
             try
@@ -468,6 +424,76 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // Removes an unfinished consultation and its clinical record. Completed
+        // records remain protected from deletion in the consultation queue.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Delete(int id)
+        {
+            var consultation = _context.Consultations
+                .Include(c => c.Appointment)
+                .FirstOrDefault(c => c.Id == id);
+
+            if (consultation == null)
+            {
+                return NotFound();
+            }
+
+            if (consultation.Status != "In Progress")
+            {
+                TempData["ErrorMessage"] = "Only an in-progress consultation can be deleted.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            using var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                RemoveLinkedClinicalRecord(consultation);
+
+                if (consultation.Appointment != null)
+                    consultation.Appointment.InProcess = false;
+
+                _context.Consultations.Remove(consultation);
+                _context.SaveChanges();
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                TempData["ErrorMessage"] = "The consultation could not be deleted. Please try again.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private void RemoveLinkedClinicalRecord(Consultation consultation)
+        {
+            if (!consultation.RecordId.HasValue)
+                return;
+
+            if (consultation.RecordType == "Prenatal")
+            {
+                var record = _context.PrenatalRecords.FirstOrDefault(r =>
+                    r.Id == consultation.RecordId.Value && r.PatientId == consultation.PatientId);
+                if (record != null)
+                    _context.PrenatalRecords.Remove(record);
+            }
+            else if (consultation.RecordType == "Newborn")
+            {
+                var record = _context.NewbornRecords.FirstOrDefault(r =>
+                    r.Id == consultation.RecordId.Value && r.PatientId == consultation.PatientId);
+                if (record != null)
+                    _context.NewbornRecords.Remove(record);
+            }
+            else if (consultation.RecordType == "Family Planning")
+            {
+                var record = _context.FamilyPlanningRecords.FirstOrDefault(r =>
+                    r.Id == consultation.RecordId.Value && r.PatientId == consultation.PatientId);
+                if (record != null)
+                    _context.FamilyPlanningRecords.Remove(record);
+            }
         }
     }
 }

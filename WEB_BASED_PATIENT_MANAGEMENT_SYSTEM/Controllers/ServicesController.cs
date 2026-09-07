@@ -60,7 +60,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(int patientId, string? serviceName)
+        public IActionResult Create(int patientId, int? appointmentId, string? serviceName)
         {
             if (!TryGetService(serviceName, out var canonicalServiceName, out var price))
             {
@@ -74,16 +74,85 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.Services.Add(new Service
+            // A service belongs to one specific appointment.  Do not look up a
+            // service by PatientId here because one patient can have more than
+            // one appointment with different services.
+            if (!appointmentId.HasValue)
             {
-                PatientId = patientId,
-                ServiceName = canonicalServiceName,
-                Price = price
-            });
-            _context.SaveChanges();
+                TempData["ErrorMessage"] = "Please select the confirmed appointment for this service.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var appointment = _context.Appointments.FirstOrDefault(appointment =>
+                appointment.Id == appointmentId.Value &&
+                appointment.PatientId == patientId &&
+                appointment.Status == "Confirmed" &&
+                !appointment.InProcess &&
+                string.IsNullOrWhiteSpace(appointment.ServiceType) &&
+                !_context.Consultations.Any(consultation => consultation.AppointmentId == appointment.Id));
+
+            if (appointment == null)
+            {
+                TempData["ErrorMessage"] = "That appointment is no longer available. Please choose an unassigned confirmed appointment.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            using var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                _context.Services.Add(new Service
+                {
+                    PatientId = patientId,
+                    ServiceName = canonicalServiceName,
+                    Price = price
+                });
+
+                // Consultation reads Appointment.ServiceType, so save the
+                // selected service on this exact appointment in the same unit
+                // of work as the service record.
+                appointment.ServiceType = canonicalServiceName;
+                _context.SaveChanges();
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                TempData["ErrorMessage"] = "The service could not be registered. Please try again.";
+                return RedirectToAction(nameof(Index));
+            }
 
             TempData["SuccessMessage"] = "Service registered successfully.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public IActionResult GetAvailableAppointments(int patientId)
+        {
+            var appointments = _context.Appointments
+                .AsNoTracking()
+                .Where(appointment =>
+                    appointment.PatientId == patientId &&
+                    appointment.Status == "Confirmed" &&
+                    !appointment.InProcess &&
+                    string.IsNullOrWhiteSpace(appointment.ServiceType) &&
+                    !_context.Consultations.Any(consultation => consultation.AppointmentId == appointment.Id))
+                .OrderBy(appointment => appointment.AppointmentDate)
+                .ThenBy(appointment => appointment.AppointmentTime)
+                .Select(appointment => new
+                {
+                    appointment.Id,
+                    appointment.AppointmentDate,
+                    appointment.AppointmentTime
+                })
+                .AsEnumerable()
+                .Select(appointment => new
+                {
+                    id = appointment.Id,
+                    label = $"{appointment.AppointmentDate:MMMM dd, yyyy} · {DateTime.Today.Add(appointment.AppointmentTime):h:mm tt}"
+                })
+                .ToList();
+
+            return Json(appointments);
         }
 
         [HttpGet]

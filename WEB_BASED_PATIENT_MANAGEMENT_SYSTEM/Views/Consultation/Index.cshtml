@@ -84,6 +84,11 @@
                                 else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
                                 {
                                     <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">Continue</a>
+                                    <form asp-action="Delete" asp-route-id="@item.ConsultationId" method="post" onsubmit="confirmDelete(event, this);" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Delete consultation">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
                                 }
                                 else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
                                 {
