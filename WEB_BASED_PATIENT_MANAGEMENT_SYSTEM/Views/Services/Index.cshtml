@@ -51,7 +51,7 @@
                 @foreach (var service in Model)
                 {
                     <tr class="patient-row" data-name="@(service.Patient?.FullName?.ToLowerInvariant() ?? string.Empty)">
-                        <td><div style="font-weight: 500;">@(service.Patient?.FullName ?? "Unknown")</div></td>
+                        <td><div style="font-weight: 500; color:#226B50;">@(service.Patient?.FullName ?? "Unknown")</div></td>
                         <td>@service.ServiceName</td>
                         <td>&#8369; @service.Price.ToString("N2")</td>
                         <td>

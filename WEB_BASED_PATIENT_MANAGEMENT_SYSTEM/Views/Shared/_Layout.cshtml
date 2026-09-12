@@ -8,7 +8,11 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - Patient Management System</title>
+    <title>@ViewData["Title"] - Materniva</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
@@ -27,7 +31,13 @@
         <aside class="sidebar">
 
             <div class="sidebar-logo">
-                <h2>LOGO</h2>
+                <div class="sidebar-logo-mark">
+                    <i class="bi bi-heart-pulse-fill"></i>
+                </div>
+                <div class="sidebar-logo-text">
+                    <h2>Materniva</h2>
+                    <p>Española Birthing Home</p>
+                </div>
             </div>
 
             <nav class="sidebar-nav">
@@ -36,21 +46,25 @@
                 }
 
                 <a asp-controller="Patients" asp-action="Index" class="nav-item @(controller == "Patients" ? "active" : "")">
+                    <i class="bi bi-people"></i>
                     <span>Patients</span>
                 </a>
 
                 <!-- Services direct link -->
                 <a asp-controller="Services" asp-action="Index" class="nav-item @(controller == "Services" ? "active" : "")">
+                    <i class="bi bi-clipboard2-pulse"></i>
                     <span>Services</span>
                 </a>
 
                 <!-- Appointments direct link -->
                 <a asp-controller="Appointments" asp-action="Index" class="nav-item @(controller == "Appointments" ? "active" : "")">
+                    <i class="bi bi-calendar2-check"></i>
                     <span>Appointments</span>
                 </a>
 
                 <!-- Consultation direct link -->
                 <a asp-controller="Consultation" asp-action="Index" class="nav-item @(controller == "Consultation" ? "active" : "")">
+                    <i class="bi bi-file-earmark-medical"></i>
                     <span>Consultation</span>
                 </a>
             </nav>
@@ -59,7 +73,7 @@
 
             <a href="#" class="nav-item logout-link">
 
-                @*<i class="bi bi-box-arrow-left"></i>*@
+                <i class="bi bi-box-arrow-left"></i>
 
                 <span>Logout</span>
 

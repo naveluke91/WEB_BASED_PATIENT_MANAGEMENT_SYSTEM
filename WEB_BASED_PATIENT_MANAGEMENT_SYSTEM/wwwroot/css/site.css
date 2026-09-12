@@ -20,8 +20,24 @@ html {
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #fafafa;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-page, #F6FAF8);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* A single, refined motion curve used app-wide instead of linear
+   transitions — the small detail that reads as "designed". */
+a, button, .btn, .nav-item, .content-card, .patient-table tbody tr,
+input, select, textarea {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Refined heading rhythm: slightly tighter tracking at large sizes
+   reads as more deliberate/professional than default letterspacing. */
+h1, h2, h3 {
+    letter-spacing: -0.01em;
 }
 
 /* Focus ring for form controls and buttons */
@@ -29,7 +45,21 @@ body {
 .btn:active:focus,
 .form-control:focus,
 .form-select:focus {
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 0 3px rgba(47, 143, 107, 0.18);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #7FB8A0;
+}
+
+/* Visible keyboard-focus ring everywhere, without adding a ring on
+   mouse click (accessibility: visible focus states). */
+a:focus-visible,
+button:focus-visible,
+.nav-item:focus-visible {
+    outline: 2px solid #2F8F6B;
+    outline-offset: 2px;
 }
 
 /* Validation error text */
@@ -37,8 +67,118 @@ body {
     font-size: 0.8rem;
 }
 
+/* ============================================================
+   Global Bootstrap overrides — keep every raw Bootstrap button/
+   alert in the app on the same clinical-green palette as the
+   custom components, instead of Bootstrap's default blue.
+   ============================================================ */
+.btn-primary {
+    background-color: #2F8F6B;
+    border-color: #2F8F6B;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: #226B50 !important;
+    border-color: #226B50 !important;
+}
+
+.btn-outline-secondary,
+.btn-secondary {
+    color: #226B50;
+    border-color: #C9DED4;
+    background-color: #fff;
+}
+
+.btn-outline-secondary:hover,
+.btn-secondary:hover {
+    background-color: #E6F4EE;
+    border-color: #2F8F6B;
+    color: #226B50;
+}
+
+/* Danger — reserved for destructive actions only (Delete) */
+.btn-danger,
+.btn-outline-danger {
+    background-color: #C0392B;
+    border-color: #C0392B;
+    color: #fff;
+}
+
+.btn-outline-danger {
+    background-color: transparent;
+    color: #C0392B;
+}
+
+.btn-danger:hover,
+.btn-danger:focus,
+.btn-outline-danger:hover,
+.btn-outline-danger:focus {
+    background-color: #A5321F !important;
+    border-color: #A5321F !important;
+    color: #fff !important;
+}
+
+/* Buttons share one radius/height rhythm app-wide */
+.btn {
+    border-radius: 6px;
+    padding: 0.55rem 1rem;
+    font-weight: 500;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.btn-sm {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+}
+
+/* A barely-there lift on primary actions — the kind of subtle
+   micro-interaction that reads as polished rather than "animated". */
+.btn-primary:hover {
+    box-shadow: 0 4px 10px rgba(47, 143, 107, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
 /* Success alert after CRUD operations */
 .alert-success {
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.9rem;
+    background-color: #E6F4EE;
+    border-color: #A9D9C4;
+    color: #1E5A42;
+}
+
+.alert-danger {
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background-color: #FBEDEB;
+    border-color: #EFC6C0;
+    color: #7A2A1F;
+}
+
+/* ---- Modal elevation: one consistent, softer shadow instead of
+   Bootstrap's harsh default drop shadow, on every modal in the app. */
+.modal-content {
+    box-shadow: 0 20px 48px rgba(31, 60, 46, 0.16);
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid #EEF3F0;
+}
+
+.modal-footer {
+    border-top: 1px solid #EEF3F0;
+}
+
+/* ---- Table polish: refined header, calmer row hover ---- */
+.table > :not(caption) > * > * {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
 }

@@ -57,12 +57,19 @@
                         var displayStatus = string.IsNullOrWhiteSpace(item.Status)
                             ? (item.AppointmentId.HasValue ? "Waiting" : "In Progress")
                             : item.Status;
+                        var statusPillClass = displayStatus switch
+                        {
+                            "Waiting" => "status-pill-waiting",
+                            "In Progress" => "status-pill-inprogress",
+                            "Completed" => "status-pill-completed",
+                            _ => "status-pill-waiting"
+                        };
                         <tr class="patient-row" data-name="@item.PatientName.ToLower()" data-contact="@item.ContactNo">
-                            <td><span style="color:#7b1d3c; font-weight:600;">@item.PatientName</span></td>
+                            <td><span style="color:var(--clr-primary-dark); font-weight:600;">@item.PatientName</span></td>
                             <td>@item.ContactNo</td>
                             <td style="font-weight:600; color:#334155;">@displayVisitType</td>
                             <td>@(hasSelectedService ? item.ServiceType : "-")</td>
-                            <td style="font-weight:600; color:#334155;">@displayStatus</td>
+                            <td><span class="status-pill @statusPillClass">@displayStatus</span></td>
                             <td>
                                 @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
                                 {
