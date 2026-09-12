@@ -769,8 +769,11 @@
                 editDateInput.setAttribute('min', tomorrow.toISOString().split('T')[0]);
                 editTimeInput.setAttribute('required', 'required');
 
-                // ALWAYS show choice cards when Confirmed
-                if (isConfirmed) {
+                // Show choice cards when Confirmed, unless this appointment is
+                // already linked to a registered Patient — it already has its
+                // Patient, so don't ask Existing/New Patient again.
+                const alreadyHasPatient = !!document.getElementById('editPatientId').value;
+                if (isConfirmed && !alreadyHasPatient) {
                     editConfirmChoiceSection.style.display = 'block';
                 } else {
                     editConfirmChoiceSection.style.display = 'none';

@@ -296,72 +296,87 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // -----------------------------------------------------------------
                 if (appointment.Status == "Confirmed")
                 {
-                    var editPatientMode = Request.Form["EditPatientMode"].ToString();
+                    // Already linked to a real, registered Patient (e.g. scheduled
+                    // via "Existing Appointment") — reuse it directly. Do not ask
+                    // Existing/New Patient again or re-match by name.
+                    var alreadyLinkedPatient = existing.PatientId.HasValue
+                        ? _context.Patients.FirstOrDefault(p => p.Id == existing.PatientId.Value)
+                        : null;
 
-                    if (editPatientMode == "existing")
+                    if (alreadyLinkedPatient != null)
                     {
-                        // Verify the patient REALLY exists in the Patients table
-                        // (source of truth) — never trust only the hidden PatientId.
-                        var foundPatient = _context.Patients
-                            .FirstOrDefault(p => p.FullName.ToLower() == appointment.PatientName.ToLower());
-                        if (foundPatient == null)
-                        {
-                            var errMsg = $"Patient \"{appointment.PatientName}\" does not exist in the Patients records. Please select an existing patient or register as a New Patient.";
-                            if (isAjax) return Json(new { success = false, message = errMsg });
-                            TempData["ErrorMessage"] = errMsg;
-                            return RedirectToAction(nameof(Index));
-                        }
-
-                        existing.PatientId   = foundPatient.Id;
-                        existing.PatientName = foundPatient.FullName;
-                        existing.ContactNo   = foundPatient.ContactNo;
-                    }
-                    else if (editPatientMode == "new")
-                    {
-                        // PROBLEM 4: validate the New Patient form BEFORE creating
-                        // anything. If invalid → no patient created, not confirmed.
-                        if (string.IsNullOrWhiteSpace(NewPatientAddress) || !NewPatientDOB.HasValue)
-                        {
-                            const string newPatErr = "Please complete the required new patient information (Address and Date of Birth) before confirming.";
-                            if (isAjax) return Json(new { success = false, message = newPatErr });
-                            TempData["ErrorMessage"] = newPatErr;
-                            return RedirectToAction(nameof(Index));
-                        }
-
-                        var newPatient = new Patient
-                        {
-                            FullName       = appointment.PatientName,
-                            ContactNo      = appointment.ContactNo,
-                            Address        = NewPatientAddress,
-                            DateOfBirth    = NewPatientDOB.Value,
-                            Age            = NewPatientAge ?? Patient.CalculateAge(NewPatientDOB.Value),
-                            MaritalStatus  = NewPatientMaritalStatus ?? "Single",
-                            Religion       = NewPatientReligion ?? "",
-                            Occupation     = NewPatientOccupation ?? "",
-                            LMP            = NewPatientLMP ?? DateTime.Today,
-                            AOG            = NewPatientAOG ?? "",
-                            EDC            = NewPatientEDC ?? DateTime.Today,
-                            Menarche       = NewPatientMenarche ?? "",
-                            Gravida        = NewPatientGravida ?? "",
-                            TFAL           = NewPatientTFAL ?? ""
-                        };
-                        _context.Patients.Add(newPatient);
-
-                        // Atomic: linking via navigation property makes EF insert the
-                        // Patient and update the Appointment in ONE SaveChanges call
-                        // (single implicit transaction) — both succeed or both fail.
-                        existing.Patient    = newPatient;
-                        existing.PatientName = newPatient.FullName;
-                        existing.ContactNo  = newPatient.ContactNo;
+                        existing.PatientName = alreadyLinkedPatient.FullName;
+                        existing.ContactNo   = alreadyLinkedPatient.ContactNo;
                     }
                     else
                     {
-                        // PROBLEM 5: no patient mode selected — NEVER confirm an
-                        // appointment without a verified/created patient.
-                        const string modeErr = "Please select either Existing Patient or New Patient before confirming the appointment.";
-                        if (isAjax) return Json(new { success = false, message = modeErr });
-                        TempData["ErrorMessage"] = modeErr;
-                        return RedirectToAction(nameof(Index));
+                        var editPatientMode = Request.Form["EditPatientMode"].ToString();
+
+                        if (editPatientMode == "existing")
+                        {
+                            // Verify the patient REALLY exists in the Patients table
+                            // (source of truth) — never trust only the hidden PatientId.
+                            var foundPatient = _context.Patients
+                                .FirstOrDefault(p => p.FullName.ToLower() == appointment.PatientName.ToLower());
+                            if (foundPatient == null)
+                            {
+                                var errMsg = $"Patient \"{appointment.PatientName}\" does not exist in the Patients records. Please select an existing patient or register as a New Patient.";
+                                if (isAjax) return Json(new { success = false, message = errMsg });
+                                TempData["ErrorMessage"] = errMsg;
+                                return RedirectToAction(nameof(Index));
+                            }
+
+                            existing.PatientId   = foundPatient.Id;
+                            existing.PatientName = foundPatient.FullName;
+                            existing.ContactNo   = foundPatient.ContactNo;
+                        }
+                        else if (editPatientMode == "new")
+                        {
+                            // PROBLEM 4: validate the New Patient form BEFORE creating
+                            // anything. If invalid → no patient created, not confirmed.
+                            if (string.IsNullOrWhiteSpace(NewPatientAddress) || !NewPatientDOB.HasValue)
+                            {
+                                const string newPatErr = "Please complete the required new patient information (Address and Date of Birth) before confirming.";
+                                if (isAjax) return Json(new { success = false, message = newPatErr });
+                                TempData["ErrorMessage"] = newPatErr;
+                                return RedirectToAction(nameof(Index));
+                            }
+
+                            var newPatient = new Patient
+                            {
+                                FullName       = appointment.PatientName,
+                                ContactNo      = appointment.ContactNo,
+                                Address        = NewPatientAddress,
+                                DateOfBirth    = NewPatientDOB.Value,
+                                Age            = NewPatientAge ?? Patient.CalculateAge(NewPatientDOB.Value),
+                                MaritalStatus  = NewPatientMaritalStatus ?? "Single",
+                                Religion       = NewPatientReligion ?? "",
+                                Occupation     = NewPatientOccupation ?? "",
+                                LMP            = NewPatientLMP ?? DateTime.Today,
+                                AOG            = NewPatientAOG ?? "",
+                                EDC            = NewPatientEDC ?? DateTime.Today,
+                                Menarche       = NewPatientMenarche ?? "",
+                                Gravida        = NewPatientGravida ?? "",
+                                TFAL           = NewPatientTFAL ?? ""
+                            };
+                            _context.Patients.Add(newPatient);
+
+                            // Atomic: linking via navigation property makes EF insert the
+                            // Patient and update the Appointment in ONE SaveChanges call
+                            // (single implicit transaction) — both succeed or both fail.
+                            existing.Patient    = newPatient;
+                            existing.PatientName = newPatient.FullName;
+                            existing.ContactNo  = newPatient.ContactNo;
+                        }
+                        else
+                        {
+                            // PROBLEM 5: no patient mode selected — NEVER confirm an
+                            // appointment without a verified/created patient.
+                            const string modeErr = "Please select either Existing Patient or New Patient before confirming the appointment.";
+                            if (isAjax) return Json(new { success = false, message = modeErr });
+                            TempData["ErrorMessage"] = modeErr;
+                            return RedirectToAction(nameof(Index));
+                        }
                     }
                 }
                 else
