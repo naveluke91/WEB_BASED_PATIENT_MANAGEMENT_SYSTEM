@@ -74,15 +74,25 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // A service belongs to one specific appointment.  Do not look up a
-            // service by PatientId here because one patient can have more than
-            // one appointment with different services.
+            // Walk-In: no appointment was selected, so no appointment-specific
+            // validation applies. Save the service against the patient only.
             if (!appointmentId.HasValue)
             {
-                TempData["ErrorMessage"] = "Please select the confirmed appointment for this service.";
+                _context.Services.Add(new Service
+                {
+                    PatientId = patientId,
+                    ServiceName = canonicalServiceName,
+                    Price = price
+                });
+                _context.SaveChanges();
+
+                TempData["SuccessMessage"] = "Service registered successfully.";
                 return RedirectToAction(nameof(Index));
             }
 
+            // Appointment-based: a service belongs to one specific appointment.
+            // Do not look up a service by PatientId here because one patient can
+            // have more than one appointment with different services.
             var appointment = _context.Appointments.FirstOrDefault(appointment =>
                 appointment.Id == appointmentId.Value &&
                 appointment.PatientId == patientId &&

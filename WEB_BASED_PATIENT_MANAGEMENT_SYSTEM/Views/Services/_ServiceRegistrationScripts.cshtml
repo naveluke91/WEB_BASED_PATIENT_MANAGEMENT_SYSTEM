@@ -116,11 +116,11 @@
         });
 
         form.addEventListener('submit', event => {
-            if (selectedPatient && patientId.value && appointmentId.value && serviceName.value) return;
+            // Appointment selection is optional: leaving it blank registers a
+            // Walk-In service; picking one applies it to that appointment.
+            if (selectedPatient && patientId.value && serviceName.value) return;
             event.preventDefault();
-            error.textContent = availableAppointments.length
-                ? 'Please select a registered patient, confirmed appointment, and one service.'
-                : 'The selected patient has no available confirmed appointment for a service.';
+            error.textContent = 'Please select a registered patient and one service.';
             error.classList.remove('d-none');
         });
 
