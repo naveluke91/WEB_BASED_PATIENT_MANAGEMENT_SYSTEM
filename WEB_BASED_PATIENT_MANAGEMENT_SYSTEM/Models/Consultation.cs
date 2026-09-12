@@ -20,6 +20,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public int? AppointmentId { get; set; }
         public Appointment? Appointment { get; set; }
 
+        // Set only for a Walk-In consultation, to identify exactly which saved
+        // Service record it was started from. Null for Appointment-based visits.
+        public int? ServiceId { get; set; }
+        public Service? Service { get; set; }
+
         [Required]
         [MaxLength(30)]
         public string VisitType { get; set; } = "Walk-In";

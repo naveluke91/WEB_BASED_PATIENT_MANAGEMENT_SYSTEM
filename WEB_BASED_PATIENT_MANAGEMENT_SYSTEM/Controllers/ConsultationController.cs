@@ -87,6 +87,35 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 queue.Add(queueItem);
             }
 
+            // Walk-In services awaiting consultation: a saved Service that was not
+            // created for an Appointment (AppointmentId is null) and hasn't already
+            // started a consultation.
+            var startedServiceIds = consultations
+                .Where(c => c.ServiceId.HasValue)
+                .Select(c => c.ServiceId!.Value)
+                .ToHashSet();
+
+            var waitingWalkInServices = _context.Services
+                .Include(s => s.Patient)
+                .Where(s => s.AppointmentId == null && !startedServiceIds.Contains(s.Id))
+                .OrderBy(s => s.Id)
+                .ToList();
+
+            foreach (var service in waitingWalkInServices)
+            {
+                queue.Add(new ConsultationQueueItem
+                {
+                    ServiceId = service.Id,
+                    PatientId = service.PatientId,
+                    PatientName = service.Patient?.FullName ?? "Unknown",
+                    ContactNo = service.Patient?.ContactNo ?? "—",
+                    VisitType = "Walk-In",
+                    ServiceType = service.ServiceName,
+                    Status = "Waiting",
+                    SortDate = DateTime.MinValue.AddSeconds(service.Id)
+                });
+            }
+
             var model = new ConsultationPageViewModel
             {
                 Queue = queue
@@ -199,14 +228,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // the point at which the matching clinical record is created.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Begin(int patientId, int? appointmentId)
+        public IActionResult Begin(int patientId, int? appointmentId, int? serviceId)
         {
-            if (!appointmentId.HasValue)
-            {
-                TempData["ErrorMessage"] = "Walk-in consultation is not available yet.";
-                return RedirectToAction(nameof(Index));
-            }
-
             var patient = _context.Patients.FirstOrDefault(p => p.Id == patientId);
             if (patient == null)
             {
@@ -214,33 +237,69 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var appointment = _context.Appointments.FirstOrDefault(a => a.Id == appointmentId.Value);
-            if (appointment == null || appointment.Status != "Confirmed" || appointment.PatientId != patientId)
+            if (appointmentId.HasValue)
             {
-                TempData["ErrorMessage"] = "Only a confirmed appointment for the selected patient can be started.";
+                var appointment = _context.Appointments.FirstOrDefault(a => a.Id == appointmentId.Value);
+                if (appointment == null || appointment.Status != "Confirmed" || appointment.PatientId != patientId)
+                {
+                    TempData["ErrorMessage"] = "Only a confirmed appointment for the selected patient can be started.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var existingConsultation = _context.Consultations.FirstOrDefault(c => c.AppointmentId == appointmentId.Value);
+                if (existingConsultation != null)
+                {
+                    return RedirectToAction(nameof(Index), new { openConsultationId = existingConsultation.Id });
+                }
+
+                // The service belongs to this appointment, not to every appointment
+                // of the same patient. A new appointment must never inherit a prior
+                // service selected for that patient.
+                var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
+                if (!AvailableServices.Contains(serviceType))
+                {
+                    TempData["ErrorMessage"] = "Please select a service for this appointment before starting consultation.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                appointment.InProcess = true;
+                appointment.ServiceType = serviceType;
+
+                return StartConsultation(patientId, "Appointment", serviceType, appointmentId, null);
+            }
+
+            // Walk-In: identified by a specific saved Service record instead of
+            // an Appointment. No AppointmentDate/AppointmentTime involved.
+            if (!serviceId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Please select a registered service.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var existingConsultation = _context.Consultations.FirstOrDefault(c => c.AppointmentId == appointmentId.Value);
-            if (existingConsultation != null)
+            var service = _context.Services.FirstOrDefault(s => s.Id == serviceId.Value && s.PatientId == patientId);
+            if (service == null)
             {
-                return RedirectToAction(nameof(Index), new { openConsultationId = existingConsultation.Id });
-            }
-
-            // The service belongs to this appointment, not to every appointment
-            // of the same patient. A new appointment must never inherit a prior
-            // service selected for that patient.
-            var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
-            if (!AvailableServices.Contains(serviceType))
-            {
-                TempData["ErrorMessage"] = "Please select a service for this appointment before starting consultation.";
+                TempData["ErrorMessage"] = "That service is no longer available.";
                 return RedirectToAction(nameof(Index));
             }
 
-            const string visitType = "Appointment";
-            appointment.InProcess = true;
-            appointment.ServiceType = serviceType;
+            var existingServiceConsultation = _context.Consultations.FirstOrDefault(c => c.ServiceId == serviceId.Value);
+            if (existingServiceConsultation != null)
+            {
+                return RedirectToAction(nameof(Index), new { openConsultationId = existingServiceConsultation.Id });
+            }
 
+            if (!AvailableServices.Contains(service.ServiceName))
+            {
+                TempData["ErrorMessage"] = "The selected service is not supported.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return StartConsultation(patientId, "Walk-In", service.ServiceName, null, serviceId);
+        }
+
+        private IActionResult StartConsultation(int patientId, string visitType, string serviceType, int? appointmentId, int? serviceId)
+        {
             using var transaction = _context.Database.BeginTransaction();
             try
             {
@@ -249,6 +308,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     PatientId = patientId,
                     AppointmentId = appointmentId,
+                    ServiceId = serviceId,
                     VisitType = visitType,
                     ServiceType = serviceType,
                     Status = "In Progress",

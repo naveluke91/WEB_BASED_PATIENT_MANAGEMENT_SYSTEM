@@ -69,6 +69,22 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .HasForeignKey(a => a.PatientId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Service -> Appointment: descriptive only (which appointment, if any,
+            // this service was created for). Null means Walk-In.
+            modelBuilder.Entity<Service>()
+                .HasOne(s => s.Appointment)
+                .WithMany()
+                .HasForeignKey(s => s.AppointmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Consultation -> Service: only set for a Walk-In consultation, so the
+            // originating Service record can be identified without ambiguity.
+            modelBuilder.Entity<Consultation>()
+                .HasOne(c => c.Service)
+                .WithMany()
+                .HasForeignKey(c => c.ServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<Consultation>()
                 .HasOne(c => c.Patient)
                 .WithMany()

@@ -81,6 +81,17 @@
                                         Start
                                     </button>
                                 }
+                                else if (displayStatus == "Waiting" && item.ServiceId.HasValue && hasSelectedService)
+                                {
+                                    <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                            data-service-id="@item.ServiceId"
+                                            data-patient-id="@item.PatientId"
+                                            data-patient-name="@item.PatientName"
+                                            data-service="@item.ServiceType"
+                                            data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
+                                        Start
+                                    </button>
+                                }
                                 else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
                                 {
                                     <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">Continue</a>
@@ -110,6 +121,7 @@
             <form asp-action="Begin" method="post" id="beginConsultationForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="appointmentId" id="beginAppointmentId" />
+                <input type="hidden" name="serviceId" id="beginServiceId" />
 
                 <div class="modal-header">
                     <h5 class="modal-title">Start Consultation</h5>
@@ -242,12 +254,14 @@
         document.addEventListener('DOMContentLoaded', function () {
             const beginModalElement = document.getElementById('beginConsultationModal');
             const appointmentId = document.getElementById('beginAppointmentId');
+            const serviceId = document.getElementById('beginServiceId');
             const patientSelect = document.getElementById('beginPatientId');
             const serviceSelect = document.getElementById('beginServiceType');
             const confirmationMessage = document.getElementById('startConfirmationMessage');
 
             function configureBeginModal(button) {
                 appointmentId.value = button.dataset.appointmentId || '';
+                serviceId.value = button.dataset.serviceId || '';
                 patientSelect.value = button.dataset.patientId || '';
                 serviceSelect.value = button.dataset.service || '';
                 const patientName = button.dataset.patientName || 'this patient';

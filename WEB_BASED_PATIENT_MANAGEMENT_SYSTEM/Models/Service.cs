@@ -35,5 +35,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         /// </summary>
         [Column(TypeName = "decimal(10,2)")]
         public decimal Price { get; set; }
+
+        /// <summary>
+        /// Optional foreign key to the Appointment this service was created for.
+        /// Null for a Walk-In service. Descriptive only — never required/validated,
+        /// so it must not block Walk-In service creation.
+        /// </summary>
+        public int? AppointmentId { get; set; }
+        public Appointment? Appointment { get; set; }
     }
 }

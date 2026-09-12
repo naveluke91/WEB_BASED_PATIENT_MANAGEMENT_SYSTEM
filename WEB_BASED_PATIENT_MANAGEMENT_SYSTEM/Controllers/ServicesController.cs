@@ -114,7 +114,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     PatientId = patientId,
                     ServiceName = canonicalServiceName,
-                    Price = price
+                    Price = price,
+                    AppointmentId = appointment.Id
                 });
 
                 // Consultation reads Appointment.ServiceType, so save the
