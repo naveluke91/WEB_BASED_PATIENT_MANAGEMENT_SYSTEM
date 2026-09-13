@@ -1,0 +1,25 @@
+/* ============================================================
+   patient.css — Patients module
+   Views/Patients (patient list, details page and patient modals).
+   ============================================================ */
+
+/* Age of Gestation value (list, details page, details modal) */
+.aog-highlight {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--brand-text);
+    background: var(--brand-surface-soft);
+    border: 1px solid #D4EDB0;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+/* Patient details show three columns on wider screens */
+@media (min-width: 768px) {
+    .detail-grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

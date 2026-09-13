@@ -1,9 +1,28 @@
 /* ============================================================
-   site.css — Española Birthing Home design system
-   Tokens, base typography and global Bootstrap overrides.
-   Layout and module components live in patients.css.
+   site.css — Española Birthing Home (global styles only)
+
+    1. Design tokens
+    2. Base
+    3. Buttons
+    4. Forms
+    5. Alerts
+    6. Modals
+    7. Application shell (sidebar, top bar, breadcrumb)
+    8. Page header
+    9. Cards and search
+   10. Data tables (shared by every module list)
+   11. Status badges
+   12. Detail views, form pages and callouts
+   13. Error page
+   14. Responsive layout
+
+   Module styles live in css/<module>/<module>.css and are loaded
+   by that module's views through the "Styles" section.
    ============================================================ */
 
+/* ============================================================
+   1. Design tokens
+   ============================================================ */
 :root {
     /* ---- Brand palette (from the Española Birthing Home logo) ---- */
     --brand-dark: #0A3D09;          /* forest green: navigation, strong branding */
@@ -87,7 +106,7 @@
 }
 
 /* ============================================================
-   Base
+   2. Base
    ============================================================ */
 html {
     font-size: 16px;
@@ -167,7 +186,7 @@ summary:focus-visible {
 }
 
 /* ============================================================
-   Buttons — Primary / Secondary / Danger / Ghost
+   3. Buttons — Primary / Secondary / Danger
    The custom classes (btn-primary-dark, btn-cancel, …) and raw
    Bootstrap classes share one visual system.
    ============================================================ */
@@ -361,7 +380,7 @@ summary:focus-visible {
 }
 
 /* ============================================================
-   Forms
+   4. Forms
    ============================================================ */
 .form-label {
     display: block;
@@ -435,6 +454,16 @@ textarea.form-control {
     color: var(--text-muted);
 }
 
+.form-text .spinner-border-sm {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-width: 0.15em;
+}
+
+.spinner-border {
+    color: var(--brand-action);
+}
+
 .form-check-input:checked {
     background-color: var(--brand-action);
     border-color: var(--brand-action);
@@ -448,6 +477,99 @@ textarea.form-control {
 input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--brand-action);
+}
+
+/* Grouped form sections (e.g. Personal / Obstetric information) */
+.form-section + .form-section {
+    margin-top: var(--space-6);
+}
+
+.form-section-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.form-section-heading i {
+    font-size: 0.95rem;
+    color: var(--brand-action);
+}
+
+.form-section-heading::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+}
+
+/* Field grids (Bootstrap .row.g-3 inside modals and form cards).
+   Each label + control column becomes a subgrid of three shared tracks:
+   label / control / help or validation text. A label that wraps to two
+   lines therefore never pushes its control below the neighbouring
+   controls. Column counts follow the width of the modal body or card
+   (container queries), not the viewport. Browsers without subgrid or
+   :has() keep the default Bootstrap row layout. */
+@supports (grid-template-rows: subgrid) and selector(:has(*)) {
+    :is(.modal-body, .content-card) .row.g-3 {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-auto-rows: auto auto minmax(var(--space-4), auto);
+        column-gap: var(--space-4);
+        row-gap: 0;
+        margin: 0 0 calc(-1 * var(--space-4));
+    }
+
+    :is(.modal-body, .content-card) .row.g-3 > * {
+        grid-column: 1 / -1;
+        grid-row: span 3;
+        width: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Label + control column: shares its row's label and control tracks */
+    :is(.modal-body, .content-card) .row.g-3 > :has(> .form-label + :is(.form-control, .form-select)) {
+        display: grid;
+        grid-template-rows: subgrid;
+    }
+
+    /* Short labels sit directly above their control */
+    :is(.modal-body, .content-card) .row.g-3 > * > .form-label {
+        align-self: end;
+    }
+
+    :is(.modal-body, .content-card) .row.g-3 > * > :is(.form-control, .form-select) {
+        align-self: start;
+    }
+
+    :is(.modal-body, .content-card) .row.g-3 > * > :is(.form-text, .field-validation-error) {
+        margin-bottom: var(--space-3);
+    }
+
+    /* Other full-width blocks (choice cards, nested field groups) keep the row gap */
+    :is(.modal-body, .content-card) .row.g-3 > :not(:has(> .form-label + :is(.form-control, .form-select))) {
+        padding-bottom: var(--space-4);
+    }
+
+    /* Two columns once the modal/card has room, three for .col-md-4 fields */
+    @container (min-width: 420px) {
+        :is(.modal-body, .content-card) .row.g-3 > :is(.col-sm-6, .col-md-6, .col-md-4) {
+            grid-column: span 6;
+        }
+    }
+
+    @container (min-width: 640px) {
+        :is(.modal-body, .content-card) .row.g-3 > .col-md-4 {
+            grid-column: span 4;
+        }
+    }
 }
 
 /* Validation (server tag helpers + jQuery unobtrusive validation) */
@@ -473,7 +595,7 @@ input[type="radio"] {
 }
 
 /* ============================================================
-   Alerts
+   5. Alerts
    ============================================================ */
 .alert {
     display: flex;
@@ -510,8 +632,21 @@ input[type="radio"] {
     color: var(--text-secondary);
 }
 
+/* Page-level TempData feedback (Views/Shared/_PageAlerts.cshtml) */
+.page-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+}
+
+.page-alerts .alert {
+    margin: 0;
+    box-shadow: var(--shadow-xs);
+}
+
 /* ============================================================
-   Modals
+   6. Modals
    ============================================================ */
 .modal-backdrop.show {
     opacity: 0.45;
@@ -519,6 +654,19 @@ input[type="radio"] {
 
 .modal-backdrop {
     background-color: #0B1F0C;
+}
+
+/* Modal widths: comfortable on desktop, never wider than the screen.
+   Bootstrap only widens .modal-lg from 992px, which squeezed the
+   three-column patient forms on tablets. */
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 540px;
+    }
+
+    .modal-lg {
+        max-width: min(820px, calc(100vw - 48px));
+    }
 }
 
 .modal-content {
@@ -542,8 +690,10 @@ input[type="radio"] {
     color: var(--text-primary);
 }
 
+/* The body is a size container so field grids follow the modal's width */
 .modal-body {
     padding: var(--space-5) var(--space-6);
+    container-type: inline-size;
 }
 
 .modal-footer {
@@ -569,18 +719,919 @@ input[type="radio"] {
     min-height: 0;
 }
 
+.modal-title-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.modal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--brand-surface);
+    color: var(--brand-text);
+    font-size: 1.15rem;
+}
+
+.modal-subtitle {
+    margin: 2px 0 0;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.modal-subtitle:empty {
+    display: none;
+}
+
+.modal-intro {
+    margin: 0;
+    font-size: var(--fs-md);
+    color: var(--text-primary);
+}
+
 /* ============================================================
-   Misc Bootstrap tuning
+   7. Application shell
    ============================================================ */
-.spinner-border {
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100vh;
+    padding: var(--space-5) var(--space-4);
+    overflow-y: auto;
+    color: #fff;
+    background:
+        radial-gradient(140% 55% at 0% 0%, rgba(98, 176, 4, 0.16) 0%, rgba(98, 176, 4, 0) 62%),
+        var(--brand-dark);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-1) var(--space-2) var(--space-5);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* White plate keeps the full-colour logo legible on forest green */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+}
+
+.brand-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.brand-logo-fallback {
     color: var(--brand-action);
+    font-size: 1.35rem;
+    line-height: 1;
 }
 
-.table > :not(caption) > * > * {
-    padding-top: 0.85rem;
-    padding-bottom: 0.85rem;
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.15;
 }
 
+.brand-name {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #fff;
+}
+
+.brand-sub {
+    margin-top: 3px;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--brand-light);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 42px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: var(--fs-base);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color var(--transition), color var(--transition);
+}
+
+.nav-item i {
+    width: 20px;
+    font-size: 1.125rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.62);
+    transition: color var(--transition);
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+
+.nav-item:hover i {
+    color: #fff;
+}
+
+.nav-item.active {
+    background-color: rgba(192, 253, 117, 0.12);
+    color: #fff;
+    font-weight: 600;
+}
+
+.nav-item.active::before {
+    content: "";
+    position: absolute;
+    top: 9px;
+    bottom: 9px;
+    left: -16px;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--brand-primary);
+}
+
+.nav-item.active i {
+    color: var(--brand-light);
+}
+
+.nav-item:focus-visible {
+    outline: 2px solid var(--brand-light);
+    outline-offset: 1px;
+}
+
+.sidebar-footer {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ---- Main area ---- */
+.main-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: var(--sidebar-width);
+}
+
+/* ---- Top bar and breadcrumb ---- */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    height: var(--topbar-height);
+    padding: 0 var(--space-7);
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar-context {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.topbar-context i {
+    font-size: 0.7rem;
+}
+
+.topbar-context strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 4px 12px 4px 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+}
+
+.topbar-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--brand-surface);
+    color: var(--brand-text);
+    font-size: 1rem;
+}
+
+.user-name {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Content uses the full main-content width; only page padding separates it
+   from the sidebar and the browser edge. */
+.page-body {
+    flex: 1;
+    width: 100%;
+    padding: var(--space-6) var(--space-7) var(--space-7);
+}
+
+/* ============================================================
+   8. Page header
+   Breadcrumb (top bar) → title + subtitle → primary action → list
+   ============================================================ */
+.page-header,
+.form-page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.page-heading {
+    min-width: 0;
+}
+
+.page-header h1,
+.form-page-header h1 {
+    margin: 0;
+    font-size: var(--fs-2xl);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.page-header .subtitle,
+.form-page-header .subtitle {
+    margin: 6px 0 0;
+    font-size: var(--fs-base);
+    color: var(--text-secondary);
+}
+
+.page-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: var(--space-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: var(--brand-action-hover);
+}
+
+.back-link i {
+    font-size: 1rem;
+}
+
+/* ============================================================
+   9. Cards and search
+   ============================================================ */
+.content-card {
+    /* Size container: row actions adapt to the card's real width */
+    container-type: inline-size;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-pad {
+    padding: var(--space-6);
+}
+
+/* List card header: section title on the left, search on the right */
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title {
+    margin: 0;
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.search-box {
+    position: relative;
+    flex: 0 1 340px;
+    min-width: 220px;
+}
+
+.search-box > i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    height: var(--control-height);
+    padding: 0 12px 0 36px;
+    font-family: inherit;
+    font-size: var(--fs-base);
+    color: var(--text-primary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+
+.search-box input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-box input:hover {
+    border-color: var(--border-strong);
+}
+
+.search-box input:focus {
+    outline: none;
+    background: var(--surface);
+    border-color: var(--brand-action);
+    box-shadow: var(--focus-ring);
+}
+
+/* ============================================================
+   10. Data tables — one design for every module list
+   ============================================================ */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--fs-base);
+}
+
+/* Header text is centred in every list. Body cells align by content:
+   text left; short values, status and actions centred. */
+.data-table thead th {
+    padding: 12px var(--space-4);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    /* Long clinical headers (e.g. EDC) wrap instead of widening the table */
+    white-space: normal;
+}
+
+.data-table tbody td {
+    padding: 12px var(--space-4);
+    line-height: 1.45;
+    color: var(--text-primary);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color var(--transition);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr.patient-row:hover td {
+    background: #FAFDF6;
+}
+
+/* First and last columns line up with the card header padding */
+.data-table :is(th, td):first-child {
+    padding-left: var(--space-5);
+}
+
+.data-table :is(th, td):last-child {
+    padding-right: var(--space-5);
+}
+
+/* Column sizing
+   .col-fit      short values (Age, Date, Time, Price) size to their content
+   .col-status   status badge: compact, but never squeezed
+   .col-actions  row buttons: room for the buttons plus breathing space
+   Text columns without a class share the remaining width. */
+.data-table .col-fit {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.data-table .col-status {
+    width: 140px;
+    white-space: nowrap;
+}
+
+.data-table .col-actions {
+    width: 190px;
+    white-space: nowrap;
+}
+
+.data-table td:is(.col-fit, .col-status, .col-actions),
+.data-table td.cell-center {
+    text-align: center;
+}
+
+/* .patient-row is the row hook used by every list's search script */
+.patient-row.hidden {
+    display: none;
+}
+
+.cell-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.cell-nowrap {
+    white-space: nowrap;
+}
+
+.cell-empty {
+    color: var(--text-muted);
+}
+
+/* Empty list: one short, muted sentence — no icon */
+.data-table td.table-empty {
+    padding: 48px var(--space-4);
+    text-align: center;
+    font-size: var(--fs-base);
+    color: var(--text-muted);
+    border-bottom: none;
+}
+
+/* ---- Row actions ---- */
+.action-btns {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.action-btns form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 34px;
+    height: var(--control-height-sm);
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    text-decoration: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.action-btn i {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.action-btn:hover {
+    color: var(--brand-dark);
+    background: var(--brand-surface-soft);
+    border-color: #A9CF7A;
+}
+
+.action-btn:focus-visible {
+    outline: none;
+    border-color: var(--brand-action);
+    box-shadow: var(--focus-ring);
+}
+
+/* Primary row action (e.g. Start / Continue) */
+.action-btn-primary {
+    color: #fff;
+    background: var(--brand-action);
+    border-color: var(--brand-action);
+}
+
+.action-btn-primary:hover {
+    color: #fff;
+    background: var(--brand-action-hover);
+    border-color: var(--brand-action-hover);
+}
+
+.action-btn.delete-btn {
+    color: var(--danger);
+    border-color: var(--danger-border);
+}
+
+.action-btn.delete-btn:hover {
+    color: var(--danger-hover);
+    background: var(--danger-surface);
+    border-color: var(--danger);
+}
+
+.action-btn:disabled,
+.action-btn[disabled] {
+    color: #9AA79B;
+    background: var(--bg-subtle);
+    border-color: var(--border-subtle);
+    cursor: not-allowed;
+}
+
+.action-label {
+    display: inline;
+}
+
+/* Labels show when the card has room; otherwise labelled actions become
+   icon buttons (each keeps its title and aria-label). */
+@container (max-width: 1119.98px) {
+    .action-label {
+        display: none;
+    }
+
+    .action-btn:has(.action-label) {
+        width: 34px;
+        padding: 0;
+    }
+}
+
+/* ============================================================
+   11. Status badges
+   Appointment: Pending · Confirmed · Cancelled · Rescheduled
+   Consultation: Waiting · In Progress · Completed
+   ============================================================ */
+.status-badge,
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    background: var(--bg-muted);
+    border-color: var(--border);
+}
+
+.status-badge::before,
+.status-pill::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-pending,
+.status-pill-waiting {
+    color: var(--warning-text);
+    background: var(--warning-surface);
+    border-color: var(--warning-border);
+}
+
+.status-confirmed,
+.status-pill-completed {
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border-color: #C9E7A0;
+}
+
+.status-cancelled {
+    color: var(--danger);
+    background: var(--danger-surface);
+    border-color: var(--danger-border);
+}
+
+.status-rescheduled,
+.status-pill-inprogress {
+    color: var(--info-text);
+    background: var(--info-surface);
+    border-color: var(--info-border);
+}
+
+/* ============================================================
+   12. Detail views, form pages and callouts
+   ============================================================ */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4) var(--space-6);
+}
+
+.detail-grid-spaced {
+    margin-top: var(--space-4);
+}
+
+.detail-item label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.detail-item .detail-value {
+    min-height: 32px;
+    padding-bottom: 10px;
+    font-size: var(--fs-md);
+    font-weight: 500;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-wrap: anywhere;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.form-actions.form-actions-bare {
+    margin-top: var(--space-5);
+    padding-top: 0;
+    border-top: none;
+}
+
+.callout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+}
+
+.callout > i {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    line-height: 1.3;
+}
+
+.callout p {
+    margin: 0;
+}
+
+.callout-danger {
+    color: #7A1B12;
+    background: var(--danger-surface);
+    border-color: var(--danger-border);
+}
+
+.callout-danger > i {
+    color: var(--danger);
+}
+
+/* ============================================================
+   13. Error page (Views/Shared/Error.cshtml)
+   ============================================================ */
+.error-card {
+    padding: var(--space-7);
+}
+
+.error-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin-bottom: var(--space-4);
+    border-radius: 50%;
+    background: var(--danger-surface);
+    color: var(--danger);
+    font-size: 1.5rem;
+}
+
+.error-card h1 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-xl);
+    font-weight: 700;
+}
+
+.error-card h2 {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: var(--fs-md);
+    font-weight: 600;
+}
+
+.error-card .error-lead {
+    margin-top: 0;
+    font-size: var(--fs-md);
+    font-weight: 500;
+}
+
+.error-card h3 {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: var(--fs-base);
+    font-weight: 600;
+}
+
+.error-card p {
+    max-width: 75ch;
+    color: var(--text-secondary);
+}
+
+.error-card code {
+    padding: 2px 6px;
+    color: var(--brand-dark);
+    background: var(--bg-muted);
+    border-radius: 4px;
+}
+
+/* ============================================================
+   14. Responsive layout
+   ============================================================ */
+@media (max-width: 1199.98px) {
+    .topbar {
+        padding: 0 var(--space-6);
+    }
+
+    .page-body {
+        padding: var(--space-5) var(--space-6) var(--space-7);
+    }
+}
+
+/* Tablet: sidebar becomes an icon rail */
+@media (max-width: 991.98px) {
+    .sidebar {
+        width: 76px;
+        padding: var(--space-4) 10px;
+    }
+
+    .sidebar-brand {
+        justify-content: center;
+        padding: 0 0 var(--space-4);
+    }
+
+    .brand-text,
+    .nav-item span {
+        display: none;
+    }
+
+    .nav-item {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .nav-item.active::before {
+        left: -10px;
+    }
+
+    .main-content {
+        margin-left: 76px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .page-header,
+    .form-page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-actions > * {
+        flex: 1 1 auto;
+    }
+
+    .card-header-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Tables scroll horizontally on small screens, so keep headers on one line */
+    .data-table thead th {
+        white-space: nowrap;
+    }
+
+    /* The table may scroll sideways here, so centre the empty-state text in
+       the visible card width (cqi = card width) rather than the full table */
+    .data-table td.table-empty {
+        text-align: left;
+        padding-left: max(var(--space-4), calc(50cqi - 5em));
+    }
+
+    .topbar-context > span,
+    .topbar-context > i {
+        display: none;
+    }
+}
+
+/* Phone: sidebar becomes a bottom tab bar */
 @media (max-width: 575.98px) {
     /* 16px inputs stop iOS from zooming the page on focus */
     .form-control,
@@ -592,6 +1643,105 @@ input[type="radio"] {
     .modal-body,
     .modal-footer {
         padding-left: var(--space-4);
+        padding-right: var(--space-4);
+    }
+
+    .sidebar {
+        top: auto;
+        bottom: 0;
+        flex-direction: row;
+        align-items: stretch;
+        width: 100%;
+        height: auto;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+        overflow: visible;
+        background: var(--brand-dark);
+        border-right: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-brand {
+        display: none;
+    }
+
+    .sidebar-nav {
+        flex: 4;
+        flex-direction: row;
+        gap: 2px;
+    }
+
+    .sidebar-footer {
+        display: flex;
+        flex: 1;
+        margin: 0;
+        padding: 0 0 0 2px;
+        border: 0;
+    }
+
+    .nav-item {
+        flex: 1;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        min-height: 52px;
+        padding: 4px 2px;
+    }
+
+    .nav-item span {
+        display: block;
+        font-size: 0.65rem;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .nav-item.active::before {
+        top: -6px;
+        bottom: auto;
+        left: 28%;
+        right: 28%;
+        width: auto;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding-bottom: 72px;
+    }
+
+    .topbar {
+        padding: 0 var(--space-4);
+    }
+
+    .page-body {
+        padding: var(--space-4) var(--space-4) var(--space-6);
+    }
+
+    .page-header h1,
+    .form-page-header h1 {
+        font-size: 1.375rem;
+    }
+
+    .card-pad,
+    .error-card {
+        padding: var(--space-4);
+    }
+
+    .card-header-row {
+        padding: var(--space-4);
+    }
+
+    .data-table thead th,
+    .data-table tbody td {
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+    }
+
+    .data-table :is(th, td):not(.table-empty):first-child {
+        padding-left: var(--space-4);
+    }
+
+    .data-table :is(th, td):not(.table-empty):last-child {
         padding-right: var(--space-4);
     }
 }

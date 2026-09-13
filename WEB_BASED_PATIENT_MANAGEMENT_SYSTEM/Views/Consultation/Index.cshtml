@@ -3,6 +3,10 @@
     ViewData["Title"] = "Consultation";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/consultation/consultation.css" asp-append-version="true" />
+}
+
 <div class="page-header">
     <div class="page-heading">
         <h1>Consultation</h1>
@@ -22,27 +26,22 @@
     </div>
 
     <div class="table-responsive">
-        <table class="patient-table">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Contact</th>
                     <th>Visit Type</th>
                     <th>Service</th>
-                    <th>Status</th>
+                    <th class="col-status">Status</th>
                     <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody id="consultationTableBody">
                 @if (!Model.Queue.Any())
                 {
-                    <tr class="table-empty">
-                        <td colspan="6">
-                            <div class="empty-state">
-                                <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
-                                <strong>No waiting or consultation records yet.</strong>
-                            </div>
-                        </td>
+                    <tr>
+                        <td colspan="6" class="table-empty">No consultations found.</td>
                     </tr>
                 }
                 else
@@ -67,21 +66,21 @@
                             _ => "status-pill-waiting"
                         };
                         <tr class="patient-row" data-name="@item.PatientName.ToLower()" data-contact="@item.ContactNo">
-                            <td><partial name="_PersonCell" model="item.PatientName" /></td>
-                            <td class="cell-nowrap">@item.ContactNo</td>
-                            <td>
+                            <td class="cell-name">@item.PatientName</td>
+                            <td class="cell-nowrap cell-center">@item.ContactNo</td>
+                            <td class="cell-center">
                                 <span class="visit-type">
                                     <i class="bi @(item.AppointmentId.HasValue ? "bi-calendar2-check" : "bi-person-walking")" aria-hidden="true"></i>
                                     @displayVisitType
                                 </span>
                             </td>
                             <td>@(hasSelectedService ? item.ServiceType : "-")</td>
-                            <td><span class="status-pill @statusPillClass">@displayStatus</span></td>
+                            <td class="col-status"><span class="status-pill @statusPillClass">@displayStatus</span></td>
                             <td class="col-actions">
                                 <div class="action-btns">
                                     @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
                                     {
-                                        <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                        <button type="button" class="action-btn action-btn-primary start-appointment-btn"
                                                 data-appointment-id="@item.AppointmentId"
                                                 data-patient-id="@item.PatientId"
                                                 data-patient-name="@item.PatientName"
@@ -92,7 +91,7 @@
                                     }
                                     else if (displayStatus == "Waiting" && item.ServiceId.HasValue && hasSelectedService)
                                     {
-                                        <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                        <button type="button" class="action-btn action-btn-primary start-appointment-btn"
                                                 data-service-id="@item.ServiceId"
                                                 data-patient-id="@item.PatientId"
                                                 data-patient-name="@item.PatientName"
@@ -103,18 +102,18 @@
                                     }
                                     else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
                                     {
-                                        <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">
+                                        <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="action-btn action-btn-primary">
                                             <i class="bi bi-pencil-square" aria-hidden="true"></i> Continue
                                         </a>
                                         <form asp-action="Delete" asp-route-id="@item.ConsultationId" method="post" onsubmit="confirmDelete(event, this);" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete consultation">
+                                            <button type="submit" class="action-btn delete-btn" title="Delete consultation">
                                                 <i class="bi bi-trash" aria-hidden="true"></i> Delete
                                             </button>
                                         </form>
                                     }
                                     else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
                                     {
-                                        <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="btn btn-sm btn-outline-secondary">
+                                        <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="action-btn">
                                             <i class="bi bi-journal-medical" aria-hidden="true"></i> View Record
                                         </a>
                                     }
@@ -166,7 +165,8 @@
                         <select name="serviceType" id="beginServiceType" class="form-select" required>
                             <option value="">Select service</option>
                             <option value="Prenatal">Prenatal</option>
-                            <option value="Normal Delivery Fee &amp; Newborn Care Package">Normal Delivery Fee &amp; Newborn Care Package</option>
+                            @* The option tag helper encodes value itself; writing &amp; here would double-encode it and break the Start match. *@
+                            <option value="Normal Delivery Fee & Newborn Care Package">Normal Delivery Fee &amp; Newborn Care Package</option>
                             <option value="Implant">Implant</option>
                             <option value="Implant Removal">Implant Removal</option>
                             <option value="DEPO">DEPO</option>
@@ -219,15 +219,15 @@
 
                         <div class="content-card mb-4 pn-card" id="prenatalRecordPanel"
                              style="display:@(Model.OpenConsultation.ServiceType == "Prenatal" ? "block" : "none");">
-                            <partial name="~/Views/Services/_PrenatalForm.cshtml" model="Model.ServiceForm" />
+                            <partial name="~/Views/Consultation/Forms/_PrenatalForm.cshtml" model="Model.ServiceForm" />
                         </div>
                         <div class="content-card mb-4 pn-card" id="newbornPanel"
                              style="display:@(Model.OpenConsultation.ServiceType == "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
-                            <partial name="~/Views/Services/_NewbornForm.cshtml" model="Model.ServiceForm" />
+                            <partial name="~/Views/Consultation/Forms/_NewbornForm.cshtml" model="Model.ServiceForm" />
                         </div>
                         <div class="content-card mb-4 pn-card" id="familyPlanningPanel"
                              style="display:@(Model.OpenConsultation.ServiceType != "Prenatal" && Model.OpenConsultation.ServiceType != "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
-                            <partial name="~/Views/Services/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
+                            <partial name="~/Views/Consultation/Forms/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
                         </div>
 
                         <div class="clinical-form-actions">
@@ -241,48 +241,17 @@
     </div>
 </div>
 
-<partial name="~/Views/Services/_ServiceFormStyles.cshtml" />
-
 @section Scripts {
-    <partial name="~/Views/Services/_ServiceFormScripts.cshtml" />
     <script>
-        document.getElementById('consultationSearch')?.addEventListener('input', function () {
-            const query = this.value.toLowerCase().trim();
-            document.querySelectorAll('#consultationTableBody .patient-row').forEach(function (row) {
-                const name = (row.dataset.name || '').toLowerCase();
-                const contact = (row.dataset.contact || '').toLowerCase();
-                row.style.display = (name.includes(query) || contact.includes(query)) ? '' : 'none';
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const beginModalElement = document.getElementById('beginConsultationModal');
-            const appointmentId = document.getElementById('beginAppointmentId');
-            const serviceId = document.getElementById('beginServiceId');
-            const patientSelect = document.getElementById('beginPatientId');
-            const serviceSelect = document.getElementById('beginServiceType');
-            const confirmationMessage = document.getElementById('startConfirmationMessage');
-
-            function configureBeginModal(button) {
-                appointmentId.value = button.dataset.appointmentId || '';
-                serviceId.value = button.dataset.serviceId || '';
-                patientSelect.value = button.dataset.patientId || '';
-                serviceSelect.value = button.dataset.service || '';
-                const patientName = button.dataset.patientName || 'this patient';
-                const serviceName = button.dataset.service || 'selected service';
-                confirmationMessage.textContent = `Do you want to start the ${serviceName} consultation for ${patientName}?`;
-            }
-
-            // Bootstrap opens the modal through the data-bs attributes.  Using its
-            // show event keeps Walk-In usable even when another page script fails.
-            beginModalElement.addEventListener('show.bs.modal', function (event) {
-                if (event.relatedTarget) configureBeginModal(event.relatedTarget);
-            });
-
-            const serviceModalElement = document.getElementById('consultationServiceModal');
-            if (serviceModalElement.dataset.open === 'true') {
-                new bootstrap.Modal(serviceModalElement).show();
-            }
-        });
+        // Server-rendered values used by consultation.js
+        window.consultationPageData = {
+            patients: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                (ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient> ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>())
+                .Select(p => new { id = p.Id, name = p.FullName }))),
+            initialPatientId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((int?)ViewBag.InitialPatientId)),
+            initialPatientName: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialPatientName)),
+            initialService: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialService))
+        };
     </script>
+    <script src="~/js/consultation/consultation.js" asp-append-version="true"></script>
 }

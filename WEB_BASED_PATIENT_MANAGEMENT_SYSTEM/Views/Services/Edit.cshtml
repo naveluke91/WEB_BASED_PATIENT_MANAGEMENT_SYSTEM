@@ -19,13 +19,13 @@
     </div>
 </div>
 
-<div class="content-card card-pad card-narrow">
+<div class="content-card card-pad">
     <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
 
         <div class="row g-3">
-            <div class="col-12">
+            <div class="col-md-6">
                 <label for="servicePatientSelect" class="form-label">Patient</label>
                 <select name="patientId" id="servicePatientSelect" class="form-select" required>
                     @foreach (var patient in patients)
@@ -42,7 +42,7 @@
                 </select>
             </div>
 
-            <div class="col-12">
+            <div class="col-md-6">
                 <label for="serviceNameSelect" class="form-label">Service</label>
                 <select name="serviceName" id="serviceNameSelect" class="form-select" required>
                     @foreach (var serviceName in serviceNames)

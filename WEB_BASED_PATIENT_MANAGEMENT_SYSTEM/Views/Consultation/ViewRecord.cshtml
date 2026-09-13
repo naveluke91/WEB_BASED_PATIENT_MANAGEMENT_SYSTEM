@@ -4,6 +4,10 @@
     var consultation = Model.OpenConsultation;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/consultation/consultation.css" asp-append-version="true" />
+}
+
 <div class="form-page-header">
     <div class="page-heading">
         <a asp-action="Index" class="back-link">
@@ -27,13 +31,13 @@
 {
     <fieldset disabled="disabled" class="record-fieldset record-view">
         <div class="content-card mb-4 pn-card" style="display:@(consultation.ServiceType == "Prenatal" ? "block" : "none");">
-            <partial name="~/Views/Services/_PrenatalForm.cshtml" model="Model.ServiceForm" />
+            <partial name="~/Views/Consultation/Forms/_PrenatalForm.cshtml" model="Model.ServiceForm" />
         </div>
         <div class="content-card mb-4 pn-card" style="display:@(consultation.ServiceType == "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
-            <partial name="~/Views/Services/_NewbornForm.cshtml" model="Model.ServiceForm" />
+            <partial name="~/Views/Consultation/Forms/_NewbornForm.cshtml" model="Model.ServiceForm" />
         </div>
         <div class="content-card mb-4 pn-card" style="display:@(consultation.ServiceType != "Prenatal" && consultation.ServiceType != "Normal Delivery Fee & Newborn Care Package" ? "block" : "none");">
-            <partial name="~/Views/Services/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
+            <partial name="~/Views/Consultation/Forms/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
         </div>
     </fieldset>
 }
@@ -41,5 +45,3 @@
 <div class="form-actions form-actions-bare">
     <a asp-action="Index" class="btn-cancel">Back to Consultation List</a>
 </div>
-
-<partial name="~/Views/Services/_ServiceFormStyles.cshtml" />

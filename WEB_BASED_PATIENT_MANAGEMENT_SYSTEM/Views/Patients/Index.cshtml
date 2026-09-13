@@ -5,6 +5,10 @@
     var openEditPatientId = TempData["OpenEditModalId"]?.ToString();
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/patient/patient.css" asp-append-version="true" />
+}
+
 <!-- Page header -->
 <div class="page-header">
     <div class="page-heading">
@@ -33,11 +37,11 @@
 
     <!-- Patient data table -->
     <div class="table-responsive">
-        <table class="patient-table">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Patient Name</th>
-                    <th>Age</th>
+                    <th class="col-fit">Age</th>
                     <th>Contact</th>
                     <th>Age of Gestation (AOG)</th>
                     <th>Estimated Date of Confinement (EDC)</th>
@@ -47,14 +51,8 @@
             <tbody id="patientTableBody">
                 @if (totalCount == 0)
                 {
-                    <tr class="table-empty">
-                        <td colspan="6">
-                            <div class="empty-state">
-                                <i class="bi bi-people" aria-hidden="true"></i>
-                                <strong>No patients yet</strong>
-                                <p>Use <strong>Add New Patient</strong> to register the first patient.</p>
-                            </div>
-                        </td>
+                    <tr>
+                        <td colspan="6" class="table-empty">No patients found.</td>
                     </tr>
                 }
                 @foreach (var patient in Model)
@@ -63,16 +61,16 @@
                         data-name="@patient.FullName.ToLower()"
                         data-contact="@patient.ContactNo"
                         data-id="@patient.Id">
-                        <td><partial name="_PersonCell" model="patient.FullName" /></td>
-                        <td>@patient.Age</td>
-                        <td class="cell-nowrap">@patient.ContactNo</td>
-                        <td>
+                        <td class="cell-name">@patient.FullName</td>
+                        <td class="col-fit">@patient.Age</td>
+                        <td class="cell-nowrap cell-center">@patient.ContactNo</td>
+                        <td class="cell-center">
                             @if (!string.IsNullOrEmpty(patient.AOG))
                             {
                                 <span class="aog-highlight">@patient.AOG</span>
                             }
                         </td>
-                        <td class="cell-nowrap">@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
+                        <td class="cell-nowrap cell-center">@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
                         <td class="col-actions">
                             <div class="action-btns">
                                 <!-- View details in modal -->
@@ -233,7 +231,7 @@
 <!-- =====================================================================
      MODAL — EDIT PATIENT
      ===================================================================== -->
-<partial name="_EditPatientModal" />
+<partial name="~/Views/Patients/Modals/_EditPatientModal.cshtml" />
 
 <!-- =====================================================================
      MODAL — VIEW PATIENT DETAILS
@@ -328,122 +326,17 @@
 
 
 @section Scripts {
-    <script src="~/js/patient.js" asp-append-version="true"></script>
+    <script src="~/js/patient/patient.js" asp-append-version="true"></script>
     <script>
-        // Auto-calculate Age from Date of Birth in the Add modal
-        document.getElementById('addDateOfBirth').addEventListener('change', function () {
-            const dob = new Date(this.value);
-            if (!this.value) { document.getElementById('addAge').value = ''; return; }
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            document.getElementById('addAge').value = age >= 0 ? age : '';
-        });
-
-        // Reset modal form on close
-        document.getElementById('modalAddPatient').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('formAddPatient').reset();
-            document.getElementById('addAge').value = '';
-        });
-
         // Auto-open modal if redirect back after failed validation
         @if (TempData["OpenAddModal"] != null)
         {
             <text>new bootstrap.Modal(document.getElementById('modalAddPatient')).show();</text>
         }
 
-        function calculateEditAge(dateOfBirth) {
-            if (!dateOfBirth) return '';
-
-            const parts = dateOfBirth.split('-');
-            if (parts.length !== 3) return '';
-
-            const dob = new Date(parts[0], parts[1] - 1, parts[2]);
-            const today = new Date();
-            if (Number.isNaN(dob.getTime()) || dob > today) return '';
-
-            let age = today.getFullYear() - dob.getFullYear();
-            const monthDiff = today.getMonth() - dob.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
-
-            return age >= 0 && age <= 130 ? age : '';
-        }
-
-        function setEditFieldValue(id, value) {
-            document.getElementById(id).value = value ?? '';
-        }
-
-        // Fetch the existing patient data before showing the edit modal.
-        async function openPatientEditModal(id) {
-            try {
-                const response = await fetch(`/Patients/GetById/${encodeURIComponent(id)}`);
-                if (!response.ok) throw new Error('Patient not found');
-
-                const patient = await response.json();
-                const normalize = value => value === '\u2014' ? '' : (value ?? '');
-                const form = document.getElementById('formEditPatient');
-
-                form.action = `/Patients/Edit/${encodeURIComponent(patient.id)}`;
-                setEditFieldValue('editId', patient.id);
-                setEditFieldValue('editFullName', patient.fullName);
-                setEditFieldValue('editAddress', patient.address);
-                setEditFieldValue('editDateOfBirth', patient.dateOfBirthRaw);
-                setEditFieldValue('editAge', patient.age);
-                setEditFieldValue('editMaritalStatus', normalize(patient.maritalStatus));
-                setEditFieldValue('editReligion', normalize(patient.religion));
-                setEditFieldValue('editLMP', patient.lmpRaw);
-                setEditFieldValue('editAOG', patient.aogRaw);
-                setEditFieldValue('editEDC', patient.edcRaw);
-                setEditFieldValue('editMenarche', patient.menarcheRaw);
-                setEditFieldValue('editContactNo', patient.contactNoRaw);
-                setEditFieldValue('editGravida', patient.gravidaRaw);
-                setEditFieldValue('editTFAL', patient.tfalRaw);
-                setEditFieldValue('editOccupation', patient.occupationRaw);
-                document.getElementById('editPatientSubtitle').textContent = patient.fullName;
-
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditPatient')).show();
-            } catch (error) {
-                console.error('Failed to load patient for editing:', error);
-            }
-        }
-
-        document.getElementById('editDateOfBirth').addEventListener('change', function () {
-            document.getElementById('editAge').value = calculateEditAge(this.value);
-        });
-
         @if (!string.IsNullOrWhiteSpace(openEditPatientId))
         {
             <text>openPatientEditModal(Number('@openEditPatientId'));</text>
-        }
-
-        // View Patient Details in Modal
-        async function openPatientDetailsModal(id) {
-            try {
-                const res = await fetch(`/Patients/GetById/${id}`);
-                if (!res.ok) throw new Error('Not found');
-                const p = await res.json();
-
-                document.getElementById('viewPatientHeaderSubtitle').textContent = p.fullName;
-                document.getElementById('viewDetailFullName').textContent      = p.fullName;
-                document.getElementById('viewDetailAddress').textContent       = p.address;
-                document.getElementById('viewDetailDOB').textContent           = p.dateOfBirth;
-                document.getElementById('viewDetailAge').textContent           = p.age;
-                document.getElementById('viewDetailMaritalStatus').textContent = p.maritalStatus;
-                document.getElementById('viewDetailReligion').textContent      = p.religion;
-                document.getElementById('viewDetailLMP').textContent           = p.lmp;
-                document.getElementById('viewDetailAOG').innerHTML             = p.aog !== '—' ? `<span class="aog-highlight">${p.aog}</span>` : '—';
-                document.getElementById('viewDetailEDC').textContent           = p.edc;
-                document.getElementById('viewDetailMenarche').textContent      = p.menarche;
-                document.getElementById('viewDetailContactNo').textContent     = p.contactNo;
-                document.getElementById('viewDetailGravida').textContent       = p.gravida;
-                document.getElementById('viewDetailTFAL').textContent          = p.tfal;
-                document.getElementById('viewDetailOccupation').textContent    = p.occupation;
-
-                new bootstrap.Modal(document.getElementById('modalViewPatientDetails')).show();
-            } catch (err) {
-                console.error('Failed to load patient details:', err);
-            }
         }
     </script>
 }

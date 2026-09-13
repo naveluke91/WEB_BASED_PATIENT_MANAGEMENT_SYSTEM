@@ -3,6 +3,10 @@
     ViewData["Title"] = "Services";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/services/services.css" asp-append-version="true" />
+}
+
 <div class="page-header">
     <div class="page-heading">
         <h1>Services</h1>
@@ -28,34 +32,28 @@
     </div>
 
     <div class="table-responsive">
-        <table class="patient-table">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Service</th>
-                    <th>Price</th>
+                    <th class="col-fit">Price</th>
                     <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody id="servicesTableBody">
                 @if (!Model.Any())
                 {
-                    <tr class="table-empty">
-                        <td colspan="4">
-                            <div class="empty-state">
-                                <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
-                                <strong>No services registered yet</strong>
-                                <p>Use <strong>Add Service</strong> to register a patient's service.</p>
-                            </div>
-                        </td>
+                    <tr>
+                        <td colspan="4" class="table-empty">No services found.</td>
                     </tr>
                 }
                 @foreach (var service in Model)
                 {
                     <tr class="patient-row" data-name="@(service.Patient?.FullName?.ToLowerInvariant() ?? string.Empty)">
-                        <td><partial name="_PersonCell" model="@(service.Patient?.FullName ?? "Unknown")" /></td>
+                        <td class="cell-name">@(service.Patient?.FullName ?? "Unknown")</td>
                         <td>@service.ServiceName</td>
-                        <td class="cell-nowrap"><span class="price-tag">&#8369; @service.Price.ToString("N2")</span></td>
+                        <td class="col-fit"><span class="price-tag">&#8369; @service.Price.ToString("N2")</span></td>
                         <td class="col-actions">
                             <div class="action-btns">
                                 <button type="button" class="action-btn js-view-service" title="View Details"
@@ -94,19 +92,18 @@
     </div>
 </div>
 
-<partial name="_RegisterServiceModal" />
-<partial name="_ServiceActionModals" />
-<partial name="_ServiceRegistrationStyles" />
+<partial name="~/Views/Services/Modals/_RegisterServiceModal.cshtml" />
+<partial name="~/Views/Services/Modals/_ServiceActionModals.cshtml" />
 
 @section Scripts {
-    <partial name="_ServiceRegistrationScripts" />
-    <partial name="_ServiceActionModalScripts" />
     <script>
-        document.getElementById('servicesSearch')?.addEventListener('input', function () {
-            const query = this.value.trim().toLowerCase();
-            document.querySelectorAll('#servicesTableBody .patient-row').forEach(function (row) {
-                row.style.display = row.dataset.name.includes(query) ? '' : 'none';
-            });
-        });
+        // Server-rendered values used by services.js
+        window.servicesPageData = {
+            patients: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                (ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient> ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>())
+                .Select(p => new { id = p.Id, name = p.FullName }))),
+            availableAppointmentsUrl: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Url.Action("GetAvailableAppointments", "Services")))
+        };
     </script>
+    <script src="~/js/services/services.js" asp-append-version="true"></script>
 }
