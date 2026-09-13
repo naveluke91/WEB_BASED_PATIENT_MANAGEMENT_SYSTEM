@@ -1,3 +1,13 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    // The clinic logo is shown when it exists in wwwroot/images; otherwise a
+    // neutral brand mark keeps the sidebar intact.
+    const string logoFileName = "espanola-birthing-home-logo.png";
+    var hasLogo = !string.IsNullOrEmpty(HostEnvironment.WebRootPath)
+                  && System.IO.File.Exists(System.IO.Path.Combine(HostEnvironment.WebRootPath, "images", logoFileName));
+}
 <!DOCTYPE html>
 
 <html lang="en-GB">
@@ -8,7 +18,9 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - Materniva</title>
+    <meta name="theme-color" content="#0A3D09" />
+
+    <title>@ViewData["Title"] · Española Birthing Home</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,72 +38,89 @@
 
 <body>
 
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
     <div class="dashboard-wrapper">
 
-        <aside class="sidebar">
+        <aside class="sidebar" aria-label="Main navigation">
 
-            <div class="sidebar-logo">
-                <div class="sidebar-logo-mark">
-                    <i class="bi bi-heart-pulse-fill"></i>
-                </div>
-                <div class="sidebar-logo-text">
-                    <h2>Materniva</h2>
-                    <p>Española Birthing Home</p>
-                </div>
+            <div class="sidebar-brand">
+                <span class="brand-logo">
+                    @if (hasLogo)
+                    {
+                        <img src="~/images/@logoFileName" asp-append-version="true" alt="Española Birthing Home logo" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-heart-pulse-fill brand-logo-fallback" aria-hidden="true"></i>
+                    }
+                </span>
+                <span class="brand-text">
+                    <span class="brand-name">Española</span>
+                    <span class="brand-sub">Birthing Home</span>
+                </span>
             </div>
 
             <nav class="sidebar-nav">
-                @{
-                    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-                }
-
-                <a asp-controller="Patients" asp-action="Index" class="nav-item @(controller == "Patients" ? "active" : "")">
-                    <i class="bi bi-people"></i>
+                <a asp-controller="Patients" asp-action="Index" title="Patients"
+                   class="nav-item @(controller == "Patients" ? "active" : "")"
+                   aria-current="@(controller == "Patients" ? "page" : null)">
+                    <i class="bi bi-people" aria-hidden="true"></i>
                     <span>Patients</span>
                 </a>
 
-                <!-- Services direct link -->
-                <a asp-controller="Services" asp-action="Index" class="nav-item @(controller == "Services" ? "active" : "")">
-                    <i class="bi bi-clipboard2-pulse"></i>
+                <a asp-controller="Services" asp-action="Index" title="Services"
+                   class="nav-item @(controller == "Services" ? "active" : "")"
+                   aria-current="@(controller == "Services" ? "page" : null)">
+                    <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
                     <span>Services</span>
                 </a>
 
-                <!-- Appointments direct link -->
-                <a asp-controller="Appointments" asp-action="Index" class="nav-item @(controller == "Appointments" ? "active" : "")">
-                    <i class="bi bi-calendar2-check"></i>
+                <a asp-controller="Appointments" asp-action="Index" title="Appointments"
+                   class="nav-item @(controller == "Appointments" ? "active" : "")"
+                   aria-current="@(controller == "Appointments" ? "page" : null)">
+                    <i class="bi bi-calendar2-check" aria-hidden="true"></i>
                     <span>Appointments</span>
                 </a>
 
-                <!-- Consultation direct link -->
-                <a asp-controller="Consultation" asp-action="Index" class="nav-item @(controller == "Consultation" ? "active" : "")">
-                    <i class="bi bi-file-earmark-medical"></i>
+                <a asp-controller="Consultation" asp-action="Index" title="Consultation"
+                   class="nav-item @(controller == "Consultation" ? "active" : "")"
+                   aria-current="@(controller == "Consultation" ? "page" : null)">
+                    <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
                     <span>Consultation</span>
                 </a>
             </nav>
 
-
-
-            <a href="#" class="nav-item logout-link">
-
-                <i class="bi bi-box-arrow-left"></i>
-
-                <span>Logout</span>
-
-            </a>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item logout-link" title="Logout">
+                    <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
 
         </aside>
 
-
-
         <div class="main-content">
 
-            @RenderBody()
+            <header class="topbar">
+                <div class="topbar-context">
+                    <span>Materniva</span>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    <strong>@ViewData["Title"]</strong>
+                </div>
+                <div class="topbar-user">
+                    <span class="topbar-avatar" aria-hidden="true"><i class="bi bi-person"></i></span>
+                    <span class="user-name">Admin Name</span>
+                </div>
+            </header>
+
+            <main id="main-content" class="page-body" tabindex="-1">
+                @RenderBody()
+            </main>
 
         </div>
 
     </div>
-
-
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 

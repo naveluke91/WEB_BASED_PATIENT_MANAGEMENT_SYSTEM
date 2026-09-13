@@ -5,30 +5,29 @@
 
 <!-- Page header -->
 <div class="page-header">
-    <h1>Appointments</h1>
-    <p class="subtitle">Schedule and manage patient appointments.</p>
-
-    <div class="header-row">
-        <div class="search-box">
-            <input type="text" id="apptSearch" placeholder="Search appointments..." />
-        </div>
-        <div class="header-actions">
-            <span class="user-name">Admin Name</span>
-        </div>
+    <div class="page-heading">
+        <h1>Appointments</h1>
+        <p class="subtitle">Schedule and manage patient appointments.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-cancel" data-bs-toggle="modal" data-bs-target="#modalExistingAppointment">
+            <i class="bi bi-person-check" aria-hidden="true"></i> Existing Appointment
+        </button>
+        <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalNewAppointment">
+            <i class="bi bi-calendar2-plus" aria-hidden="true"></i> New Appointment
+        </button>
     </div>
 </div>
+
+<partial name="_PageAlerts" />
 
 <!-- Appointments table card -->
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Appointment List</h2>
-        <div class="card-actions">
-            <button class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalNewAppointment">
-                + New Appointment
-            </button>
-            <button class="btn-cancel" data-bs-toggle="modal" data-bs-target="#modalExistingAppointment">
-                Existing Appointment
-            </button>
+        <div class="search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="apptSearch" placeholder="Search appointments..." aria-label="Search appointments" />
         </div>
     </div>
 
@@ -41,16 +40,20 @@
                     <th>Date</th>
                     <th>Time</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th class="col-actions">Actions</th>
                     <th>In Process</th>
                 </tr>
             </thead>
             <tbody id="apptTableBody">
                 @if (!Model.Any())
                 {
-                    <tr>
-                        <td colspan="7" style="text-align:center; padding:2rem; color:#aaa;">
-                            No appointments yet. Click <strong>+ New Appointment</strong> to get started.
+                    <tr class="table-empty">
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-calendar2-week" aria-hidden="true"></i>
+                                <strong>No appointments yet</strong>
+                                <p>Click <strong>New Appointment</strong> to get started.</p>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -59,12 +62,10 @@
                     <tr class="patient-row"
                         data-name="@appt.PatientName.ToLower()"
                         data-contact="@appt.ContactNo">
-                        <td>
-                            <span style="color:#226B50; font-weight:500;">@appt.PatientName</span>
-                        </td>
-                        <td>@appt.ContactNo</td>
-                        <td>@appt.AppointmentDate.ToString("MM/dd/yy")</td>
-                        <td>@appt.FormattedTime</td>
+                        <td><partial name="_PersonCell" model="appt.PatientName" /></td>
+                        <td class="cell-nowrap">@appt.ContactNo</td>
+                        <td class="cell-nowrap">@appt.AppointmentDate.ToString("MM/dd/yy")</td>
+                        <td class="cell-nowrap">@appt.FormattedTime</td>
 
                         <!-- STATUS BADGE (NON-CLICKABLE) -->
                         <td>
@@ -74,40 +75,37 @@
                         </td>
 
                         <!-- ACTIONS (MODAL TRIGGERS) -->
-                        <td>
+                        <td class="col-actions">
                             <div class="action-btns">
-                                
+                                <button type="button" class="action-btn" title="View Details"
+                                        aria-label="View appointment of @appt.PatientName"
+                                        onclick="openViewModal(@appt.Id)">
+                                    <i class="bi bi-eye" aria-hidden="true"></i><span class="action-label">View</span>
+                                </button>
                                 @if (appt.Status != "Confirmed")
                                 {
                                     <button type="button" class="action-btn" title="Edit Appointment"
-                                            onclick="openEditModal(@appt.Id)"
-                                            style="border:none; background:none; padding:0.35rem; cursor:pointer;">
-                                        <i class="bi bi-pencil"></i>
+                                            aria-label="Edit appointment of @appt.PatientName"
+                                            onclick="openEditModal(@appt.Id)">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
                                     </button>
                                 }
                                 else
                                 {
                                     <button type="button" class="action-btn" title="Confirmed appointments cannot be edited"
-                                            disabled aria-label="Confirmed appointments cannot be edited"
-                                            style="border:none; background:none; padding:0.35rem; color:#94a3b8; opacity:0.65; cursor:not-allowed;">
-                                        <i class="bi bi-pencil"></i>
+                                            disabled aria-label="Confirmed appointments cannot be edited">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
                                     </button>
                                 }
                                 <form asp-action="Delete" asp-route-id="@appt.Id"
                                       method="post"
-                                      onsubmit="return confirmApptDelete(event, this, '@appt.PatientName');"
-                                      style="display:inline;">
+                                      onsubmit="return confirmApptDelete(event, this, '@appt.PatientName');">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="action-btn delete-btn" title="Delete"
-                                            style="border:none; background:none; padding:0;">
-                                        <i class="bi bi-trash"></i>
+                                            aria-label="Delete appointment of @appt.PatientName">
+                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
                                     </button>
                                 </form>
-                                <button type="button" class="action-btn" title="View Details"
-                                        onclick="openViewModal(@appt.Id)"
-                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
-                                    <i class="bi bi-eye"></i>
-                                </button>
                             </div>
                         </td>
 
@@ -117,12 +115,12 @@
                             {
                                 <a asp-controller="Consultation" asp-action="Index" asp-route-patientId="@appt.PatientId" asp-route-appointmentId="@appt.Id"
                                    class="btn-go-consultation" title="Go to Consultation">
-                                    Go to Consultation
+                                    Go to Consultation <i class="bi bi-arrow-right" aria-hidden="true"></i>
                                 </a>
                             }
                             else
                             {
-                                <span style="color: #94a3b8; font-weight: 500; font-size: 1.1rem;">—</span>
+                                <span class="cell-empty">—</span>
                             }
                         </td>
                     </tr>
@@ -137,46 +135,52 @@
      ===================================================================== -->
 <div class="modal fade" id="modalNewAppointment" tabindex="-1" aria-labelledby="modalNewLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 16px;">
-            <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold" id="modalNewLabel" style="font-size: 1.25rem;">New Appointment</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-calendar2-plus"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="modalNewLabel">New Appointment</h5>
+                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="Create" method="post" id="formNewAppointment">
                 @Html.AntiForgeryToken()
-                <div class="modal-body pt-3 px-4">
+                <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Patient Name <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="newPatientName" class="form-label">Patient Name <span class="text-danger">*</span></label>
                             <input type="text" name="PatientName" id="newPatientName"
                                    class="form-control" required placeholder="Enter patient name" />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="newContactNo" class="form-label">Contact Number <span class="text-danger">*</span></label>
                             <input type="text" name="ContactNo" id="newContactNo"
                                    class="form-control" required placeholder="Enter contact number" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Date <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="newDate" class="form-label">Date <span class="text-danger">*</span></label>
                             <input type="date" name="AppointmentDate" id="newDate"
                                    class="form-control" required
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Time <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="newTimeSelect" class="form-label">Time <span class="text-danger">*</span></label>
                             <select name="AppointmentTime" id="newTimeSelect" class="form-select" required>
                                 <option value="">-- Select Time --</option>
                             </select>
-                            <div id="newTimeLoading" class="form-text text-muted" style="display:none;">
-                                <span class="spinner-border spinner-border-sm"></span> Checking available slots...
+                            <div id="newTimeLoading" class="form-text" style="display:none;">
+                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Checking available slots...
                             </div>
                         </div>
                         <input type="hidden" name="PatientId" value="" />
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-2 pb-4 px-4 justify-content-end gap-2">
+                <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn-primary-dark">Save Appointment</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Appointment</button>
                 </div>
             </form>
         </div>
@@ -188,39 +192,44 @@
      ===================================================================== -->
 <div class="modal fade" id="modalViewAppointment" tabindex="-1" aria-labelledby="modalViewLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 16px; padding: 0.5rem;">
-            <div class="modal-header border-0 pb-0 pt-3 px-4">
-                <h5 class="modal-title fw-bold" id="modalViewLabel" style="font-size: 1.2rem; color: #1e293b;">Appointment Details</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-calendar2-week"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="modalViewLabel">Appointment Details</h5>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-3 px-4 pb-2">
-                <div class="row gy-3">
-                    <div class="col-6">
-                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">PATIENT</div>
-                        <div class="mt-1" id="viewPatientName" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;"></div>
+            <div class="modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Patient</label>
+                        <div class="detail-value" id="viewPatientName"></div>
                     </div>
-                    <div class="col-6">
-                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">CONTACT</div>
-                        <div class="mt-1" id="viewContactNo" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;"></div>
+                    <div class="detail-item">
+                        <label>Contact</label>
+                        <div class="detail-value" id="viewContactNo"></div>
                     </div>
-                    <div class="col-6">
-                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">DATE</div>
-                        <div class="mt-1" id="viewDate" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;"></div>
+                    <div class="detail-item">
+                        <label>Date</label>
+                        <div class="detail-value" id="viewDate"></div>
                     </div>
-                    <div class="col-6">
-                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">TIME</div>
-                        <div class="mt-1" id="viewTime" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;"></div>
+                    <div class="detail-item">
+                        <label>Time</label>
+                        <div class="detail-value" id="viewTime"></div>
                     </div>
-                    <div class="col-6">
-                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">STATUS</div>
-                        <div class="mt-1">
+                    <div class="detail-item">
+                        <label>Status</label>
+                        <div class="detail-value">
                             <span id="viewStatusBadge" class="status-badge status-pending">Pending</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-2 pb-3 px-4 justify-content-end">
-                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #f3f4f6; color: #374151; font-weight: 500; border-radius: 8px; padding: 0.45rem 1.4rem; border:none;">Close</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -229,14 +238,17 @@
 <!-- =====================================================================
      MODAL 3: EDIT APPOINTMENT (With Status Change & Existing Patient Link)
      ===================================================================== -->
-<!-- =====================================================================
-     MODAL 3: EDIT APPOINTMENT
-     ===================================================================== -->
 <div class="modal fade" id="modalEditAppointment" tabindex="-1" aria-labelledby="modalEditLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 16px;">
-            <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold" id="modalEditLabel" style="font-size: 1.25rem;">Edit Appointment</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="modalEditLabel">Edit Appointment</h5>
+                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="Edit" method="post" id="formEditAppointment">
@@ -244,12 +256,12 @@
                 <input type="hidden" name="Id" id="editId" />
                 <input type="hidden" name="PatientId" id="editPatientId" value="" />
 
-                <div class="modal-body pt-3 px-4">
+                <div class="modal-body">
 
                     <div class="row g-3">
                         <!-- Status Selection -->
                         <div class="col-12">
-                            <label class="form-label small fw-semibold text-muted">Status <span class="text-danger">*</span></label>
+                            <label for="editStatus" class="form-label">Status <span class="text-danger">*</span></label>
                             <select name="Status" id="editStatus" class="form-select" required>
                                 <option value="Pending">Pending</option>
                                 <option value="Confirmed">Confirmed</option>
@@ -258,62 +270,64 @@
                             </select>
                         </div>
 
-                        <!-- Choice Cards (Pops up directly below Status when Confirmed is selected - Matching Pic 2) -->
+                        <!-- Choice cards: shown directly below Status when Confirmed is selected -->
                         <div class="col-12" id="editConfirmChoiceSection" style="display:none;">
                             <input type="hidden" name="EditPatientMode" id="editPatientMode" value="" />
+                            <span class="form-label">Patient Record</span>
                             <div class="confirm-choice-row" id="editChoiceCards">
                                 <button type="button" class="confirm-choice-btn" id="editExistingBtn" onclick="toggleEditExistingCard()">
-                                    <i class="bi bi-person-check" style="font-size: 1.8rem;"></i>
+                                    <i class="bi bi-person-check" aria-hidden="true"></i>
                                     <span>Existing Patient</span>
                                 </button>
                                 <button type="button" class="confirm-choice-btn" id="editNewBtn" onclick="openNewPatientModalFromEdit()">
-                                    <i class="bi bi-person-plus" style="font-size: 1.8rem;"></i>
+                                    <i class="bi bi-person-plus" aria-hidden="true"></i>
                                     <span>New Patient</span>
                                 </button>
                             </div>
                         </div>
 
                         <!-- Patient Name & Contact -->
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Patient Name <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="editPatientName" class="form-label">Patient Name <span class="text-danger">*</span></label>
                             <input type="text" name="PatientName" id="editPatientName"
                                    class="form-control" required placeholder="Enter patient name" />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Contact Number <span class="text-danger">*</span></label>
+                        <div class="col-sm-6">
+                            <label for="editContactNo" class="form-label">Contact Number <span class="text-danger">*</span></label>
                             <input type="text" name="ContactNo" id="editContactNo"
                                    class="form-control" required placeholder="Enter contact number" />
                         </div>
 
                         <!-- Date & Time -->
                         <div class="col-12" id="editDateTimeSection">
-                        <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Date <span class="text-danger">*</span></label>
-                            <input type="date" name="AppointmentDate" id="editDate"
-                                   class="form-control" required
-                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Time <span class="text-danger">*</span></label>
-                            <select name="AppointmentTime" id="editTimeSelect" class="form-select" required>
-                                <option value="">-- Select Time --</option>
-                            </select>
-                            <div id="editTimeLoading" class="form-text text-muted" style="display:none;">
-                                <span class="spinner-border spinner-border-sm"></span> Checking available slots...
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label for="editDate" class="form-label">Date <span class="text-danger">*</span></label>
+                                    <input type="date" name="AppointmentDate" id="editDate"
+                                           class="form-control" required
+                                           min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="editTimeSelect" class="form-label">Time <span class="text-danger">*</span></label>
+                                    <select name="AppointmentTime" id="editTimeSelect" class="form-select" required>
+                                        <option value="">-- Select Time --</option>
+                                    </select>
+                                    <div id="editTimeLoading" class="form-text" style="display:none;">
+                                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Checking available slots...
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        </div>
-                        <!-- Inline validation error (no browser alert) -->
-                        <div id="editInlineError"
-                             class="alert alert-danger py-2 px-3 mt-2 mb-0"
-                             style="display:none; font-size: 0.85rem;"></div>
+                            <!-- Inline validation error (no browser alert) -->
+                            <div id="editInlineError"
+                                 class="alert alert-danger mt-3 mb-0"
+                                 role="alert"
+                                 style="display:none;"></div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-2 pb-4 px-4 justify-content-end gap-2">
+                <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn-primary-dark">Save Changes</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Changes</button>
                 </div>
             </form>
         </div>
@@ -325,99 +339,106 @@
      ===================================================================== -->
 <div class="modal fade" id="modalConfirmNewPatient" tabindex="-1" aria-labelledby="modalConfirmNewLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-            <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold" id="modalConfirmNewLabel" style="font-size: 1.25rem;">Add New Patient</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-person-plus"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="modalConfirmNewLabel">Add New Patient</h5>
+                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="ConfirmNewPatient" method="post" id="formConfirmNewPatient">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="appointmentId" id="confirmNewApptId" />
 
-                <div class="modal-body pt-3 px-4">
+                <div class="modal-body">
 
                     <!-- Inline validation error (no browser alert) -->
                     <div id="confirmNewInlineError"
-                         class="alert alert-danger py-2 px-3 mb-3"
-                         style="display:none; font-size: 0.85rem;"></div>
+                         class="alert alert-danger mb-3"
+                         role="alert"
+                         style="display:none;"></div>
 
-                    <div class="row g-3">
-                        <!-- Row 1: Full Name & Address -->
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="FullName" id="confirmNewFullName" class="form-control" placeholder="Enter full name" required />
+                    <div class="form-section">
+                        <h6 class="form-section-heading"><i class="bi bi-person-vcard" aria-hidden="true"></i> Personal Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="confirmNewFullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" name="FullName" id="confirmNewFullName" class="form-control" placeholder="Enter full name" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmNewAddress" class="form-label">Address <span class="text-danger">*</span></label>
+                                <input type="text" name="Address" id="confirmNewAddress" class="form-control" placeholder="Enter address" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewDOB" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                <input type="date" name="DateOfBirth" id="confirmNewDOB" class="form-control" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewAge" class="form-label">Age</label>
+                                <input type="number" name="Age" id="confirmNewAge" class="form-control age-readonly" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewMaritalStatus" class="form-label">Marital Status <span class="text-danger">*</span></label>
+                                <select name="MaritalStatus" id="confirmNewMaritalStatus" class="form-select" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Widowed">Widowed</option>
+                                    <option value="Separated">Separated</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewReligion" class="form-label">Religion <span class="text-danger">*</span></label>
+                                <input type="text" name="Religion" id="confirmNewReligion" class="form-control" placeholder="Enter religion" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewOccupation" class="form-label">Occupation <span class="text-danger">*</span></label>
+                                <input type="text" name="Occupation" id="confirmNewOccupation" class="form-control" placeholder="Enter occupation" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewContactNo" class="form-label">Contact No. <span class="text-danger">*</span></label>
+                                <input type="text" name="ContactNo" id="confirmNewContactNo" class="form-control" placeholder="Enter contact number" required />
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-muted">Address <span class="text-danger">*</span></label>
-                            <input type="text" name="Address" id="confirmNewAddress" class="form-control" placeholder="Enter address" required />
-                        </div>
+                    </div>
 
-                        <!-- Row 2: Date of Birth, Age, Marital Status -->
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Date of Birth <span class="text-danger">*</span></label>
-                            <input type="date" name="DateOfBirth" id="confirmNewDOB" class="form-control" required />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Age</label>
-                            <input type="number" name="Age" id="confirmNewAge" class="form-control" readonly style="background-color: #f1f3f5;" />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Marital Status <span class="text-danger">*</span></label>
-                            <select name="MaritalStatus" id="confirmNewMaritalStatus" class="form-select" required>
-                                <option value="">-- Select --</option>
-                                <option value="Single">Single</option>
-                                <option value="Married">Married</option>
-                                <option value="Widowed">Widowed</option>
-                                <option value="Separated">Separated</option>
-                            </select>
-                        </div>
-
-                        <!-- Row 3: Religion, LMP, AOG -->
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Religion <span class="text-danger">*</span></label>
-                            <input type="text" name="Religion" id="confirmNewReligion" class="form-control" placeholder="Enter religion" required />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">LMP (Last Menstrual Period) <span class="text-danger">*</span></label>
-                            <input type="date" name="LMP" id="confirmNewLMP" class="form-control" required />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">AOG (Age of Gestation) <span class="text-danger">*</span></label>
-                            <input type="text" name="AOG" id="confirmNewAOG" class="form-control" placeholder="Enter weeks" />
-                        </div>
-
-                        <!-- Row 4: EDC, Menarche, Contact No. -->
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">EDC (Estimated Date of Confinement) <span class="text-danger">*</span></label>
-                            <input type="date" name="EDC" id="confirmNewEDC" class="form-control" />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Menarche <span class="text-danger">*</span></label>
-                            <input type="text" name="Menarche" id="confirmNewMenarche" class="form-control" placeholder="Age at first menstruation" />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Contact No. <span class="text-danger">*</span></label>
-                            <input type="text" name="ContactNo" id="confirmNewContactNo" class="form-control" placeholder="Enter contact number" required />
-                        </div>
-
-                        <!-- Row 5: Gravida, TFAL, Occupation -->
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Gravida <span class="text-danger">*</span></label>
-                            <input type="text" name="Gravida" id="confirmNewGravida" class="form-control" placeholder="Number of pregnancies" />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">TFAL (Term, Full-term, Abortions, Living) <span class="text-danger">*</span></label>
-                            <input type="text" name="TFAL" id="confirmNewTFAL" class="form-control" placeholder="e.g. 2-1-0-1" />
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-muted">Occupation <span class="text-danger">*</span></label>
-                            <input type="text" name="Occupation" id="confirmNewOccupation" class="form-control" placeholder="Enter occupation" />
+                    <div class="form-section">
+                        <h6 class="form-section-heading"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Obstetric Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="confirmNewLMP" class="form-label">LMP (Last Menstrual Period) <span class="text-danger">*</span></label>
+                                <input type="date" name="LMP" id="confirmNewLMP" class="form-control" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewAOG" class="form-label">AOG (Age of Gestation) <span class="text-danger">*</span></label>
+                                <input type="text" name="AOG" id="confirmNewAOG" class="form-control" placeholder="Enter weeks" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewEDC" class="form-label">EDC (Estimated Date of Confinement) <span class="text-danger">*</span></label>
+                                <input type="date" name="EDC" id="confirmNewEDC" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewMenarche" class="form-label">Menarche <span class="text-danger">*</span></label>
+                                <input type="text" name="Menarche" id="confirmNewMenarche" class="form-control" placeholder="Age at first menstruation" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewGravida" class="form-label">Gravida <span class="text-danger">*</span></label>
+                                <input type="text" name="Gravida" id="confirmNewGravida" class="form-control" placeholder="Number of pregnancies" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="confirmNewTFAL" class="form-label">TFAL (Term, Full-term, Abortions, Living) <span class="text-danger">*</span></label>
+                                <input type="text" name="TFAL" id="confirmNewTFAL" class="form-control" placeholder="e.g. 2-1-0-1" />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-3 pb-4 px-4 justify-content-end gap-2">
-                    <button type="button" class="btn" onclick="backToEditModalFromNewPatient()" style="background: #fff; border: 1px solid #d1d5db; color: #374151; font-weight: 500; border-radius: 8px; padding: 0.55rem 1.4rem;">Cancel</button>
-                    <button type="submit" class="btn" style="background: #232238; color: #fff; font-weight: 600; border-radius: 8px; padding: 0.55rem 1.6rem;"><i class="bi bi-check-lg me-1"></i> Save Patient</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="backToEditModalFromNewPatient()">Cancel</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Patient</button>
                 </div>
             </form>
         </div>
@@ -430,19 +451,25 @@
 <div class="modal fade" id="modalExistingAppointment" tabindex="-1" aria-labelledby="modalExistingLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="modalExistingLabel">Existing Appointment</h5>
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="modalExistingLabel">Existing Appointment</h5>
+                        <p class="modal-subtitle">Schedule an appointment for a registered patient.</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="Create" method="post" id="formExistingAppointment">
                 @Html.AntiForgeryToken()
-                <div class="modal-body pt-2">
+                <div class="modal-body">
 
                     <!-- Search bar -->
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Patient Name</label>
+                        <label for="existSearch" class="form-label">Patient Name</label>
                         <div class="appt-exist-search-wrap">
-                            <i class="bi bi-search appt-exist-search-icon"></i>
+                            <i class="bi bi-search appt-exist-search-icon" aria-hidden="true"></i>
                             <input type="text" id="existSearch"
                                    class="form-control appt-exist-search-input"
                                    placeholder="Type or select patient name..."
@@ -454,23 +481,23 @@
                     <!-- Auto-filled fields -->
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label small fw-semibold">Contact Number</label>
+                            <label for="existContactNo" class="form-label">Contact Number</label>
                             <input type="text" name="ContactNo" id="existContactNo"
                                    class="form-control" required placeholder="Contact number" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Date</label>
+                        <div class="col-sm-6">
+                            <label for="existDate" class="form-label">Date</label>
                             <input type="date" name="AppointmentDate" id="existDate"
                                    class="form-control" required
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Time</label>
+                        <div class="col-sm-6">
+                            <label for="existTimeSelect" class="form-label">Time</label>
                             <select name="AppointmentTime" id="existTimeSelect" class="form-select" required>
                                 <option value="">-- Select Time --</option>
                             </select>
-                            <div id="existTimeLoading" class="form-text text-muted" style="display:none;">
-                                <span class="spinner-border spinner-border-sm"></span> Loading...
+                            <div id="existTimeLoading" class="form-text" style="display:none;">
+                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading...
                             </div>
                         </div>
                         <!-- Hidden fields -->
@@ -478,9 +505,9 @@
                         <input type="hidden" name="PatientId" id="existPatientId" value="" />
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
+                <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn-primary-dark">Save Appointment</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Appointment</button>
                 </div>
             </form>
         </div>

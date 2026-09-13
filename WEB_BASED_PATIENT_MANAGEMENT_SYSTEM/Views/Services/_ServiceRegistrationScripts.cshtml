@@ -70,7 +70,7 @@
             selectedPatient = patient;
             patientId.value = patient.id;
             search.value = patient.name;
-            search.style.borderColor = '#2F8F6B';
+            search.style.borderColor = '#468403';
             hideDropdown();
             loadAvailableAppointments(patient);
         }
@@ -98,7 +98,7 @@
             selectedPatient = null;
             patientId.value = '';
             resetAppointments();
-            search.style.borderColor = '#d1d5db';
+            search.style.borderColor = '#C8D5C0';
             const query = search.value.trim().toLowerCase();
             showPatients(patients.filter(patient => patient.name.toLowerCase().includes(query)));
         });
@@ -130,7 +130,7 @@
             resetAppointments();
             serviceName.value = '';
             search.value = '';
-            search.style.borderColor = '#d1d5db';
+            search.style.borderColor = '#C8D5C0';
             error.classList.add('d-none');
             document.querySelectorAll('#addServiceModal .svc-tile').forEach(tile => tile.classList.remove('selected'));
             hideDropdown();

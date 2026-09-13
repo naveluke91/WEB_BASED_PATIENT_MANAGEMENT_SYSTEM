@@ -4,36 +4,26 @@
 }
 
 <div class="page-header">
-    <h1>Services</h1>
-    <p class="subtitle">Welcome back, Admin</p>
-
-    <div class="header-row">
-        <div class="search-box">
-            <input type="text" id="servicesSearch" placeholder="Search by patient name..." />
-        </div>
-        <div class="header-actions">
-            <span class="user-name">Admin Name</span>
-        </div>
+    <div class="page-heading">
+        <h1>Services</h1>
+        <p class="subtitle">Welcome back, Admin</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-primary-dark"
+                data-bs-toggle="modal" data-bs-target="#addServiceModal">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Service
+        </button>
     </div>
 </div>
 
-<div class="content-card">
-    @if (TempData["SuccessMessage"] is string successMessage)
-    {
-        <div class="alert alert-success mx-4 mt-4 mb-0">@successMessage</div>
-    }
-    @if (TempData["ErrorMessage"] is string errorMessage)
-    {
-        <div class="alert alert-danger mx-4 mt-4 mb-0">@errorMessage</div>
-    }
+<partial name="_PageAlerts" />
 
+<div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Services Record List</h2>
-        <div class="card-actions">
-            <button type="button" class="btn-primary-dark"
-                    data-bs-toggle="modal" data-bs-target="#addServiceModal">
-                Add Service
-            </button>
+        <div class="search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="servicesSearch" placeholder="Search by patient name..." aria-label="Search services by patient name" />
         </div>
     </div>
 
@@ -44,44 +34,57 @@
                     <th>Name</th>
                     <th>Service</th>
                     <th>Price</th>
-                    <th>Action</th>
+                    <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody id="servicesTableBody">
+                @if (!Model.Any())
+                {
+                    <tr class="table-empty">
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                                <strong>No services registered yet</strong>
+                                <p>Use <strong>Add Service</strong> to register a patient's service.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
                 @foreach (var service in Model)
                 {
                     <tr class="patient-row" data-name="@(service.Patient?.FullName?.ToLowerInvariant() ?? string.Empty)">
-                        <td><div style="font-weight: 500; color:#226B50;">@(service.Patient?.FullName ?? "Unknown")</div></td>
+                        <td><partial name="_PersonCell" model="@(service.Patient?.FullName ?? "Unknown")" /></td>
                         <td>@service.ServiceName</td>
-                        <td>&#8369; @service.Price.ToString("N2")</td>
-                        <td>
+                        <td class="cell-nowrap"><span class="price-tag">&#8369; @service.Price.ToString("N2")</span></td>
+                        <td class="col-actions">
                             <div class="action-btns">
-                                <button type="button" class="action-btn js-edit-service" title="Edit"
-                                        data-bs-toggle="modal" data-bs-target="#editServiceModal"
-                                        data-service-id="@service.Id"
-                                        data-patient-id="@service.PatientId"
-                                        data-patient-name="@(service.Patient?.FullName ?? "Unknown")"
-                                        data-service-name="@service.ServiceName"
-                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form asp-action="Delete" asp-route-id="@service.Id" method="post" class="d-inline"
-                                      onsubmit="return confirm('Delete this service registration?');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="action-btn delete-btn border-0 bg-transparent" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
                                 <button type="button" class="action-btn js-view-service" title="View Details"
+                                        aria-label="View service details"
                                         data-bs-toggle="modal" data-bs-target="#viewServiceModal"
                                         data-service-id="@service.Id"
                                         data-patient-id="@service.PatientId"
                                         data-patient-name="@(service.Patient?.FullName ?? "Unknown")"
                                         data-service-name="@service.ServiceName"
-                                        data-service-price="@service.Price.ToString("N2")"
-                                        style="border:none; background:none; padding:0.35rem; cursor:pointer;">
-                                    <i class="bi bi-eye"></i>
+                                        data-service-price="@service.Price.ToString("N2")">
+                                    <i class="bi bi-eye" aria-hidden="true"></i><span class="action-label">View</span>
                                 </button>
+                                <button type="button" class="action-btn js-edit-service" title="Edit"
+                                        aria-label="Edit service"
+                                        data-bs-toggle="modal" data-bs-target="#editServiceModal"
+                                        data-service-id="@service.Id"
+                                        data-patient-id="@service.PatientId"
+                                        data-patient-name="@(service.Patient?.FullName ?? "Unknown")"
+                                        data-service-name="@service.ServiceName">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
+                                </button>
+                                <form asp-action="Delete" asp-route-id="@service.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Delete this service registration?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="action-btn delete-btn" title="Delete"
+                                            aria-label="Delete service">
+                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

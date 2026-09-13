@@ -1,76 +1,76 @@
-<div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+        <div class="modal-content">
             <form asp-controller="Services" asp-action="Create" method="post" id="serviceForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="serviceName" id="selectedServicesInput" />
                 <input type="hidden" name="patientId" id="selectedPatientIdInput" />
 
-                <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold">Add Service</h5>
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <span class="modal-icon" aria-hidden="true"><i class="bi bi-clipboard2-plus"></i></span>
+                        <div>
+                            <h5 class="modal-title" id="addServiceModalLabel">Add Service</h5>
+                            <p class="modal-subtitle">Select a registered patient, then choose one service.</p>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <div class="modal-body pt-3 px-4 pb-2">
-                    <div id="serviceRegistrationError" class="alert alert-danger d-none mb-3"></div>
+                <div class="modal-body">
+                    <div id="serviceRegistrationError" class="alert alert-danger d-none mb-3" role="alert"></div>
 
-                    <div class="mb-4">
-                        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT PATIENT</h2>
-                        <div id="patientSearchWrapper" style="position:relative; max-width:360px;">
-                            <span style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:#9ca3af; pointer-events:none;">
-                                <i class="bi bi-search"></i>
-                            </span>
+                    <div class="form-section">
+                        <h2 class="form-section-heading"><i class="bi bi-person" aria-hidden="true"></i> Select Patient</h2>
+                        <div id="patientSearchWrapper" class="svc-patient-search">
+                            <i class="bi bi-search svc-patient-search-icon" aria-hidden="true"></i>
                             <input type="text" id="patientSearchInput" class="form-control"
                                    placeholder="Search patient name..." autocomplete="off"
-                                   style="padding-left:2.25rem; border-radius:8px; border:1.5px solid #d1d5db;" />
-                            <div id="patientDropdown"
-                                 style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:1060;
-                                        background:#fff; border:1px solid #e2e8f0; border-radius:10px;
-                                        box-shadow:0 6px 20px rgba(0,0,0,0.12); overflow-y:auto; max-height:240px;">
-                            </div>
+                                   aria-label="Search patient name" />
+                            <div id="patientDropdown" class="svc-patient-dropdown" style="display:none;"></div>
                         </div>
                     </div>
 
-                    <div class="mb-4 d-none" id="appointmentSelectionGroup">
-                        <h2 class="svc-section-label mb-2" style="font-size:0.78rem;">SELECT APPOINTMENT</h2>
-                        <select name="appointmentId" id="selectedAppointmentIdInput" class="form-select" disabled>
+                    <div class="form-section d-none" id="appointmentSelectionGroup">
+                        <h2 class="form-section-heading"><i class="bi bi-calendar2-check" aria-hidden="true"></i> Select Appointment</h2>
+                        <select name="appointmentId" id="selectedAppointmentIdInput" class="form-select" disabled aria-label="Select appointment">
                             <option value="">-- Select a confirmed appointment --</option>
                         </select>
                         <div class="form-text">Select an appointment to apply this service to it, or leave unselected to register a Walk-In service.</div>
                     </div>
 
-                    <div class="mb-0">
-                        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT SERVICE</h2>
+                    <div class="form-section">
+                        <h2 class="form-section-heading"><i class="bi bi-grid" aria-hidden="true"></i> Select Service</h2>
 
                         <div class="svc-section-label">General Services</div>
                         <div class="svc-grid svc-grid-general">
-                            <div class="svc-tile svc-tile-wide" data-service="Normal Delivery Fee &amp; Newborn Care Package" data-price="15000">
+                            <button type="button" class="svc-tile svc-tile-wide" data-service="Normal Delivery Fee &amp; Newborn Care Package" data-price="15000">
                                 <span class="svc-name">Normal Delivery Fee &amp; Newborn Care Package</span>
                                 <span class="svc-sub">(Including NBS &amp; Newborn Hearing Test)</span>
                                 <span class="svc-price">PHP 15,000.00</span>
-                            </div>
-                            <div class="svc-tile" data-service="Prenatal" data-price="100">
+                            </button>
+                            <button type="button" class="svc-tile" data-service="Prenatal" data-price="100">
                                 <span class="svc-name">Prenatal</span>
                                 <span class="svc-price">PHP 100.00</span>
-                            </div>
+                            </button>
                         </div>
 
                         <div class="svc-section-label mt-3">Family Planning</div>
                         <div class="svc-grid svc-grid-family">
-                            <div class="svc-tile" data-service="Implant" data-price="0"><span class="svc-name">Implant</span><span class="svc-price svc-free">Free</span></div>
-                            <div class="svc-tile" data-service="Implant Removal" data-price="700"><span class="svc-name">Implant Removal</span><span class="svc-price">PHP 700.00</span></div>
-                            <div class="svc-tile" data-service="DEPO" data-price="200"><span class="svc-name">DEPO</span><span class="svc-price">PHP 200.00</span></div>
-                            <div class="svc-tile" data-service="NORIFAM" data-price="410"><span class="svc-name">NORIFAM</span><span class="svc-price">PHP 410.00</span></div>
-                            <div class="svc-tile" data-service="IUD Insertion" data-price="0"><span class="svc-name">IUD Insertion</span><span class="svc-price svc-free">Free</span></div>
-                            <div class="svc-tile" data-service="IUD Removal" data-price="600"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP 600.00</span></div>
-                            <div class="svc-tile" data-service="Anti-Tetanus Injection" data-price="200"><span class="svc-name">Anti-Tetanus Injection</span><span class="svc-price">PHP 200.00</span></div>
+                            <button type="button" class="svc-tile" data-service="Implant" data-price="0"><span class="svc-name">Implant</span><span class="svc-price svc-free">Free</span></button>
+                            <button type="button" class="svc-tile" data-service="Implant Removal" data-price="700"><span class="svc-name">Implant Removal</span><span class="svc-price">PHP 700.00</span></button>
+                            <button type="button" class="svc-tile" data-service="DEPO" data-price="200"><span class="svc-name">DEPO</span><span class="svc-price">PHP 200.00</span></button>
+                            <button type="button" class="svc-tile" data-service="NORIFAM" data-price="410"><span class="svc-name">NORIFAM</span><span class="svc-price">PHP 410.00</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Insertion" data-price="0"><span class="svc-name">IUD Insertion</span><span class="svc-price svc-free">Free</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Removal" data-price="600"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP 600.00</span></button>
+                            <button type="button" class="svc-tile" data-service="Anti-Tetanus Injection" data-price="200"><span class="svc-name">Anti-Tetanus Injection</span><span class="svc-price">PHP 200.00</span></button>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 pt-3 pb-4 px-4">
+                <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn-primary-dark">Register Service</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Register Service</button>
                 </div>
             </form>
         </div>

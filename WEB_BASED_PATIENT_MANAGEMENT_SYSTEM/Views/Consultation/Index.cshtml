@@ -4,22 +4,21 @@
 }
 
 <div class="page-header">
-    <h1>Consultation</h1>
-    <p class="subtitle">Manage waiting, in-progress, and completed patient consultations.</p>
-
-    <div class="header-row">
-        <div class="search-box">
-            <input type="text" id="consultationSearch" placeholder="Search patient by name or contact..." />
-        </div>
-        <div class="header-actions">
-            <span class="user-name">Admin Name</span>
-        </div>
+    <div class="page-heading">
+        <h1>Consultation</h1>
+        <p class="subtitle">Manage waiting, in-progress, and completed patient consultations.</p>
     </div>
 </div>
+
+<partial name="_PageAlerts" />
 
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Consultation</h2>
+        <div class="search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="consultationSearch" placeholder="Search patient by name or contact..." aria-label="Search consultations" />
+        </div>
     </div>
 
     <div class="table-responsive">
@@ -31,15 +30,18 @@
                     <th>Visit Type</th>
                     <th>Service</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody id="consultationTableBody">
                 @if (!Model.Queue.Any())
                 {
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            No waiting or consultation records yet.
+                    <tr class="table-empty">
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                                <strong>No waiting or consultation records yet.</strong>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -65,47 +67,58 @@
                             _ => "status-pill-waiting"
                         };
                         <tr class="patient-row" data-name="@item.PatientName.ToLower()" data-contact="@item.ContactNo">
-                            <td><span style="color:var(--clr-primary-dark); font-weight:600;">@item.PatientName</span></td>
-                            <td>@item.ContactNo</td>
-                            <td style="font-weight:600; color:#334155;">@displayVisitType</td>
+                            <td><partial name="_PersonCell" model="item.PatientName" /></td>
+                            <td class="cell-nowrap">@item.ContactNo</td>
+                            <td>
+                                <span class="visit-type">
+                                    <i class="bi @(item.AppointmentId.HasValue ? "bi-calendar2-check" : "bi-person-walking")" aria-hidden="true"></i>
+                                    @displayVisitType
+                                </span>
+                            </td>
                             <td>@(hasSelectedService ? item.ServiceType : "-")</td>
                             <td><span class="status-pill @statusPillClass">@displayStatus</span></td>
-                            <td>
-                                @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
-                                {
-                                    <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
-                                            data-appointment-id="@item.AppointmentId"
-                                            data-patient-id="@item.PatientId"
-                                            data-patient-name="@item.PatientName"
-                                            data-service="@(item.ServiceType == "—" ? "" : item.ServiceType)"
-                                            data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
-                                        Start
-                                    </button>
-                                }
-                                else if (displayStatus == "Waiting" && item.ServiceId.HasValue && hasSelectedService)
-                                {
-                                    <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
-                                            data-service-id="@item.ServiceId"
-                                            data-patient-id="@item.PatientId"
-                                            data-patient-name="@item.PatientName"
-                                            data-service="@item.ServiceType"
-                                            data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
-                                        Start
-                                    </button>
-                                }
-                                else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
-                                {
-                                    <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">Continue</a>
-                                    <form asp-action="Delete" asp-route-id="@item.ConsultationId" method="post" onsubmit="confirmDelete(event, this);" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Delete consultation">
-                                            <i class="bi bi-trash"></i> Delete
+                            <td class="col-actions">
+                                <div class="action-btns">
+                                    @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                                data-appointment-id="@item.AppointmentId"
+                                                data-patient-id="@item.PatientId"
+                                                data-patient-name="@item.PatientName"
+                                                data-service="@(item.ServiceType == "—" ? "" : item.ServiceType)"
+                                                data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
+                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Start
                                         </button>
-                                    </form>
-                                }
-                                else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
-                                {
-                                    <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="btn btn-sm btn-outline-secondary">View Record</a>
-                                }
+                                    }
+                                    else if (displayStatus == "Waiting" && item.ServiceId.HasValue && hasSelectedService)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-primary start-appointment-btn"
+                                                data-service-id="@item.ServiceId"
+                                                data-patient-id="@item.PatientId"
+                                                data-patient-name="@item.PatientName"
+                                                data-service="@item.ServiceType"
+                                                data-bs-toggle="modal" data-bs-target="#beginConsultationModal">
+                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Start
+                                        </button>
+                                    }
+                                    else if (displayStatus == "In Progress" && item.ConsultationId.HasValue)
+                                    {
+                                        <a asp-action="Index" asp-route-openConsultationId="@item.ConsultationId" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i> Continue
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.ConsultationId" method="post" onsubmit="confirmDelete(event, this);" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete consultation">
+                                                <i class="bi bi-trash" aria-hidden="true"></i> Delete
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
+                                    {
+                                        <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-journal-medical" aria-hidden="true"></i> View Record
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -116,7 +129,7 @@
 </div>
 
 <!-- The service is already registered in Services. Starting only needs confirmation. -->
-<div class="modal fade" id="beginConsultationModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="beginConsultationModal" tabindex="-1" aria-labelledby="beginConsultationTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form asp-action="Begin" method="post" id="beginConsultationForm">
@@ -125,11 +138,16 @@
                 <input type="hidden" name="serviceId" id="beginServiceId" />
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Start Consultation</h5>
+                    <div class="modal-title-wrap">
+                        <span class="modal-icon" aria-hidden="true"><i class="bi bi-play-circle"></i></span>
+                        <div>
+                            <h5 class="modal-title" id="beginConsultationTitle">Start Consultation</h5>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="startConfirmationMessage" class="mb-0">Do you want to start this consultation?</p>
+                    <p id="startConfirmationMessage" class="modal-intro">Do you want to start this consultation?</p>
                     <div id="appointmentPatientNotice" class="alert alert-light border small d-none mb-3"></div>
 
                     <div class="mb-3 d-none">
@@ -170,8 +188,8 @@
 
 <!-- The full service form is kept in Consultation, so a started encounter can be continued. -->
 <div class="modal fade" id="consultationServiceModal" tabindex="-1" aria-hidden="true" data-open="@(Model.OpenConsultation != null ? "true" : "false")">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" style="max-width:min(960px, calc(100vw - 32px));">
-        <div class="modal-content border-0 shadow-lg" style="max-height:90vh; border-radius:16px; overflow:hidden;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-clinical">
+        <div class="modal-content">
             @* The service header is intentionally not rendered; only the interview form belongs in this modal.
             <div class="modal-header">
                 <div>
@@ -184,7 +202,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             *@
-            <div class="modal-body bg-light">
+            <div class="modal-body clinical-form-body">
                 @if (Model.OpenConsultation != null)
                 {
                     <form asp-action="SaveService" method="post" id="consultationServiceForm">
@@ -212,9 +230,9 @@
                             <partial name="~/Views/Services/_FamilyPlanningForm.cshtml" model="Model.ServiceForm" />
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 pb-3">
+                        <div class="clinical-form-actions">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Save Later</button>
-                            <button type="submit" class="btn btn-primary">Complete &amp; Save Record</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Complete &amp; Save Record</button>
                         </div>
                     </form>
                 }
@@ -224,21 +242,6 @@
 </div>
 
 <partial name="~/Views/Services/_ServiceFormStyles.cshtml" />
-
-<style>
-    /* The interview form still scrolls with the wheel/touchpad, but its side
-       scrollbar stays hidden. */
-    #consultationServiceModal .modal-body {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    #consultationServiceModal .modal-body::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
-    }
-</style>
 
 @section Scripts {
     <partial name="~/Views/Services/_ServiceFormScripts.cshtml" />

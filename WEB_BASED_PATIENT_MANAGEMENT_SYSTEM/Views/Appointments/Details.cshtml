@@ -4,14 +4,16 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link">
-        <i class="bi bi-arrow-left"></i> Back to Appointments
-    </a>
-    <h1>Appointment Details</h1>
-    <p class="subtitle">@Model.PatientName</p>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Appointments
+        </a>
+        <h1>Appointment Details</h1>
+        <p class="subtitle">@Model.PatientName</p>
+    </div>
 </div>
 
-<div class="content-card">
+<div class="content-card card-pad card-narrow">
     <div class="detail-grid">
         <div class="detail-item">
             <label>Patient Name</label>
@@ -48,7 +50,7 @@
         </div>
     </div>
 
-    <div class="form-actions mt-4">
+    <div class="form-actions">
         <a asp-action="Index" class="btn-cancel">Back to List</a>
     </div>
 </div>

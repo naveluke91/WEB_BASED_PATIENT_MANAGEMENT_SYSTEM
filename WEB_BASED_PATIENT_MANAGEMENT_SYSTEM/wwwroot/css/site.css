@@ -1,184 +1,597 @@
 /* ============================================================
-   site.css — Global base styles
+   site.css — Española Birthing Home design system
+   Tokens, base typography and global Bootstrap overrides.
+   Layout and module components live in patients.css.
    ============================================================ */
 
+:root {
+    /* ---- Brand palette (from the Española Birthing Home logo) ---- */
+    --brand-dark: #0A3D09;          /* forest green: navigation, strong branding */
+    --brand-primary: #62B004;       /* clinic green: accents, indicators, focus */
+    --brand-light: #C0FD75;         /* light green: highlights on dark surfaces */
+    --brand-surface: #F0FEDB;       /* soft green: selected / highlighted areas */
+    --brand-surface-soft: #F5FFE8;  /* softer green: hover and subtle fills */
+
+    /* Deeper clinic-green shades. White text on #62B004 is only 2.7:1,
+       so filled buttons use these AA-compliant shades of the same hue. */
+    --brand-action: #468403;        /* 4.6:1 with white */
+    --brand-action-hover: #386B03;  /* 6.4:1 with white */
+    --brand-action-active: #2E5A02;
+    --brand-text: #2F5E05;          /* green text on light surfaces */
+
+    /* ---- Neutrals (green-tinted) ---- */
+    --surface: #FFFFFF;
+    --bg-app: #F4F7EF;
+    --bg-subtle: #F8FAF5;
+    --bg-muted: #EEF3EA;
+    --text-primary: #172B19;
+    --text-secondary: #4F6152;
+    --text-muted: #6B7A6C;          /* 4.5:1 on white */
+    --border: #DDE6D6;
+    --border-strong: #C8D5C0;
+    --border-subtle: #E9EFE5;
+
+    /* ---- Semantic ---- */
+    --danger: #B42318;
+    --danger-hover: #912018;
+    --danger-surface: #FEF1F0;
+    --danger-border: #F5C6C1;
+    --warning-text: #8A5300;
+    --warning-surface: #FFF6E0;
+    --warning-border: #F2DDA4;
+    --info-text: #1D4F91;
+    --info-surface: #EAF2FB;
+    --info-border: #C3D7F0;
+
+    /* ---- Typography ---- */
+    --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --fs-xs: 0.75rem;     /* 12px */
+    --fs-sm: 0.8125rem;   /* 13px */
+    --fs-base: 0.875rem;  /* 14px */
+    --fs-md: 0.9375rem;   /* 15px */
+    --fs-lg: 1.0625rem;   /* 17px */
+    --fs-xl: 1.25rem;     /* 20px */
+    --fs-2xl: 1.625rem;   /* 26px */
+
+    /* ---- Spacing scale (4px base) ---- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+
+    /* ---- Radius ---- */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 14px;
+    --radius-pill: 999px;
+
+    /* ---- Elevation ---- */
+    --shadow-xs: 0 1px 2px rgba(10, 61, 9, 0.05);
+    --shadow-sm: 0 1px 3px rgba(10, 61, 9, 0.06), 0 1px 2px rgba(10, 61, 9, 0.04);
+    --shadow-md: 0 8px 24px rgba(10, 61, 9, 0.10);
+    --shadow-lg: 0 24px 56px rgba(10, 61, 9, 0.20);
+
+    /* ---- Controls ---- */
+    --control-height: 40px;
+    --control-height-sm: 32px;
+    --focus-ring: 0 0 0 3px rgba(98, 176, 4, 0.28);
+    --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---- Layout ---- */
+    --sidebar-width: 248px;
+    --topbar-height: 60px;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
 html {
-    font-size: 14px;
+    font-size: 16px;
     position: relative;
     min-height: 100%;
 }
 
-@media (min-width: 768px) {
-    html {
-        font-size: 16px;
-    }
-}
-
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-page, #F6FAF8);
+    font-family: var(--font-sans);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-app);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
 }
 
-/* A single, refined motion curve used app-wide instead of linear
-   transitions — the small detail that reads as "designed". */
-a, button, .btn, .nav-item, .content-card, .patient-table tbody tr,
-input, select, textarea {
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Refined heading rhythm: slightly tighter tracking at large sizes
-   reads as more deliberate/professional than default letterspacing. */
-h1, h2, h3 {
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
     letter-spacing: -0.01em;
 }
 
-/* Focus ring for form controls and buttons */
-.btn:focus,
-.btn:active:focus,
-.form-control:focus,
-.form-select:focus {
-    box-shadow: 0 0 0 3px rgba(47, 143, 107, 0.18);
+a {
+    color: var(--brand-action);
 }
 
-.form-control:focus,
-.form-select:focus {
-    border-color: #7FB8A0;
+a:hover {
+    color: var(--brand-action-hover);
 }
 
-/* Visible keyboard-focus ring everywhere, without adding a ring on
-   mouse click (accessibility: visible focus states). */
+::selection {
+    background: var(--brand-light);
+    color: var(--brand-dark);
+}
+
+/* Visible keyboard focus everywhere, without a ring on mouse click */
 a:focus-visible,
 button:focus-visible,
-.nav-item:focus-visible {
-    outline: 2px solid #2F8F6B;
+[role="button"]:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--brand-action);
     outline-offset: 2px;
 }
 
-/* Validation error text */
-.text-danger {
-    font-size: 0.8rem;
+.skip-link {
+    position: absolute;
+    top: -48px;
+    left: var(--space-4);
+    z-index: 2000;
+    padding: var(--space-2) var(--space-4);
+    background: var(--brand-dark);
+    color: #fff;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
 }
 
-/* ============================================================
-   Global Bootstrap overrides — keep every raw Bootstrap button/
-   alert in the app on the same clinical-green palette as the
-   custom components, instead of Bootstrap's default blue.
-   ============================================================ */
-.btn-primary {
-    background-color: #2F8F6B;
-    border-color: #2F8F6B;
-}
-
-.btn-primary:hover,
-.btn-primary:focus,
-.btn-primary:active {
-    background-color: #226B50 !important;
-    border-color: #226B50 !important;
-}
-
-.btn-outline-secondary,
-.btn-secondary {
-    color: #226B50;
-    border-color: #C9DED4;
-    background-color: #fff;
-}
-
-.btn-outline-secondary:hover,
-.btn-secondary:hover {
-    background-color: #E6F4EE;
-    border-color: #2F8F6B;
-    color: #226B50;
-}
-
-/* Danger — reserved for destructive actions only (Delete) */
-.btn-danger,
-.btn-outline-danger {
-    background-color: #C0392B;
-    border-color: #C0392B;
+.skip-link:focus {
+    top: var(--space-3);
     color: #fff;
 }
 
-.btn-outline-danger {
-    background-color: transparent;
-    color: #C0392B;
+.text-muted {
+    color: var(--text-muted) !important;
 }
 
-.btn-danger:hover,
-.btn-danger:focus,
-.btn-outline-danger:hover,
-.btn-outline-danger:focus {
-    background-color: #A5321F !important;
-    border-color: #A5321F !important;
-    color: #fff !important;
+.text-danger {
+    color: var(--danger) !important;
 }
 
-/* Buttons share one radius/height rhythm app-wide */
-.btn {
-    border-radius: 6px;
-    padding: 0.55rem 1rem;
-    font-weight: 500;
-    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+/* ============================================================
+   Buttons — Primary / Secondary / Danger / Ghost
+   The custom classes (btn-primary-dark, btn-cancel, …) and raw
+   Bootstrap classes share one visual system.
+   ============================================================ */
+.btn,
+.btn-primary-dark,
+.btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--control-height);
+    padding: 0 var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color var(--transition), border-color var(--transition),
+                color var(--transition), box-shadow var(--transition);
+}
+
+.btn i,
+.btn-primary-dark i,
+.btn-cancel i {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 .btn-sm {
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
+    min-height: var(--control-height-sm);
+    padding: 0 var(--space-3);
+    font-size: var(--fs-sm);
+    border-radius: var(--radius-sm);
 }
 
-/* A barely-there lift on primary actions — the kind of subtle
-   micro-interaction that reads as polished rather than "animated". */
+/* Primary */
+.btn-primary-dark,
+.btn-primary {
+    background-color: var(--brand-action);
+    border-color: var(--brand-action);
+    color: #fff;
+    box-shadow: var(--shadow-xs);
+}
+
+.btn-primary-dark:hover,
 .btn-primary:hover {
-    box-shadow: 0 4px 10px rgba(47, 143, 107, 0.25);
-    transform: translateY(-1px);
+    background-color: var(--brand-action-hover);
+    border-color: var(--brand-action-hover);
+    color: #fff;
 }
 
-.btn-primary:active {
-    transform: translateY(0);
+.btn-primary-dark:active,
+.btn-primary:active,
+.btn-primary:not(:disabled):not(.disabled):active {
+    background-color: var(--brand-action-active);
+    border-color: var(--brand-action-active);
+    color: #fff;
+}
+
+.btn-primary-dark:focus-visible,
+.btn-primary:focus,
+.btn-primary:focus-visible {
+    background-color: var(--brand-action-hover);
+    border-color: var(--brand-action-hover);
+    color: #fff;
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Secondary */
+.btn-cancel,
+.btn-secondary,
+.btn-outline-secondary,
+.btn-light {
+    background-color: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--brand-dark);
+}
+
+.btn-cancel:hover,
+.btn-secondary:hover,
+.btn-outline-secondary:hover,
+.btn-light:hover {
+    background-color: var(--brand-surface-soft);
+    border-color: #9FC86C;
+    color: var(--brand-dark);
+}
+
+.btn-cancel:active,
+.btn-secondary:active,
+.btn-outline-secondary:active,
+.btn-light:active {
+    background-color: var(--brand-surface);
+    border-color: #9FC86C;
+    color: var(--brand-dark);
+}
+
+.btn-cancel:focus-visible,
+.btn-secondary:focus,
+.btn-outline-secondary:focus,
+.btn-light:focus {
+    color: var(--brand-dark);
+    background-color: var(--brand-surface-soft);
+    border-color: var(--brand-action);
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Danger — destructive actions only */
+.btn-danger,
+.btn-delete-confirm,
+.btn-primary-dark.btn-delete-confirm {
+    background-color: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+.btn-danger:hover,
+.btn-delete-confirm:hover,
+.btn-primary-dark.btn-delete-confirm:hover {
+    background-color: var(--danger-hover);
+    border-color: var(--danger-hover);
+    color: #fff;
+}
+
+.btn-delete-confirm:focus-visible,
+.btn-danger:focus {
+    background-color: var(--danger-hover);
+    border-color: var(--danger-hover);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.25);
+}
+
+.btn-outline-danger {
+    background-color: var(--surface);
+    border-color: var(--danger-border);
+    color: var(--danger);
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:active {
+    background-color: var(--danger-surface);
+    border-color: var(--danger);
+    color: var(--danger-hover);
+}
+
+.btn-outline-danger:focus {
+    background-color: var(--danger-surface);
+    border-color: var(--danger);
+    color: var(--danger-hover);
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.2);
+}
+
+/* Disabled state for every button role */
+.btn:disabled,
+.btn.disabled,
+.btn-primary-dark:disabled,
+.btn-primary-dark[aria-disabled="true"],
+.btn-cancel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    pointer-events: none;
+}
+
+/* Bootstrap close control — larger target, brand focus */
+.btn-close {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: -6px -8px -6px auto;
+    border-radius: var(--radius-md);
+    background-size: 12px;
+    opacity: 0.55;
+    transition: background-color var(--transition), opacity var(--transition);
+}
+
+.btn-close:hover {
+    opacity: 0.9;
+    background-color: var(--bg-muted);
+}
+
+.btn-close:focus {
+    opacity: 1;
+    box-shadow: var(--focus-ring);
+}
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: #2A3D2C;
+}
+
+.form-label.small {
+    font-size: var(--fs-sm);
+}
+
+.form-control,
+.form-select {
+    min-height: var(--control-height);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: var(--fs-base);
+    color: var(--text-primary);
+    background-color: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+
+.form-select {
+    padding-right: 36px;
+    background-position: right 12px center;
+}
+
+textarea.form-control {
+    min-height: 88px;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+.form-control:hover:not(:disabled):not([readonly]),
+.form-select:hover:not(:disabled) {
+    border-color: #A9BBA0;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--brand-action);
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+.form-control[readonly],
+.form-control:disabled,
+.form-select:disabled,
+.age-readonly {
+    background-color: var(--bg-muted);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.form-control[readonly]:focus {
+    border-color: var(--border-strong);
     box-shadow: none;
 }
 
-/* Success alert after CRUD operations */
+.form-text {
+    margin-top: 6px;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.form-check-input:checked {
+    background-color: var(--brand-action);
+    border-color: var(--brand-action);
+}
+
+.form-check-input:focus {
+    border-color: var(--brand-action);
+    box-shadow: var(--focus-ring);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--brand-action);
+}
+
+/* Validation (server tag helpers + jQuery unobtrusive validation) */
+.input-validation-error,
+.form-control.input-validation-error,
+.form-select.input-validation-error {
+    border-color: var(--danger);
+    background-color: #FFFBFA;
+}
+
+.input-validation-error:focus {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.18);
+}
+
+/* Only real validation messages become block text; required-field
+   asterisks (span.text-danger inside labels/subtitles) stay inline. */
+.field-validation-error {
+    display: block;
+    margin-top: 6px;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+}
+
+/* ============================================================
+   Alerts
+   ============================================================ */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: var(--fs-base);
+    line-height: 1.45;
+}
+
+.alert > i {
+    font-size: 1.1rem;
+    line-height: 1.25;
+    flex-shrink: 0;
+}
+
 .alert-success {
-    border-radius: 10px;
-    font-size: 0.9rem;
-    background-color: #E6F4EE;
-    border-color: #A9D9C4;
-    color: #1E5A42;
+    background-color: var(--brand-surface);
+    border-color: #C9E7A0;
+    color: #234A04;
 }
 
 .alert-danger {
-    border-radius: 10px;
-    font-size: 0.9rem;
-    background-color: #FBEDEB;
-    border-color: #EFC6C0;
-    color: #7A2A1F;
+    background-color: var(--danger-surface);
+    border-color: var(--danger-border);
+    color: #7A1B12;
 }
 
-/* ---- Modal elevation: one consistent, softer shadow instead of
-   Bootstrap's harsh default drop shadow, on every modal in the app. */
+.alert-light {
+    background-color: var(--bg-subtle);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   Modals
+   ============================================================ */
+.modal-backdrop.show {
+    opacity: 0.45;
+}
+
+.modal-backdrop {
+    background-color: #0B1F0C;
+}
+
 .modal-content {
-    box-shadow: 0 20px 48px rgba(31, 60, 46, 0.16);
     border: none;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    background-color: var(--surface);
 }
 
 .modal-header {
-    border-bottom: 1px solid #EEF3F0;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: var(--space-5) var(--space-6);
 }
 
 .modal-footer {
-    border-top: 1px solid #EEF3F0;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-6);
+    background-color: var(--bg-subtle);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom-left-radius: var(--radius-xl);
+    border-bottom-right-radius: var(--radius-xl);
 }
 
-/* ---- Table polish: refined header, calmer row hover ---- */
+.modal-footer > * {
+    margin: 0;
+}
+
+/* Several modals wrap body + footer in a <form>. Letting the form join the
+   modal's flex column keeps .modal-dialog-scrollable bodies scrollable and
+   the footer actions always visible. */
+.modal-content > form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* ============================================================
+   Misc Bootstrap tuning
+   ============================================================ */
+.spinner-border {
+    color: var(--brand-action);
+}
+
 .table > :not(caption) > * > * {
     padding-top: 0.85rem;
     padding-bottom: 0.85rem;
+}
+
+@media (max-width: 575.98px) {
+    /* 16px inputs stop iOS from zooming the page on focus */
+    .form-control,
+    .form-select {
+        font-size: 1rem;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding-left: var(--space-4);
+        padding-right: var(--space-4);
+    }
 }

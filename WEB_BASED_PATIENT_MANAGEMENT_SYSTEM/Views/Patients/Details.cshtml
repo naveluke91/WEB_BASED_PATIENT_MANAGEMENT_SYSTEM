@@ -4,90 +4,103 @@
 }
 
 <div class="form-page-header">
-    <h1>View Details</h1>
-    <p class="subtitle">@Model.FullName</p>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Patient List
+        </a>
+        <h1>View Details</h1>
+        <p class="subtitle">@Model.FullName</p>
+    </div>
 </div>
 
-<div class="content-card">
+<div class="content-card card-pad">
     <!-- Read-only display of all patient fields -->
-    <div class="detail-grid">
-        <div class="detail-item">
-            <label>Full Name</label>
-            <div class="detail-value">@Model.FullName</div>
-        </div>
+    <div class="form-section">
+        <h2 class="form-section-heading"><i class="bi bi-person-vcard" aria-hidden="true"></i> Personal Information</h2>
+        <div class="detail-grid detail-grid-3">
+            <div class="detail-item">
+                <label>Full Name</label>
+                <div class="detail-value">@Model.FullName</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Address</label>
-            <div class="detail-value">@Model.Address</div>
-        </div>
+            <div class="detail-item">
+                <label>Address</label>
+                <div class="detail-value">@Model.Address</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Date of Birth</label>
-            <div class="detail-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</div>
-        </div>
+            <div class="detail-item">
+                <label>Contact No.</label>
+                <div class="detail-value">@Model.ContactNo</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Age</label>
-            <div class="detail-value">@Model.Age</div>
-        </div>
+            <div class="detail-item">
+                <label>Date of Birth</label>
+                <div class="detail-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Marital Status</label>
-            <div class="detail-value">@Model.MaritalStatus</div>
-        </div>
+            <div class="detail-item">
+                <label>Age</label>
+                <div class="detail-value">@Model.Age</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Religion</label>
-            <div class="detail-value">@(string.IsNullOrEmpty(Model.Religion) ? "—" : Model.Religion)</div>
-        </div>
+            <div class="detail-item">
+                <label>Marital Status</label>
+                <div class="detail-value">@Model.MaritalStatus</div>
+            </div>
 
-        <div class="detail-item">
-            <label>LMP (Last Menstrual Period)</label>
-            <div class="detail-value">@(Model.LMP?.ToString("MMMM dd, yyyy") ?? "—")</div>
-        </div>
+            <div class="detail-item">
+                <label>Religion</label>
+                <div class="detail-value">@(string.IsNullOrEmpty(Model.Religion) ? "—" : Model.Religion)</div>
+            </div>
 
-        <div class="detail-item">
-            <label>AOG (Age of Gestation)</label>
-            <div class="detail-value">
-                @if (!string.IsNullOrEmpty(Model.AOG))
-                {
-                    <span class="aog-highlight">@Model.AOG</span>
-                }
-                else
-                {
-                    <span>—</span>
-                }
+            <div class="detail-item">
+                <label>Occupation</label>
+                <div class="detail-value">@(string.IsNullOrEmpty(Model.Occupation) ? "—" : Model.Occupation)</div>
             </div>
         </div>
+    </div>
 
-        <div class="detail-item">
-            <label>EDC (Estimated Date of Confinement)</label>
-            <div class="detail-value">@(Model.EDC?.ToString("MMMM dd, yyyy") ?? "—")</div>
-        </div>
+    <div class="form-section">
+        <h2 class="form-section-heading"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Obstetric Information</h2>
+        <div class="detail-grid detail-grid-3">
+            <div class="detail-item">
+                <label>LMP (Last Menstrual Period)</label>
+                <div class="detail-value">@(Model.LMP?.ToString("MMMM dd, yyyy") ?? "—")</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Menarche</label>
-            <div class="detail-value">@(string.IsNullOrEmpty(Model.Menarche) ? "—" : Model.Menarche)</div>
-        </div>
+            <div class="detail-item">
+                <label>AOG (Age of Gestation)</label>
+                <div class="detail-value">
+                    @if (!string.IsNullOrEmpty(Model.AOG))
+                    {
+                        <span class="aog-highlight">@Model.AOG</span>
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </div>
+            </div>
 
-        <div class="detail-item">
-            <label>Contact No.</label>
-            <div class="detail-value">@Model.ContactNo</div>
-        </div>
+            <div class="detail-item">
+                <label>EDC (Estimated Date of Confinement)</label>
+                <div class="detail-value">@(Model.EDC?.ToString("MMMM dd, yyyy") ?? "—")</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Gravida</label>
-            <div class="detail-value">@(string.IsNullOrEmpty(Model.Gravida) ? "—" : Model.Gravida)</div>
-        </div>
+            <div class="detail-item">
+                <label>Menarche</label>
+                <div class="detail-value">@(string.IsNullOrEmpty(Model.Menarche) ? "—" : Model.Menarche)</div>
+            </div>
 
-        <div class="detail-item">
-            <label>TFAL (Term, Full-term, Abortions, Living)</label>
-            <div class="detail-value">@(string.IsNullOrEmpty(Model.TFAL) ? "—" : Model.TFAL)</div>
-        </div>
+            <div class="detail-item">
+                <label>Gravida</label>
+                <div class="detail-value">@(string.IsNullOrEmpty(Model.Gravida) ? "—" : Model.Gravida)</div>
+            </div>
 
-        <div class="detail-item">
-            <label>Occupation</label>
-            <div class="detail-value">@(string.IsNullOrEmpty(Model.Occupation) ? "—" : Model.Occupation)</div>
+            <div class="detail-item">
+                <label>TFAL (Term, Full-term, Abortions, Living)</label>
+                <div class="detail-value">@(string.IsNullOrEmpty(Model.TFAL) ? "—" : Model.TFAL)</div>
+            </div>
         </div>
     </div>
 

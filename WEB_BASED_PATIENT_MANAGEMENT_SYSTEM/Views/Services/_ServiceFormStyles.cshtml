@@ -1,526 +1,538 @@
-﻿<style>
-/* â”€â”€ Back link â”€â”€ */
-    .back-link {
-        color: #c0392b;
-        font-size: 1.1rem;
-        text-decoration: none;
-        margin-right: 0.5rem;
-    }
-    .back-link:hover { opacity: 0.75; }
+<style>
+    /* Clinical record forms — Prenatal / Antenatal, Newborn, Family Planning.
+       The paper-form structure is kept; colours and spacing use site.css tokens. */
 
-    /* â”€â”€ Service tile labels â”€â”€ */
-    .svc-section-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #9ca3af;
-        margin-bottom: 0.65rem;
+    /* ── Record card ── */
+    .pn-card {
+        font-family: var(--font-sans);
+        font-size: .8125rem;
+        color: var(--text-primary);
     }
-
-    /* â”€â”€ General Services: 4-col same as Family Planning, bundle spans 2 cols â”€â”€ */
-    .svc-grid-general {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
-    }
-    .svc-tile-wide { grid-column: span 2; }
-
-    /* â”€â”€ Family Planning: 4-col â”€â”€ */
-    .svc-grid-family {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
-    }
-
-    /* â”€â”€ Tile base â”€â”€ */
-    .svc-tile {
-        border: 1.5px solid #e2e8f0;
-        border-radius: 10px;
-        min-height: 80px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 0.75rem 1rem;
-        cursor: pointer;
-        background: #fff;
-        user-select: none;
-        transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .svc-tile:hover:not(.selected) {
-        border-color: #a0aec0;
-        background: #f8fafc;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    }
-    .svc-tile.selected {
-        border-color: #2F8F6B;
-        background: #EAF7F1;
-        box-shadow: 0 0 0 3px rgba(47,143,107,0.15);
-    }
-    .svc-name  { font-size: 0.875rem; font-weight: 700; color: #1a1a1a; line-height: 1.3; }
-    .svc-sub   { font-size: 0.72rem;  color: #ea580c; font-style: italic; margin-top: 2px; font-weight: 600; }
-    .svc-price { font-size: 0.82rem;  color: #b45309; font-weight: 700; margin-top: 5px; }
-    .svc-price.svc-free { color: #15803d; }
-
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       PRENATAL CARD
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-    .pn-card { font-family: 'Segoe UI', Arial, sans-serif; font-size: 0.82rem; color: #1a1a1a; }
 
     .pn-main-title {
+        position: relative;
+        margin: 0 0 1.25rem;
+        padding-bottom: .75rem;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: .08em;
         text-align: center;
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-decoration: underline;
-        letter-spacing: 0.07em;
-        margin-bottom: 1rem;
-        text-underline-offset: 3px;
+        color: var(--brand-dark);
+        border-bottom: 1px solid var(--border);
     }
 
-    .pn-section-tag {
-        display: inline-block;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: #226B50;
-        border: 1px solid #226B50;
-        border-radius: 4px;
-        padding: 1px 7px;
-        margin-bottom: 0.6rem;
+    .pn-main-title::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -2px;
+        width: 56px;
+        height: 3px;
+        margin-left: -28px;
+        border-radius: 3px;
+        background: var(--brand-primary);
     }
 
-    /* â”€â”€ Paper-form rows â”€â”€ */
+    /* ── Paper-form rows ── */
     .pn-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem 1.5rem;
-        margin-bottom: 0.45rem;
         align-items: flex-end;
+        gap: .5rem 1.5rem;
+        margin-bottom: .6rem;
     }
+
     .pn-field {
         display: flex;
         align-items: flex-end;
-        gap: 0.3rem;
+        gap: .4rem;
         min-width: 120px;
     }
+
     .pn-label {
-        white-space: nowrap;
+        padding-bottom: 3px;
+        font-size: .75rem;
         font-weight: 600;
-        font-size: 0.78rem;
-        color: #374151;
-        padding-bottom: 2px;
+        color: var(--text-secondary);
+        white-space: nowrap;
     }
+
+    .pn-input,
+    .pn-inline-input,
+    .nb-blank {
+        font-family: inherit;
+        font-size: .8125rem;
+        color: var(--text-primary);
+        background: transparent;
+        border: none;
+        border-bottom: 1.5px solid #A9B8A3;
+        border-radius: 4px 4px 0 0;
+        outline: none;
+        transition: border-color var(--transition), background-color var(--transition);
+    }
+
     .pn-input {
         flex: 1;
-        border: none;
-        border-bottom: 1.5px solid #374151;
-        outline: none;
-        background: transparent;
-        font-size: 0.82rem;
-        color: #1a1a1a;
-        padding: 1px 4px;
         min-width: 60px;
+        padding: 3px 6px;
     }
-    .pn-input:focus { border-bottom-color: #2F8F6B; }
 
-    /* â”€â”€ Aligned grid for NAME + vitals columns â”€â”€ */
-    .pn-grid-5 {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-        column-gap: 1rem;
-        row-gap: 0;
+    .pn-input:hover:not(:disabled),
+    .pn-inline-input:hover:not(:disabled),
+    .nb-blank:hover:not(:disabled) {
+        border-bottom-color: #7E9477;
     }
-    /* â”€â”€ Aligned grid for ADDRESS + GTPAL columns â”€â”€ */
-    .pn-grid-6 {
-        display: grid;
-        grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr;
-        column-gap: 1rem;
-        row-gap: 0;
-    }
-    .pn-gcell {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-    }
-    .pn-gcell-hdr {
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #6b7280;
-        text-align: center;
-        padding-bottom: 2px;
-    }
-    .pn-gcell-field {
-        display: flex;
-        align-items: flex-end;
-        gap: 0.3rem;
-        padding-bottom: 4px;
-        border-bottom: 1.5px solid #374151;
-    }
-    .pn-gcell-field .pn-label { border-bottom: none; }
-    .pn-gcell-field .pn-input { border-bottom: none; padding: 1px 4px; min-width: 0; }
 
-    /* â”€â”€ Radio labels â”€â”€ */
+    .pn-input:focus,
+    .pn-inline-input:focus,
+    .nb-blank:focus {
+        background: var(--brand-surface-soft);
+        border-bottom-color: var(--brand-action);
+    }
+
     .pn-radio-lbl {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        font-size: 0.8rem;
+        gap: 5px;
+        font-size: .8125rem;
         cursor: pointer;
     }
-    .ml-2 { margin-left: 0.5rem; }
 
-    /* â”€â”€ Divider â”€â”€ */
-    .pn-divider { border: none; border-top: 1.5px solid #e5e7eb; margin: 1.25rem 0; }
+    .ml-2 { margin-left: .5rem; }
 
-    /* â”€â”€ Visit table â”€â”€ */
-    .pn-visit-wrap { margin-top: 0.75rem; overflow-x: auto; }
+    hr.pn-divider {
+        height: 0;
+        margin: 1.75rem 0;
+        background: none;
+        border: 0;
+        border-top: 1px dashed var(--border-strong);
+        opacity: 1;
+    }
+
+    /* ── Visit / vitals / medication tables ── */
+    .pn-visit-wrap {
+        margin-top: .75rem;
+        overflow-x: auto;
+    }
+
     .pn-visit-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.8rem;
+        font-size: .8125rem;
     }
+
     .pn-visit-table th {
-        background: #f1f3f5;
-        border: 1px solid #d1d5db;
-        padding: 5px 8px;
-        font-weight: 700;
-        color: #374151;
+        padding: 7px 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .03em;
         text-align: left;
-        font-size: 0.76rem;
+        color: var(--text-secondary);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
     }
+
     .pn-visit-table td {
-        border: 1px solid #d1d5db;
-        padding: 3px 5px;
+        padding: 2px 4px;
+        background: var(--surface);
+        border: 1px solid var(--border);
     }
-    /* X button cell â€” no border so it appears outside the table visually */
+
+    /* Remove button cell sits visually outside the table */
     .pn-visit-table td.td-remove {
-        border: none;
+        width: 40px;
+        padding: 0 0 0 8px;
         background: transparent;
-        padding: 0 0 0 6px;
-        width: 120px;
+        border: none;
     }
 
     .pn-table-input {
         width: 100%;
-        border: none;
-        outline: none;
+        padding: 6px;
+        font-family: inherit;
+        font-size: .8125rem;
+        color: var(--text-primary);
         background: transparent;
-        font-size: 0.8rem;
-        color: #1a1a1a;
-        padding: 2px;
-    }
-    .visit-remove-btn {
-        background: #ef4444;
-        color: #fff;
         border: none;
         border-radius: 4px;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
+        outline: none;
+    }
+
+    .pn-table-input:focus {
+        background: var(--brand-surface-soft);
+        box-shadow: inset 0 0 0 1.5px var(--brand-action);
+    }
+
+    .visit-remove-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.85rem;
+        width: 28px;
+        height: 28px;
         padding: 0;
-        transition: background 0.15s;
-    }
-    .visit-remove-btn:hover { background: #dc2626; }
-    .pn-add-visit-row { text-align: right; margin-top: 0.5rem; }
-    .btn-add-visit {
-        background: #2F8F6B;
-        color: #fff;
-        border: none;
+        font-size: 1rem;
+        color: var(--danger);
+        background: var(--surface);
+        border: 1px solid var(--danger-border);
         border-radius: 6px;
-        padding: 6px 16px;
-        font-size: 0.82rem;
-        font-weight: 600;
         cursor: pointer;
-        transition: background 0.15s;
+        transition: background-color var(--transition), color var(--transition), border-color var(--transition);
     }
-    .btn-add-visit:hover { background: #226B50; }
 
-    /* â”€â”€ Assess / Classify table â”€â”€ */
+    .visit-remove-btn:hover {
+        color: #fff;
+        background: var(--danger);
+        border-color: var(--danger);
+    }
+
+    .visit-remove-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(180, 35, 24, .2);
+    }
+
+    .pn-add-visit-row {
+        margin-top: .6rem;
+        text-align: right;
+    }
+
+    .btn-add-visit {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 12px;
+        font-family: inherit;
+        font-size: .8125rem;
+        font-weight: 600;
+        color: var(--brand-text);
+        background: var(--brand-surface);
+        border: 1px solid #C9E7A0;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+    }
+
+    .btn-add-visit:hover {
+        color: #fff;
+        background: var(--brand-action);
+        border-color: var(--brand-action);
+    }
+
+    .btn-add-visit:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+
+    /* ── Assess / Classify table ── */
     .pn-assess-table {
         width: 100%;
+        margin-top: 1rem;
         border-collapse: collapse;
-        font-size: 0.8rem;
-        margin-top: 0.75rem;
+        font-size: .8125rem;
     }
+
     .pn-assess-table th {
-        background: #f8f9fa;
-        border: 1px solid #9ca3af;
-        padding: 6px 10px;
+        padding: 8px 12px;
+        font-size: .75rem;
         font-weight: 700;
-        font-size: 0.82rem;
-        color: #374151;
+        letter-spacing: .06em;
         text-align: center;
+        color: var(--brand-dark);
+        background: var(--brand-surface);
+        border: 1px solid #C9DDB5;
     }
+
+    /* height:1px lets the classify textarea stretch to the row height */
     .pn-assess-table td {
-        border: 1px solid #9ca3af;
-        padding: 8px 10px;
+        height: 1px;
+        padding: 10px 12px;
         vertical-align: top;
+        border: 1px solid var(--border);
     }
+
     .classify-col { width: 30%; }
-    .pn-full-cell { padding: 8px 10px; }
+    .pn-full-cell { padding: 10px 12px; }
 
     .pn-assess-title {
+        margin-bottom: 6px;
+        font-size: .8125rem;
         font-weight: 700;
-        font-size: 0.82rem;
-        margin-bottom: 5px;
-        color: #1f2937;
+        color: var(--text-primary);
     }
+
     .pn-assess-sub {
+        margin: 8px 0 4px;
+        font-size: .75rem;
         font-weight: 700;
-        font-size: 0.78rem;
-        color: #4b5563;
-        margin: 6px 0 3px;
+        letter-spacing: .02em;
+        color: var(--text-secondary);
     }
+
     .pn-check-lbl {
         display: flex;
         align-items: flex-start;
-        gap: 5px;
-        font-size: 0.8rem;
-        margin-bottom: 2px;
-        cursor: pointer;
-        line-height: 1.4;
-    }
-    .pn-check-lbl input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; }
-
-    .pn-classify {
-        width: 100%;
-        height: 100%;
-        min-height: 80px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        resize: vertical;
-        font-size: 0.8rem;
-        padding: 4px 6px;
-        background: #fafafa;
-        box-sizing: border-box;
-    }
-    /* Make classify td fill row height so textarea can stretch */
-    .pn-assess-table td {
-        border: 1px solid #9ca3af;
-        padding: 8px 10px;
-        vertical-align: top;
-        height: 1px; /* allows td to shrink-fit and textarea to fill with height:100% */
-    }
-
-    /* â”€â”€ Inline question fields â”€â”€ */
-    .pn-inline-field {
-        display: flex;
-        align-items: center;
-        gap: 5px;
+        gap: 6px;
         margin-bottom: 3px;
-        font-size: 0.8rem;
-        flex-wrap: wrap;
+        font-size: .8125rem;
+        line-height: 1.45;
+        cursor: pointer;
     }
-    .pn-inline-input {
-        border: none;
-        border-bottom: 1.5px solid #374151;
-        outline: none;
-        background: transparent;
-        font-size: 0.8rem;
-        flex: 1;
-        min-width: 100px;
-        padding: 1px 3px;
+
+    .pn-check-lbl input[type="checkbox"],
+    .pn-check-lbl input[type="radio"] {
+        flex-shrink: 0;
+        margin-top: 3px;
     }
-    .pn-inline-input:focus { border-bottom-color: #2F8F6B; }
-    .pn-short { flex: none; width: 110px; }
 
-    .pn-sub-heading { font-weight: 600; font-size: 0.79rem; margin: 5px 0 2px; color: #374151; }
-
+    .pn-classify,
     .pn-full-textarea {
         width: 100%;
-        height: 52px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        padding: 4px 6px;
+        padding: 6px 8px;
+        font-family: inherit;
+        font-size: .8125rem;
+        color: var(--text-primary);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
         resize: vertical;
-        background: #fafafa;
-        margin-bottom: 4px;
+        transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
     }
 
-    .pn-inline-row { flex-wrap: wrap; gap: 1rem; margin-top: 4px; margin-bottom: 4px; }
+    .pn-classify {
+        height: 100%;
+        min-height: 84px;
+    }
 
-    /* â”€â”€ Two-column layout inside cells â”€â”€ */
+    .pn-full-textarea {
+        height: 56px;
+        margin-bottom: 6px;
+    }
+
+    .pn-classify:focus,
+    .pn-full-textarea:focus {
+        outline: none;
+        background: var(--surface);
+        border-color: var(--brand-action);
+        box-shadow: var(--focus-ring);
+    }
+
+    /* ── Inline question fields ── */
+    .pn-inline-field {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+        font-size: .8125rem;
+    }
+
+    .pn-inline-input {
+        flex: 1;
+        min-width: 100px;
+        padding: 2px 4px;
+    }
+
+    .pn-short { flex: none; width: 110px; }
+
+    .pn-sub-heading {
+        margin: 6px 0 3px;
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .pn-inline-row { flex-wrap: wrap; gap: 1rem; margin: 4px 0; }
+
     .pn-two-col {
         display: grid;
         grid-template-columns: 1fr 1.5fr;
-        gap: 0.75rem;
-        font-size: 0.8rem;
+        gap: .75rem;
+        font-size: .8125rem;
     }
 
-    .pn-bullet-list { margin-top: 5px; font-size: 0.8rem; line-height: 1.7; color: #374151; }
-    .pn-indent { padding-left: 1.2rem; font-size: 0.79rem; color: #4b5563; line-height: 1.6; }
+    .pn-bullet-list { margin-top: 6px; font-size: .8125rem; line-height: 1.7; color: var(--text-secondary); }
+    .pn-indent { padding-left: 1.2rem; font-size: .8rem; line-height: 1.6; color: var(--text-secondary); }
 
-    /* â”€â”€ Generic form controls â”€â”€ */
-    .form-control, .form-select {
-        border-radius: 8px !important;
-        border: 1px solid #ccc;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #1a1a2e;
-        box-shadow: 0 0 0 2px rgba(26, 26, 46, 0.1);
-    }
-
-    /* â”€â”€ Newborn consent paragraph â”€â”€ */
+    /* ── Newborn consent ── */
     .nb-consent-text {
-        font-size: 0.82rem;
-        line-height: 1.8;
-        color: #1a1a1a;
         margin-bottom: 1rem;
+        font-size: .8125rem;
+        line-height: 2;
+        color: var(--text-primary);
     }
-    .nb-blank-wrap { display: inline-flex; align-items: flex-end; }
-    .nb-blank {
-        border: none;
-        border-bottom: 1.5px solid #374151;
-        outline: none;
-        background: transparent;
-        font-size: 0.82rem;
-        padding: 0 3px;
-    }
-    .nb-blank:focus { border-bottom-color: #2F8F6B; }
 
-    /* â”€â”€ Care Package table â”€â”€ */
+    .nb-blank-wrap { display: inline-flex; align-items: flex-end; }
+    .nb-blank { padding: 0 4px; }
+
     .nb-pkg-table {
         width: 100%;
-        border-collapse: collapse;
-        font-size: 0.82rem;
         margin-bottom: 1.25rem;
-    }
-    .nb-pkg-table td {
-        border: 1px solid #9ca3af;
-        padding: 7px 12px;
-        color: #1a1a1a;
-    }
-    .nb-pkg-price {
-        width: 160px;
-        text-align: right;
-        font-weight: 700;
-        color: #374151;
+        border-collapse: collapse;
+        font-size: .8125rem;
     }
 
-    /* â”€â”€ Signatures â”€â”€ */
-    .nb-sig-row {
-        display: flex;
-        gap: 3rem;
-        margin-top: 1rem;
+    .nb-pkg-table td {
+        padding: 9px 14px;
+        color: var(--text-primary);
+        border: 1px solid var(--border);
     }
+
+    .nb-pkg-price {
+        width: 170px;
+        text-align: right;
+        font-weight: 700;
+        color: var(--brand-dark);
+        background: var(--bg-subtle);
+    }
+
+    .nb-sig-row { display: flex; gap: 3rem; margin-top: 1rem; }
     .nb-sig-col { flex: 1; }
-    .nb-sig-line {
-        border-bottom: 1.5px solid #374151;
-        margin-top: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    /* â”€â”€ Family Planning Form CSS â”€â”€ */
+    .nb-sig-line { margin: 1.5rem 0 .25rem; border-bottom: 1.5px solid #A9B8A3; }
+
+    /* ── Family Planning Form 1 ── */
     .fp-header-row {
         display: flex;
         justify-content: space-between;
-        font-size: 0.75rem;
-        color: #4b5563;
-        margin-bottom: -4px;
+        margin-bottom: 4px;
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+        color: var(--text-muted);
     }
-    .fp-name-row {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-    .fp-name-col {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .fp-col-lbl {
-        font-size: 0.7rem;
-        color: #4b5563;
-        margin-top: 2px;
-    }
+
+    .fp-name-row { display: flex; gap: .6rem; margin-bottom: .5rem; }
+    .fp-name-col { display: flex; flex-direction: column; align-items: center; }
+    .fp-col-lbl { margin-top: 3px; font-size: .7rem; color: var(--text-muted); }
+
     .fp-client-box {
-        border: 1.5px solid #374151;
-        padding: 8px 12px;
-        margin-top: 0.75rem;
         display: flex;
         gap: 1.5rem;
+        margin-top: 1rem;
+        padding: 12px 16px;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 10px;
     }
+
     .fp-client-left {
         flex: 1;
-        border-right: 1.5px solid #e5e7eb;
         padding-right: 1rem;
+        border-right: 1px solid var(--border);
     }
+
     .fp-client-right { flex: 2; }
+
     .fp-method-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: repeat(4, 1fr);
         gap: 2px 0;
     }
+
     .fp-section-hdr {
-        background: #f3f4f6;
-        border: 1px solid #9ca3af;
-        padding: 4px 8px;
-        font-size: 0.85rem;
+        margin: 1.5rem 0 .6rem;
+        padding: 7px 12px;
+        font-size: .8125rem;
         font-weight: 700;
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
+        letter-spacing: .03em;
+        color: var(--brand-dark);
+        background: var(--brand-surface);
+        border-left: 3px solid var(--brand-primary);
+        border-radius: 0 6px 6px 0;
     }
-    .fp-yn-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.8rem;
-    }
-    .fp-yn-table th {
-        font-weight: normal;
-        color: #6b7280;
-        padding-bottom: 4px;
-    }
-    .fp-yn-table td {
-        padding: 6px 0;
-        border-bottom: 1px solid #f3f4f6;
-    }
-    .fp-yn-cell {
-        width: 60px;
-        text-align: center;
-    }
+
+    .fp-yn-table,
     .fp-sti-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.8rem;
+        font-size: .8125rem;
     }
+
+    .fp-yn-table th,
+    .fp-sti-table th {
+        padding-bottom: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
     .fp-sti-table th {
         text-align: left;
-        font-weight: normal;
-        color: #6b7280;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
     }
+
+    .fp-yn-table td,
     .fp-sti-table td {
-        padding: 8px 4px;
-        border-bottom: 1px solid #f3f4f6;
+        padding: 7px 4px;
+        border-bottom: 1px solid var(--border-subtle);
     }
+
+    .fp-yn-table tr:hover td,
+    .fp-sti-table tr:hover td {
+        background: #FAFDF6;
+    }
+
+    .fp-yn-cell { width: 60px; text-align: center; }
+
     .fp-pe-two-col {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 1.5rem;
     }
+
     .fp-pe-group {
-        margin-bottom: 0.75rem;
-        font-size: 0.8rem;
         display: flex;
         flex-direction: column;
         gap: 2px;
+        margin-bottom: .85rem;
+        font-size: .8125rem;
     }
+
     .fp-pe-title {
+        margin-bottom: 3px;
+        font-size: .8rem;
         font-weight: 700;
-        font-size: 0.8rem;
-        margin-bottom: 2px;
+        color: var(--text-primary);
     }
+
     .fp-ack-box {
-        border: 1px solid #9ca3af;
-        padding: 1rem;
-        margin-top: 0.75rem;
+        margin-top: 1rem;
+        padding: 1rem 1.25rem;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+
+    /* ── Read-only record view (disabled fieldset on ViewRecord) ── */
+    .record-view input:disabled,
+    .record-view select:disabled,
+    .record-view textarea:disabled {
+        color: var(--text-primary);
+        -webkit-text-fill-color: var(--text-primary);
+        opacity: 1;
+        cursor: default;
+    }
+
+    .record-view textarea:disabled { resize: none; }
+
+    .record-view input[type="checkbox"]:disabled,
+    .record-view input[type="radio"]:disabled {
+        opacity: .85;
+    }
+
+    @@media (max-width: 767.98px) {
+        .pn-two-col,
+        .fp-pe-two-col { grid-template-columns: 1fr; }
+
+        .fp-client-box { flex-direction: column; }
+
+        .fp-client-left {
+            padding: 0 0 1rem;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .fp-method-grid { grid-template-columns: repeat(2, 1fr); }
+        .nb-sig-row { flex-direction: column; gap: 1rem; }
+        .classify-col { width: 38%; }
     }
 </style>

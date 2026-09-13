@@ -4,12 +4,16 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
-    <h1>Service Details</h1>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Services
+        </a>
+        <h1>Service Details</h1>
+    </div>
 </div>
 
-<div class="content-card" style="max-width: 760px;">
-    <div class="detail-grid detail-grid-spaced p-4">
+<div class="content-card card-pad card-narrow">
+    <div class="detail-grid">
         <div class="detail-item">
             <label>Patient</label>
             <div class="detail-value">@(Model.Patient?.FullName ?? "Unknown")</div>
@@ -24,8 +28,10 @@
         </div>
     </div>
 
-    <div class="form-actions px-4 pb-4">
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-dark">Edit</a>
-        <a asp-action="Index" class="btn-cancel ms-2">Back to List</a>
+    <div class="form-actions">
+        <a asp-action="Index" class="btn-cancel">Back to List</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-dark">
+            <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+        </a>
     </div>
 </div>

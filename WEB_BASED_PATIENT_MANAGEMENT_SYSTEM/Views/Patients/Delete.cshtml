@@ -4,14 +4,19 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link">
-        <i class="bi bi-arrow-left"></i> Back to Patient List
-    </a>
-    <h1>Delete Patient</h1>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Patient List
+        </a>
+        <h1>Delete Patient</h1>
+    </div>
 </div>
 
-<div class="content-card">
-    <p>Are you sure you want to delete the following patient record? All related services, appointments, consultations, and medical records will also be permanently deleted.</p>
+<div class="content-card card-pad card-narrow">
+    <div class="callout callout-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <p>Are you sure you want to delete the following patient record? All related services, appointments, consultations, and medical records will also be permanently deleted.</p>
+    </div>
 
     <!-- Summary of patient being deleted -->
     <div class="detail-grid detail-grid-spaced">
@@ -36,9 +41,9 @@
     <form asp-action="Delete" method="post" class="form-actions">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
-        <button type="submit" class="btn-primary-dark btn-delete-confirm">
-            <i class="bi bi-trash"></i> Confirm Delete
-        </button>
         <a asp-action="Index" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-primary-dark btn-delete-confirm">
+            <i class="bi bi-trash" aria-hidden="true"></i> Confirm Delete
+        </button>
     </form>
 </div>

@@ -4,17 +4,20 @@
 }
 
 <div class="modal fade" id="viewServiceModal" tabindex="-1" aria-labelledby="viewServiceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:620px;">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
-            <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <div>
-                    <h5 class="modal-title fw-bold" id="viewServiceModalLabel">Service Details</h5>
-                    <p class="text-muted small mb-0" id="viewServiceSubtitle"></p>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-clipboard2-pulse"></i></span>
+                    <div>
+                        <h5 class="modal-title" id="viewServiceModalLabel">Service Details</h5>
+                        <p class="modal-subtitle" id="viewServiceSubtitle"></p>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body pt-3 px-4 pb-2">
+            <div class="modal-body">
                 <div class="detail-grid">
                     <div class="detail-item">
                         <label>Patient</label>
@@ -31,11 +34,11 @@
                 </div>
             </div>
 
-            <div class="modal-footer border-0 pt-3 pb-4 px-4">
-                <button type="button" id="viewServiceEditButton" class="btn-primary-dark" data-bs-dismiss="modal" disabled>
-                    <i class="bi bi-pencil"></i> Edit
-                </button>
+            <div class="modal-footer">
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="viewServiceEditButton" class="btn-primary-dark" data-bs-dismiss="modal" disabled>
+                    <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+                </button>
             </div>
         </div>
     </div>
@@ -43,38 +46,44 @@
 
 <div class="modal fade" id="editServiceModal" tabindex="-1" aria-labelledby="editServiceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+        <div class="modal-content">
             <form asp-controller="Services" asp-action="Edit" method="post" id="editServiceForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="editServiceId" />
                 <input type="hidden" name="serviceName" id="editSelectedServiceInput" />
 
-                <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <div>
-                        <h5 class="modal-title fw-bold" id="editServiceModalLabel">Edit Service</h5>
-                        <p class="text-muted small mb-0">Update the selected patient or service.</p>
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <span class="modal-icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
+                        <div>
+                            <h5 class="modal-title" id="editServiceModalLabel">Edit Service</h5>
+                            <p class="modal-subtitle">Update the selected patient or service.</p>
+                        </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <div class="modal-body pt-3 px-4 pb-2">
-                    <div id="editServiceError" class="alert alert-danger d-none mb-3"></div>
+                <div class="modal-body">
+                    <div id="editServiceError" class="alert alert-danger d-none mb-3" role="alert"></div>
 
-                    <div class="mb-4" style="max-width:420px;">
-                        <label for="editPatientId" class="form-label small fw-semibold">
-                            Patient <span class="text-danger">*</span>
-                        </label>
-                        <select name="patientId" id="editPatientId" class="form-select" required>
-                            <option value="">-- Select registered patient --</option>
-                            @foreach (var patient in patients)
-                            {
-                                <option value="@patient.Id">@patient.FullName</option>
-                            }
-                        </select>
+                    <div class="form-section">
+                        <h2 class="form-section-heading"><i class="bi bi-person" aria-hidden="true"></i> Patient</h2>
+                        <div class="svc-patient-select">
+                            <label for="editPatientId" class="form-label">
+                                Patient <span class="text-danger">*</span>
+                            </label>
+                            <select name="patientId" id="editPatientId" class="form-select" required>
+                                <option value="">-- Select registered patient --</option>
+                                @foreach (var patient in patients)
+                                {
+                                    <option value="@patient.Id">@patient.FullName</option>
+                                }
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <h2 class="svc-section-label mb-3" style="font-size:0.78rem;">SELECT SERVICE</h2>
+                    <div class="form-section">
+                        <h2 class="form-section-heading"><i class="bi bi-grid" aria-hidden="true"></i> Select Service</h2>
 
                         <div class="svc-section-label">General Services</div>
                         <div class="svc-grid svc-grid-general">
@@ -102,10 +111,10 @@
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 pt-3 pb-4 px-4">
+                <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn-primary-dark">
-                        <i class="bi bi-check-lg"></i> Save Changes
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Save Changes
                     </button>
                 </div>
             </form>

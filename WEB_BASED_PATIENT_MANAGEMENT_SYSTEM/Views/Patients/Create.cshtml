@@ -6,99 +6,114 @@
 }
 
 <div class="form-page-header">
-    <h1>Add New Patient</h1>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Patient List
+        </a>
+        <h1>Add New Patient</h1>
+    </div>
 </div>
 
 
-<div class="content-card">
+<div class="content-card card-pad">
     <form asp-action="Create" method="post" class="patient-form">
         @Html.AntiForgeryToken()
 
-        <!-- Patient fields -->
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label asp-for="FullName" class="form-label"></label>
-                <input asp-for="FullName" class="form-control" placeholder="Enter full name" required />
-                <span asp-validation-for="FullName" class="text-danger"></span>
+        <!-- Personal information -->
+        <div class="form-section">
+            <h2 class="form-section-heading"><i class="bi bi-person-vcard" aria-hidden="true"></i> Personal Information</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label"></label>
+                    <input asp-for="FullName" class="form-control" placeholder="Enter full name" required />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Address" class="form-label"></label>
+                    <input asp-for="Address" class="form-control" placeholder="Enter address" required />
+                    <span asp-validation-for="Address" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="DateOfBirth" class="form-label"></label>
+                    <input asp-for="DateOfBirth" class="form-control" type="date" id="dateOfBirth" min="@minimumDateOfBirth" max="@maximumDateOfBirth" lang="en-GB" required />
+                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Age" class="form-label"></label>
+                    <input asp-for="Age" class="form-control age-readonly" id="ageField" type="number" min="0" max="130" readonly />
+                    <span asp-validation-for="Age" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="MaritalStatus" class="form-label"></label>
+                    <select asp-for="MaritalStatus" class="form-select" required>
+                        <option value="">-- Select --</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Separated">Separated</option>
+                    </select>
+                    <span asp-validation-for="MaritalStatus" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Religion" class="form-label"></label>
+                    <input asp-for="Religion" class="form-control" placeholder="Enter religion" required />
+                    <span asp-validation-for="Religion" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Occupation" class="form-label"></label>
+                    <input asp-for="Occupation" class="form-control" placeholder="Enter occupation" required />
+                    <span asp-validation-for="Occupation" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="ContactNo" class="form-label"></label>
+                    <input asp-for="ContactNo" class="form-control" placeholder="Enter contact number" required />
+                    <span asp-validation-for="ContactNo" class="text-danger"></span>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label asp-for="Address" class="form-label"></label>
-                <input asp-for="Address" class="form-control" placeholder="Enter address" required />
-                <span asp-validation-for="Address" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="DateOfBirth" class="form-label"></label>
-                <input asp-for="DateOfBirth" class="form-control" type="date" id="dateOfBirth" min="@minimumDateOfBirth" max="@maximumDateOfBirth" lang="en-GB" required />
-                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Age" class="form-label"></label>
-                <input asp-for="Age" class="form-control age-readonly" id="ageField" type="number" min="0" max="130" readonly />
-                <span asp-validation-for="Age" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="MaritalStatus" class="form-label"></label>
-                <select asp-for="MaritalStatus" class="form-select" required>
-                    <option value="">-- Select --</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Widowed">Widowed</option>
-                    <option value="Separated">Separated</option>
-                </select>
-                <span asp-validation-for="MaritalStatus" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Religion" class="form-label"></label>
-                <input asp-for="Religion" class="form-control" placeholder="Enter religion" required />
-                <span asp-validation-for="Religion" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="LMP" class="form-label"></label>
-                <input asp-for="LMP" class="form-control" type="date" required />
-                <span asp-validation-for="LMP" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="AOG" class="form-label"></label>
-                <input asp-for="AOG" class="form-control" placeholder="Enter weeks" required />
-                <span asp-validation-for="AOG" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="EDC" class="form-label"></label>
-                <input asp-for="EDC" class="form-control" type="date" required />
-                <span asp-validation-for="EDC" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Menarche" class="form-label"></label>
-                <input asp-for="Menarche" class="form-control" placeholder="Age at first menstruation" required />
-                <span asp-validation-for="Menarche" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="ContactNo" class="form-label"></label>
-                <input asp-for="ContactNo" class="form-control" placeholder="Enter contact number" required />
-                <span asp-validation-for="ContactNo" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Gravida" class="form-label"></label>
-                <input asp-for="Gravida" class="form-control" placeholder="Number of pregnancies" required />
-                <span asp-validation-for="Gravida" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="TFAL" class="form-label"></label>
-                <input asp-for="TFAL" class="form-control" placeholder="e.g. 2-1-0-1" required />
-                <span asp-validation-for="TFAL" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Occupation" class="form-label"></label>
-                <input asp-for="Occupation" class="form-control" placeholder="Enter occupation" required />
-                <span asp-validation-for="Occupation" class="text-danger"></span>
+        </div>
+
+        <!-- Obstetric information -->
+        <div class="form-section">
+            <h2 class="form-section-heading"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Obstetric Information</h2>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="LMP" class="form-label"></label>
+                    <input asp-for="LMP" class="form-control" type="date" required />
+                    <span asp-validation-for="LMP" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="AOG" class="form-label"></label>
+                    <input asp-for="AOG" class="form-control" placeholder="Enter weeks" required />
+                    <span asp-validation-for="AOG" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="EDC" class="form-label"></label>
+                    <input asp-for="EDC" class="form-control" type="date" required />
+                    <span asp-validation-for="EDC" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Menarche" class="form-label"></label>
+                    <input asp-for="Menarche" class="form-control" placeholder="Age at first menstruation" required />
+                    <span asp-validation-for="Menarche" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Gravida" class="form-label"></label>
+                    <input asp-for="Gravida" class="form-control" placeholder="Number of pregnancies" required />
+                    <span asp-validation-for="Gravida" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="TFAL" class="form-label"></label>
+                    <input asp-for="TFAL" class="form-control" placeholder="e.g. 2-1-0-1" required />
+                    <span asp-validation-for="TFAL" class="text-danger"></span>
+                </div>
             </div>
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn-primary-dark">
-                <i class="bi bi-check-lg"></i> Save Patient
-            </button>
             <a asp-action="Index" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-primary-dark">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Save Patient
+            </button>
         </div>
     </form>
 </div>

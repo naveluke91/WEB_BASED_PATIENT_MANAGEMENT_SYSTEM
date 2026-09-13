@@ -11,51 +11,61 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
-    <h1>Edit Service</h1>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Services
+        </a>
+        <h1>Edit Service</h1>
+    </div>
 </div>
 
-<div class="content-card" style="max-width: 760px;">
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="p-4">
+<div class="content-card card-pad card-narrow">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
 
-        <div class="mb-3">
-            <label class="form-label">Patient</label>
-            <select name="patientId" class="form-select" required>
-                @foreach (var patient in patients)
-                {
-                    if (patient.Id == Model.PatientId)
+        <div class="row g-3">
+            <div class="col-12">
+                <label for="servicePatientSelect" class="form-label">Patient</label>
+                <select name="patientId" id="servicePatientSelect" class="form-select" required>
+                    @foreach (var patient in patients)
                     {
-                        <option value="@patient.Id" selected>@patient.FullName</option>
+                        if (patient.Id == Model.PatientId)
+                        {
+                            <option value="@patient.Id" selected>@patient.FullName</option>
+                        }
+                        else
+                        {
+                            <option value="@patient.Id">@patient.FullName</option>
+                        }
                     }
-                    else
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label for="serviceNameSelect" class="form-label">Service</label>
+                <select name="serviceName" id="serviceNameSelect" class="form-select" required>
+                    @foreach (var serviceName in serviceNames)
                     {
-                        <option value="@patient.Id">@patient.FullName</option>
+                        if (serviceName == Model.ServiceName)
+                        {
+                            <option value="@serviceName" selected>@serviceName</option>
+                        }
+                        else
+                        {
+                            <option value="@serviceName">@serviceName</option>
+                        }
                     }
-                }
-            </select>
+                </select>
+                <div class="form-text">The price is set automatically from the selected service.</div>
+            </div>
         </div>
 
-        <div class="mb-4">
-            <label class="form-label">Service</label>
-            <select name="serviceName" class="form-select" required>
-                @foreach (var serviceName in serviceNames)
-                {
-                    if (serviceName == Model.ServiceName)
-                    {
-                        <option value="@serviceName" selected>@serviceName</option>
-                    }
-                    else
-                    {
-                        <option value="@serviceName">@serviceName</option>
-                    }
-                }
-            </select>
-            <small class="text-muted">The price is set automatically from the selected service.</small>
+        <div class="form-actions">
+            <a asp-action="Index" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-primary-dark">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Save Changes
+            </button>
         </div>
-
-        <button type="submit" class="btn-primary-dark">Save Changes</button>
-        <a asp-action="Index" class="btn-cancel ms-2">Cancel</a>
     </form>
 </div>

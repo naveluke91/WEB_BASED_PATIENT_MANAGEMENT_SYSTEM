@@ -1,0 +1,24 @@
+@* Shows the success / error messages the controllers already place in TempData. *@
+@{
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+@if (!string.IsNullOrWhiteSpace(successMessage) || !string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="page-alerts">
+        @if (!string.IsNullOrWhiteSpace(successMessage))
+        {
+            <div class="alert alert-success" role="status">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>@successMessage</span>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>@errorMessage</span>
+            </div>
+        }
+    </div>
+}

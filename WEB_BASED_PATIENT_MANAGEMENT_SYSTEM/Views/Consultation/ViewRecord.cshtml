@@ -5,17 +5,27 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
-    <h1>Consultation Record</h1>
-    @if (consultation?.Patient != null)
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Consultation
+        </a>
+        <h1>Consultation Record</h1>
+        @if (consultation?.Patient != null)
+        {
+            <p class="subtitle">@consultation.Patient.FullName &middot; @consultation.ServiceType</p>
+        }
+    </div>
+    @if (consultation != null)
     {
-        <p class="subtitle">@consultation.Patient.FullName &middot; @consultation.ServiceType</p>
+        <div class="page-actions">
+            <span class="status-pill status-pill-completed">@consultation.Status</span>
+        </div>
     }
 </div>
 
 @if (consultation != null)
 {
-    <fieldset disabled="disabled" style="border:0; margin:0; padding:0;">
+    <fieldset disabled="disabled" class="record-fieldset record-view">
         <div class="content-card mb-4 pn-card" style="display:@(consultation.ServiceType == "Prenatal" ? "block" : "none");">
             <partial name="~/Views/Services/_PrenatalForm.cshtml" model="Model.ServiceForm" />
         </div>
@@ -28,7 +38,7 @@
     </fieldset>
 }
 
-<div class="form-actions">
+<div class="form-actions form-actions-bare">
     <a asp-action="Index" class="btn-cancel">Back to Consultation List</a>
 </div>
 

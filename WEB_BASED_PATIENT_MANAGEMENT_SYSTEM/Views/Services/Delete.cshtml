@@ -4,16 +4,25 @@
 }
 
 <div class="form-page-header">
-    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i></a>
-    <h1>Delete Service</h1>
+    <div class="page-heading">
+        <a asp-action="Index" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Services
+        </a>
+        <h1>Delete Service</h1>
+    </div>
 </div>
 
-<div class="content-card p-4" style="max-width: 760px;">
-    <p>Delete the <strong>@Model.ServiceName</strong> service selected by <strong>@(Model.Patient?.FullName ?? "this patient")</strong>?</p>
+<div class="content-card card-pad card-narrow">
+    <div class="callout callout-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <p>Delete the <strong>@Model.ServiceName</strong> service selected by <strong>@(Model.Patient?.FullName ?? "this patient")</strong>?</p>
+    </div>
 
-    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="form-actions mt-4">
+    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="form-actions">
         @Html.AntiForgeryToken()
-        <button type="submit" class="btn-primary-dark btn-delete-confirm">Confirm Delete</button>
-        <a asp-action="Index" class="btn-cancel ms-2">Cancel</a>
+        <a asp-action="Index" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-primary-dark btn-delete-confirm">
+            <i class="bi bi-trash" aria-hidden="true"></i> Confirm Delete
+        </button>
     </form>
 </div>
