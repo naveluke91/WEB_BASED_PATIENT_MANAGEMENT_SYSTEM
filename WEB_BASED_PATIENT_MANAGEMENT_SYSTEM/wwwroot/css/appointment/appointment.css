@@ -3,6 +3,34 @@
    Views/Appointments/Index.cshtml (appointment list and modals).
    ============================================================ */
 
+/* ---- Appointments table column widths ----
+   Patient · Contact · Date · Time · Status · Actions · In Process.
+   Shares of the table width; a column is never squeezed below its content. */
+.data-table thead th:nth-child(1) {
+    width: 16%;
+}
+
+.data-table thead th:nth-child(2) {
+    width: 12%;
+}
+
+.data-table thead th:nth-child(3),
+.data-table thead th:nth-child(4) {
+    width: 9%;
+}
+
+.data-table thead th:nth-child(5) {
+    width: 13%;
+}
+
+.data-table thead th:nth-child(6) {
+    width: 24%;
+}
+
+.data-table thead th:nth-child(7) {
+    width: 17%;
+}
+
 /* ---- "Go to Consultation" link in the In Process column ---- */
 .btn-go-consultation {
     display: inline-flex;

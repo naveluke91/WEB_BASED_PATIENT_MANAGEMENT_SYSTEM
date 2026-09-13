@@ -17,6 +17,33 @@
     white-space: nowrap;
 }
 
+/* ---- Patients table column widths ----
+   Patient Name · Age · Contact · AOG · EDC · Action.
+   Shares of the table width; a column is never squeezed below its content. */
+.data-table thead th:nth-child(1) {
+    width: 22%;
+}
+
+.data-table thead th:nth-child(2) {
+    width: 7%;
+}
+
+.data-table thead th:nth-child(3) {
+    width: 13%;
+}
+
+.data-table thead th:nth-child(4) {
+    width: 15%;
+}
+
+.data-table thead th:nth-child(5) {
+    width: 19%;
+}
+
+.data-table thead th:nth-child(6) {
+    width: 24%;
+}
+
 /* Patient details show three columns on wider screens */
 @media (min-width: 768px) {
     .detail-grid-3 {

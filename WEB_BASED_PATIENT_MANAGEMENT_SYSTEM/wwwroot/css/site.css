@@ -508,68 +508,28 @@ input[type="radio"] {
     background: var(--border-subtle);
 }
 
-/* Field grids (Bootstrap .row.g-3 inside modals and form cards).
-   Each label + control column becomes a subgrid of three shared tracks:
-   label / control / help or validation text. A label that wraps to two
-   lines therefore never pushes its control below the neighbouring
-   controls. Column counts follow the width of the modal body or card
-   (container queries), not the viewport. Browsers without subgrid or
-   :has() keep the default Bootstrap row layout. */
-@supports (grid-template-rows: subgrid) and selector(:has(*)) {
-    :is(.modal-body, .content-card) .row.g-3 {
-        display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-        grid-auto-rows: auto auto minmax(var(--space-4), auto);
-        column-gap: var(--space-4);
-        row-gap: 0;
-        margin: 0 0 calc(-1 * var(--space-4));
-    }
+/* Modal field rows (Bootstrap .row.g-3 inside modals).
+   Plain Bootstrap columns, each laid out as a flex column with its content
+   at the bottom. Columns in the same row stretch to the same height, so a
+   label that wraps to two lines (EDC, TFAL) never pushes its control below
+   the neighbouring controls. Uses only flexbox (no subgrid, :has() or
+   container queries) for stable rendering in every browser. */
+.modal-body .row.g-3 > [class*="col-"] {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
 
-    :is(.modal-body, .content-card) .row.g-3 > * {
-        grid-column: 1 / -1;
-        grid-row: span 3;
-        width: auto;
-        max-width: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    /* Label + control column: shares its row's label and control tracks */
-    :is(.modal-body, .content-card) .row.g-3 > :has(> .form-label + :is(.form-control, .form-select)) {
-        display: grid;
-        grid-template-rows: subgrid;
-    }
-
-    /* Short labels sit directly above their control */
-    :is(.modal-body, .content-card) .row.g-3 > * > .form-label {
-        align-self: end;
-    }
-
-    :is(.modal-body, .content-card) .row.g-3 > * > :is(.form-control, .form-select) {
-        align-self: start;
-    }
-
-    :is(.modal-body, .content-card) .row.g-3 > * > :is(.form-text, .field-validation-error) {
-        margin-bottom: var(--space-3);
-    }
-
-    /* Other full-width blocks (choice cards, nested field groups) keep the row gap */
-    :is(.modal-body, .content-card) .row.g-3 > :not(:has(> .form-label + :is(.form-control, .form-select))) {
-        padding-bottom: var(--space-4);
-    }
-
-    /* Two columns once the modal/card has room, three for .col-md-4 fields */
-    @container (min-width: 420px) {
-        :is(.modal-body, .content-card) .row.g-3 > :is(.col-sm-6, .col-md-6, .col-md-4) {
-            grid-column: span 6;
-        }
-    }
-
-    @container (min-width: 640px) {
-        :is(.modal-body, .content-card) .row.g-3 > .col-md-4 {
-            grid-column: span 4;
-        }
-    }
+/* A short hint under a control (e.g. "Checking available slots...") sits
+   just below it without changing the row height, so neighbouring controls
+   stay aligned while it is visible. */
+.modal-body .row.g-3 > [class*="col-"] > .form-text {
+    position: absolute;
+    top: 100%;
+    left: calc(var(--bs-gutter-x) * 0.5);
+    right: calc(var(--bs-gutter-x) * 0.5);
+    margin-top: 4px;
 }
 
 /* Validation (server tag helpers + jQuery unobtrusive validation) */
@@ -690,10 +650,8 @@ input[type="radio"] {
     color: var(--text-primary);
 }
 
-/* The body is a size container so field grids follow the modal's width */
 .modal-body {
     padding: var(--space-5) var(--space-6);
-    container-type: inline-size;
 }
 
 .modal-footer {
@@ -1151,8 +1109,10 @@ input[type="radio"] {
     font-size: var(--fs-base);
 }
 
-/* Header text is centred in every list. Body cells align by content:
-   text left; short values, status and actions centred. */
+/* Alignment is the same in every list: the first column (the name) is
+   left-aligned and every other column is centred, header and data alike,
+   so each value sits directly under its heading. Column widths are set per
+   table in the module CSS (e.g. css/services/services.css). */
 .data-table thead th {
     padding: 12px var(--space-4);
     font-size: var(--fs-xs);
@@ -1172,6 +1132,7 @@ input[type="radio"] {
 .data-table tbody td {
     padding: 12px var(--space-4);
     line-height: 1.45;
+    text-align: center;
     color: var(--text-primary);
     vertical-align: middle;
     border-bottom: 1px solid var(--border-subtle);
@@ -1186,38 +1147,24 @@ input[type="radio"] {
     background: #FAFDF6;
 }
 
-/* First and last columns line up with the card header padding */
-.data-table :is(th, td):first-child {
+/* First column: header and data left-aligned, lined up with the card
+   header padding. The last column keeps the same padding on the right. */
+.data-table th:first-child,
+.data-table td:first-child {
     padding-left: var(--space-5);
+    text-align: left;
 }
 
-.data-table :is(th, td):last-child {
+.data-table th:last-child,
+.data-table td:last-child {
     padding-right: var(--space-5);
 }
 
-/* Column sizing
-   .col-fit      short values (Age, Date, Time, Price) size to their content
-   .col-status   status badge: compact, but never squeezed
-   .col-actions  row buttons: room for the buttons plus breathing space
-   Text columns without a class share the remaining width. */
-.data-table .col-fit {
-    width: 1%;
-    white-space: nowrap;
-}
-
-.data-table .col-status {
-    width: 140px;
-    white-space: nowrap;
-}
-
+/* Short values, status badges and row buttons stay on one line */
+.data-table .col-fit,
+.data-table .col-status,
 .data-table .col-actions {
-    width: 190px;
     white-space: nowrap;
-}
-
-.data-table td:is(.col-fit, .col-status, .col-actions),
-.data-table td.cell-center {
-    text-align: center;
 }
 
 /* .patient-row is the row hook used by every list's search script */
@@ -1225,10 +1172,11 @@ input[type="radio"] {
     display: none;
 }
 
+/* Names may wrap on desktop/tablet so a long name never pushes the table
+   wider than its card (they stay on one line on phones, where tables scroll) */
 .cell-name {
     font-weight: 600;
     color: var(--text-primary);
-    white-space: nowrap;
 }
 
 .cell-nowrap {
@@ -1586,6 +1534,23 @@ input[type="radio"] {
     .main-content {
         margin-left: 76px;
     }
+
+    /* Slightly tighter table cells; long text (service names, headers) wraps */
+    .data-table thead th,
+    .data-table tbody td {
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+    }
+
+    .data-table th:first-child,
+    .data-table td:not(.table-empty):first-child {
+        padding-left: var(--space-4);
+    }
+
+    .data-table th:last-child,
+    .data-table td:not(.table-empty):last-child {
+        padding-right: var(--space-4);
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -1613,8 +1578,9 @@ input[type="radio"] {
         grid-template-columns: 1fr;
     }
 
-    /* Tables scroll horizontally on small screens, so keep headers on one line */
-    .data-table thead th {
+    /* Tables scroll horizontally on small screens, so keep headers and names on one line */
+    .data-table thead th,
+    .data-table .cell-name {
         white-space: nowrap;
     }
 
@@ -1729,19 +1695,5 @@ input[type="radio"] {
 
     .card-header-row {
         padding: var(--space-4);
-    }
-
-    .data-table thead th,
-    .data-table tbody td {
-        padding-left: var(--space-3);
-        padding-right: var(--space-3);
-    }
-
-    .data-table :is(th, td):not(.table-empty):first-child {
-        padding-left: var(--space-4);
-    }
-
-    .data-table :is(th, td):not(.table-empty):last-child {
-        padding-right: var(--space-4);
     }
 }

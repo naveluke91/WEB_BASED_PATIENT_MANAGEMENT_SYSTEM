@@ -5,6 +5,23 @@
    ============================================================ */
 
 /* ---- Consultation queue table ---- */
+/* Column widths: Name · Contact · Visit Type · Service · Status · Action.
+   Shares of the table width; a column is never squeezed below its content. */
+.data-table thead th:nth-child(1) {
+    width: 19%;
+}
+
+.data-table thead th:nth-child(2),
+.data-table thead th:nth-child(3),
+.data-table thead th:nth-child(5) {
+    width: 13%;
+}
+
+.data-table thead th:nth-child(4),
+.data-table thead th:nth-child(6) {
+    width: 21%;
+}
+
 .visit-type {
     display: inline-flex;
     align-items: center;
