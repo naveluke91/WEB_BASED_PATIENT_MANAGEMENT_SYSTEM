@@ -995,6 +995,12 @@ button.nav-item {
     margin-bottom: var(--space-6);
 }
 
+/* List pages show only a one-line title, so it is centred against the action
+   buttons instead of sitting on their bottom edge. */
+.page-header {
+    align-items: center;
+}
+
 .page-heading {
     min-width: 0;
 }

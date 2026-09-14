@@ -1,6 +1,6 @@
 @model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.UserManagementPageViewModel
 @{
-    ViewData["Title"] = "User Management";
+    ViewData["Title"] = "Users";
 
     // Set by UserManagementController when a form was rejected: reopens that modal.
     var reopenForm = TempData["UserForm"] as string;
@@ -12,8 +12,7 @@
 
 <div class="page-header">
     <div class="page-heading">
-        <h1>User Management</h1>
-        <p class="subtitle">Add, edit and delete the accounts that can sign in to the system.</p>
+        <h1>Users</h1>
     </div>
     <div class="page-actions">
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#addUserModal">
