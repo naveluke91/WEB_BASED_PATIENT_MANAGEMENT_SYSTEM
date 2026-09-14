@@ -58,6 +58,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 })
                 .ToList();
 
+            // Completed consultations link to Billing. One that already has a
+            // payment opens that transaction instead of adding another one.
+            var paymentIdsByConsultation = _context.Payments
+                .AsNoTracking()
+                .Select(p => new { p.ConsultationId, p.Id })
+                .ToDictionary(p => p.ConsultationId, p => p.Id);
+
+            foreach (var item in queue.Where(i => i.ConsultationId.HasValue))
+            {
+                item.PaymentId = paymentIdsByConsultation.TryGetValue(item.ConsultationId!.Value, out var paymentId)
+                    ? paymentId
+                    : null;
+            }
+
             var appointmentIdsWithConsultation = consultations
                 .Where(c => c.AppointmentId.HasValue)
                 .Select(c => c.AppointmentId!.Value)
@@ -476,6 +490,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 transaction.Commit();
 
                 TempData["SuccessMessage"] = "Consultation and service record saved successfully.";
+                // Consultation Index shows "Proceed to Billing" for this consultation.
+                TempData["BillingConsultationId"] = consultation.Id;
             }
             catch
             {

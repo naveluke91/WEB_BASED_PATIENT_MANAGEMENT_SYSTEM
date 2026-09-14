@@ -26,6 +26,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public string Status { get; set; } = string.Empty;
         public string? RecordType { get; set; }
         public int? RecordId { get; set; }
+        // Set when a completed consultation already has a payment (Billing).
+        public int? PaymentId { get; set; }
         public DateTime SortDate { get; set; }
     }
 }

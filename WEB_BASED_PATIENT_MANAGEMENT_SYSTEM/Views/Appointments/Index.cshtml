@@ -136,10 +136,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-calendar2-plus"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalNewLabel">New Appointment</h5>
-                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -149,23 +147,23 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-sm-6">
-                            <label for="newPatientName" class="form-label">Patient Name <span class="text-danger">*</span></label>
+                            <label for="newPatientName" class="form-label">Patient Name</label>
                             <input type="text" name="PatientName" id="newPatientName"
                                    class="form-control" required placeholder="Enter patient name" />
                         </div>
                         <div class="col-sm-6">
-                            <label for="newContactNo" class="form-label">Contact Number <span class="text-danger">*</span></label>
+                            <label for="newContactNo" class="form-label">Contact Number</label>
                             <input type="text" name="ContactNo" id="newContactNo"
                                    class="form-control" required placeholder="Enter contact number" />
                         </div>
                         <div class="col-sm-6">
-                            <label for="newDate" class="form-label">Date <span class="text-danger">*</span></label>
+                            <label for="newDate" class="form-label">Date</label>
                             <input type="date" name="AppointmentDate" id="newDate"
                                    class="form-control" required
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
                         </div>
                         <div class="col-sm-6">
-                            <label for="newTimeSelect" class="form-label">Time <span class="text-danger">*</span></label>
+                            <label for="newTimeSelect" class="form-label">Time</label>
                             <select name="AppointmentTime" id="newTimeSelect" class="form-select" required>
                                 <option value="">-- Select Time --</option>
                             </select>
@@ -193,7 +191,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-calendar2-week"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalViewLabel">Appointment Details</h5>
                     </div>
@@ -241,10 +238,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalEditLabel">Edit Appointment</h5>
-                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -259,7 +254,7 @@
                     <div class="row g-3">
                         <!-- Status Selection -->
                         <div class="col-12">
-                            <label for="editStatus" class="form-label">Status <span class="text-danger">*</span></label>
+                            <label for="editStatus" class="form-label">Status</label>
                             <select name="Status" id="editStatus" class="form-select" required>
                                 <option value="Pending">Pending</option>
                                 <option value="Confirmed">Confirmed</option>
@@ -286,12 +281,12 @@
 
                         <!-- Patient Name & Contact -->
                         <div class="col-sm-6">
-                            <label for="editPatientName" class="form-label">Patient Name <span class="text-danger">*</span></label>
+                            <label for="editPatientName" class="form-label">Patient Name</label>
                             <input type="text" name="PatientName" id="editPatientName"
                                    class="form-control" required placeholder="Enter patient name" />
                         </div>
                         <div class="col-sm-6">
-                            <label for="editContactNo" class="form-label">Contact Number <span class="text-danger">*</span></label>
+                            <label for="editContactNo" class="form-label">Contact Number</label>
                             <input type="text" name="ContactNo" id="editContactNo"
                                    class="form-control" required placeholder="Enter contact number" />
                         </div>
@@ -300,13 +295,13 @@
                         <div class="col-12" id="editDateTimeSection">
                             <div class="row g-3">
                                 <div class="col-sm-6">
-                                    <label for="editDate" class="form-label">Date <span class="text-danger">*</span></label>
+                                    <label for="editDate" class="form-label">Date</label>
                                     <input type="date" name="AppointmentDate" id="editDate"
                                            class="form-control" required
                                            min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
                                 </div>
                                 <div class="col-sm-6">
-                                    <label for="editTimeSelect" class="form-label">Time <span class="text-danger">*</span></label>
+                                    <label for="editTimeSelect" class="form-label">Time</label>
                                     <select name="AppointmentTime" id="editTimeSelect" class="form-select" required>
                                         <option value="">-- Select Time --</option>
                                     </select>
@@ -340,10 +335,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-person-plus"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalConfirmNewLabel">Add New Patient</h5>
-                        <p class="modal-subtitle">Fields marked <span class="text-danger">*</span> are required.</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -361,18 +354,18 @@
                          style="display:none;"></div>
 
                     <div class="form-section">
-                        <h6 class="form-section-heading"><i class="bi bi-person-vcard" aria-hidden="true"></i> Personal Information</h6>
+                        <h6 class="form-section-heading">Personal Information</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="confirmNewFullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <label for="confirmNewFullName" class="form-label">Full Name</label>
                                 <input type="text" name="FullName" id="confirmNewFullName" class="form-control" placeholder="Enter full name" required />
                             </div>
                             <div class="col-md-6">
-                                <label for="confirmNewAddress" class="form-label">Address <span class="text-danger">*</span></label>
+                                <label for="confirmNewAddress" class="form-label">Address</label>
                                 <input type="text" name="Address" id="confirmNewAddress" class="form-control" placeholder="Enter address" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewDOB" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                <label for="confirmNewDOB" class="form-label">Date of Birth</label>
                                 <input type="date" name="DateOfBirth" id="confirmNewDOB" class="form-control" required />
                             </div>
                             <div class="col-md-4">
@@ -380,7 +373,7 @@
                                 <input type="number" name="Age" id="confirmNewAge" class="form-control age-readonly" readonly />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewMaritalStatus" class="form-label">Marital Status <span class="text-danger">*</span></label>
+                                <label for="confirmNewMaritalStatus" class="form-label">Marital Status</label>
                                 <select name="MaritalStatus" id="confirmNewMaritalStatus" class="form-select" required>
                                     <option value="">-- Select --</option>
                                     <option value="Single">Single</option>
@@ -390,45 +383,45 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewReligion" class="form-label">Religion <span class="text-danger">*</span></label>
+                                <label for="confirmNewReligion" class="form-label">Religion</label>
                                 <input type="text" name="Religion" id="confirmNewReligion" class="form-control" placeholder="Enter religion" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewOccupation" class="form-label">Occupation <span class="text-danger">*</span></label>
+                                <label for="confirmNewOccupation" class="form-label">Occupation</label>
                                 <input type="text" name="Occupation" id="confirmNewOccupation" class="form-control" placeholder="Enter occupation" />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewContactNo" class="form-label">Contact No. <span class="text-danger">*</span></label>
+                                <label for="confirmNewContactNo" class="form-label">Contact No.</label>
                                 <input type="text" name="ContactNo" id="confirmNewContactNo" class="form-control" placeholder="Enter contact number" required />
                             </div>
                         </div>
                     </div>
 
                     <div class="form-section">
-                        <h6 class="form-section-heading"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Obstetric Information</h6>
+                        <h6 class="form-section-heading">Obstetric Information</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label for="confirmNewLMP" class="form-label">LMP (Last Menstrual Period) <span class="text-danger">*</span></label>
+                                <label for="confirmNewLMP" class="form-label">LMP (Last Menstrual Period)</label>
                                 <input type="date" name="LMP" id="confirmNewLMP" class="form-control" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewAOG" class="form-label">AOG (Age of Gestation) <span class="text-danger">*</span></label>
+                                <label for="confirmNewAOG" class="form-label">AOG (Age of Gestation)</label>
                                 <input type="text" name="AOG" id="confirmNewAOG" class="form-control" placeholder="Enter weeks" />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewEDC" class="form-label">EDC (Estimated Date of Confinement) <span class="text-danger">*</span></label>
+                                <label for="confirmNewEDC" class="form-label">EDC (Estimated Date of Confinement)</label>
                                 <input type="date" name="EDC" id="confirmNewEDC" class="form-control" />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewMenarche" class="form-label">Menarche <span class="text-danger">*</span></label>
+                                <label for="confirmNewMenarche" class="form-label">Menarche</label>
                                 <input type="text" name="Menarche" id="confirmNewMenarche" class="form-control" placeholder="Age at first menstruation" />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewGravida" class="form-label">Gravida <span class="text-danger">*</span></label>
+                                <label for="confirmNewGravida" class="form-label">Gravida</label>
                                 <input type="text" name="Gravida" id="confirmNewGravida" class="form-control" placeholder="Number of pregnancies" />
                             </div>
                             <div class="col-md-4">
-                                <label for="confirmNewTFAL" class="form-label">TFAL (Term, Full-term, Abortions, Living) <span class="text-danger">*</span></label>
+                                <label for="confirmNewTFAL" class="form-label">TFAL (Term, Full-term, Abortions, Living)</label>
                                 <input type="text" name="TFAL" id="confirmNewTFAL" class="form-control" placeholder="e.g. 2-1-0-1" />
                             </div>
                         </div>
@@ -451,7 +444,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalExistingLabel">Existing Appointment</h5>
                         <p class="modal-subtitle">Schedule an appointment for a registered patient.</p>

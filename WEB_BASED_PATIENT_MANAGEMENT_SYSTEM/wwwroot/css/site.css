@@ -636,10 +636,12 @@ input[type="radio"] {
     background-color: var(--surface);
 }
 
+/* Title and close button share one row, both vertically centred, with equal
+   top and bottom padding. */
 .modal-header {
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-3);
-    padding: var(--space-5) var(--space-6) var(--space-4);
+    padding: var(--space-4) var(--space-6);
     border-bottom: 1px solid var(--border-subtle);
 }
 

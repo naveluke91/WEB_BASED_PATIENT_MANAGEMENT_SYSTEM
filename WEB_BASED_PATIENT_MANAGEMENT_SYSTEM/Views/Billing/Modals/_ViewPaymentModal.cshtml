@@ -1,0 +1,63 @@
+<!-- Transaction details. Values come from the View button's data attributes (billing.js). -->
+<div class="modal fade" id="viewPaymentModal" tabindex="-1" aria-labelledby="viewPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div>
+                        <h5 class="modal-title" id="viewPaymentModalLabel">Transaction Details</h5>
+                        <p class="modal-subtitle" id="viewPaymentSubtitle"></p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="viewPaymentNotice" class="alert alert-light d-none mb-3" role="status"></div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Patient Name</label>
+                        <div class="detail-value" id="viewPaymentPatientName">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Patient ID</label>
+                        <div class="detail-value" id="viewPaymentPatientId">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Consultation Date</label>
+                        <div class="detail-value" id="viewPaymentConsultationDate">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Consultation Type</label>
+                        <div class="detail-value" id="viewPaymentServiceType">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Visit Type</label>
+                        <div class="detail-value" id="viewPaymentVisitType">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Appointment</label>
+                        <div class="detail-value" id="viewPaymentAppointment">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Amount</label>
+                        <div class="detail-value" id="viewPaymentAmount">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Payment Method</label>
+                        <div class="detail-value" id="viewPaymentMethod">—</div>
+                    </div>
+                    <div class="detail-item detail-item-full">
+                        <label>Payment Date</label>
+                        <div class="detail-value" id="viewPaymentDate">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

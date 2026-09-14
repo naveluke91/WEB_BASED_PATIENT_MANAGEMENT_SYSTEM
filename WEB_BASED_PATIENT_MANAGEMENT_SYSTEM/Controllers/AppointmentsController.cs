@@ -256,16 +256,18 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 }
 
                 // -----------------------------------------------------------------
-                // PROBLEM 1: "Rescheduled" requires BOTH a new date AND a new time.
-                // Compare against the ORIGINAL saved date/time — if either is
-                // unchanged, do NOT save and do NOT change the status.
+                // PROBLEM 1: "Rescheduled" requires a new date OR a new time (or both).
+                // Compare values against the ORIGINAL saved record: the date part
+                // only, and the time to the minute (the form posts "HH:mm"). Only
+                // an unchanged date AND an unchanged time is rejected — then
+                // nothing is saved and the status does not change.
                 // -----------------------------------------------------------------
                 bool reschedDateChanged = existing.AppointmentDate.Date != appointment.AppointmentDate.Date;
-                bool reschedTimeChanged = existing.AppointmentTime != appointment.AppointmentTime;
+                bool reschedTimeChanged = TruncateToMinute(existing.AppointmentTime) != TruncateToMinute(appointment.AppointmentTime);
 
-                if (appointment.Status == "Rescheduled" && (!reschedDateChanged || !reschedTimeChanged))
+                if (appointment.Status == "Rescheduled" && !reschedDateChanged && !reschedTimeChanged)
                 {
-                    const string reschedError = "Please change both the appointment date and time before rescheduling.";
+                    const string reschedError = "Please change the appointment date or time before rescheduling.";
                     if (isAjax) return Json(new { success = false, message = reschedError });
                     TempData["ErrorMessage"] = reschedError;
                     return RedirectToAction(nameof(Index));
@@ -571,6 +573,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var appointment = _context.Appointments.FirstOrDefault(a => a.Id == id);
             if (appointment == null) return NotFound();
 
+            // An appointment that already started a consultation is kept. Deleting it
+            // would unlink its Service (ON DELETE SET NULL), and Consultation would list
+            // that service again as a Waiting walk-in to be consulted and billed twice.
+            if (_context.Consultations.Any(c => c.AppointmentId == id))
+            {
+                TempData["ErrorMessage"] = "This appointment already has a consultation, so it can no longer be deleted.";
+                return RedirectToAction(nameof(Index));
+            }
+
             string name = appointment.PatientName;
             _context.Appointments.Remove(appointment);
             _context.SaveChanges();
@@ -601,5 +612,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // Appointment times are chosen in whole minutes ("HH:mm"), so the
+        // reschedule check compares them at that precision.
+        private static TimeSpan TruncateToMinute(TimeSpan time) =>
+            new TimeSpan(time.Days, time.Hours, time.Minutes, 0);
     }
 }

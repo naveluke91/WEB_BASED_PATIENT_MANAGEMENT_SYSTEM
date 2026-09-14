@@ -1,0 +1,108 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.BillingPageViewModel
+@{
+    var hasBillableConsultations = Model.BillableConsultations.Any();
+}
+
+<!-- Add Payment: choose a completed consultation; its details are loaded from the database. -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form asp-controller="Billing" asp-action="Create" method="post" id="addPaymentForm">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <div>
+                            <h5 class="modal-title" id="addPaymentModalLabel">Add Payment</h5>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="addPaymentError" class="alert alert-danger d-none mb-3" role="alert"></div>
+
+                    <div class="form-section">
+                        <h6 class="form-section-heading">Completed Consultation</h6>
+                        <label for="paymentConsultationId" class="form-label">Consultation</label>
+                        <select name="ConsultationId" id="paymentConsultationId" class="form-select" required
+                                disabled="@(hasBillableConsultations ? null : "disabled")">
+                            <option value="">@(hasBillableConsultations ? "-- Select a completed consultation --" : "No completed consultations awaiting payment")</option>
+                            @foreach (var consultation in Model.BillableConsultations)
+                            {
+                                <option value="@consultation.Id">@(consultation.Patient?.FullName ?? "Unknown") · @consultation.ServiceType · @((consultation.CompletedAt ?? consultation.StartedAt).ToString("MMM dd, yyyy"))</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-section">
+                        <h6 class="form-section-heading">Consultation Details</h6>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Patient Name</label>
+                                <div class="detail-value" id="payPatientName">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Patient ID</label>
+                                <div class="detail-value" id="payPatientId">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Consultation Date</label>
+                                <div class="detail-value" id="payConsultationDate">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Consultation Type</label>
+                                <div class="detail-value" id="payServiceType">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Visit Type</label>
+                                <div class="detail-value" id="payVisitType">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Appointment</label>
+                                <div class="detail-value" id="payAppointment">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Contact No.</label>
+                                <div class="detail-value" id="payContactNo">—</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Service Fee</label>
+                                <div class="detail-value" id="payServiceFee">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h6 class="form-section-heading">Payment Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="paymentAmount" class="form-label">Amount (&#8369;)</label>
+                                <input type="number" name="Amount" id="paymentAmount" class="form-control"
+                                       min="0" max="99999999.99" step="0.01" placeholder="0.00" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="paymentMethod" class="form-label">Payment Method</label>
+                                <select name="PaymentMethod" id="paymentMethod" class="form-select" required>
+                                    <option value="">-- Select Payment Method --</option>
+                                    @foreach (var method in Model.PaymentMethods)
+                                    {
+                                        <option value="@method">@method</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-dark" id="addPaymentSubmit"
+                            disabled="@(hasBillableConsultations ? null : "disabled")">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Save Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -34,6 +34,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
         // Representasyon sa actual walk-in or appointment consultation encounter
         public DbSet<Consultation> Consultations { get; set; }
 
+        // Payment transaction recorded for a completed consultation
+        public DbSet<Payment> Payments { get; set; }
+
         /// <summary>
         /// I-configure ang relasyon tali sa Patient ug PrenatalRecord.
         /// Kung ma-delete ang Patient, ma-delete pud ang iyang PrenatalRecords (cascade).
@@ -102,6 +105,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .HasIndex(c => c.AppointmentId)
                 .IsUnique()
                 .HasFilter("[AppointmentId] IS NOT NULL");
+
+            // Payment -> Consultation: one payment per consultation. WithOne()
+            // gives ConsultationId a unique index. Deleting a patient already
+            // removes their consultations, so their payments are removed with them.
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Consultation)
+                .WithOne()
+                .HasForeignKey<Payment>(p => p.ConsultationId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

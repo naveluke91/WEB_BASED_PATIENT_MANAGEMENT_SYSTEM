@@ -9,7 +9,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
                     <div>
                         <h5 class="modal-title" id="modalEditPatientLabel">Edit Patient</h5>
                         <p class="modal-subtitle" id="editPatientSubtitle"></p>
@@ -23,18 +22,18 @@
 
                 <div class="modal-body">
                     <div class="form-section">
-                        <h6 class="form-section-heading"><i class="bi bi-person-vcard" aria-hidden="true"></i> Personal Information</h6>
+                        <h6 class="form-section-heading">Personal Information</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="editFullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <label for="editFullName" class="form-label">Full Name</label>
                                 <input type="text" name="FullName" id="editFullName" class="form-control" placeholder="Enter full name" required />
                             </div>
                             <div class="col-md-6">
-                                <label for="editAddress" class="form-label">Address <span class="text-danger">*</span></label>
+                                <label for="editAddress" class="form-label">Address</label>
                                 <input type="text" name="Address" id="editAddress" class="form-control" placeholder="Enter address" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editDateOfBirth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                <label for="editDateOfBirth" class="form-label">Date of Birth</label>
                                 <input type="date" name="DateOfBirth" id="editDateOfBirth" class="form-control"
                                        min="@minimumDateOfBirth" max="@maximumDateOfBirth" required />
                             </div>
@@ -43,7 +42,7 @@
                                 <input type="number" name="Age" id="editAge" class="form-control age-readonly" min="0" max="130" readonly />
                             </div>
                             <div class="col-md-4">
-                                <label for="editMaritalStatus" class="form-label">Marital Status <span class="text-danger">*</span></label>
+                                <label for="editMaritalStatus" class="form-label">Marital Status</label>
                                 <select name="MaritalStatus" id="editMaritalStatus" class="form-select" required>
                                     <option value="">-- Select --</option>
                                     <option value="Single">Single</option>
@@ -53,45 +52,45 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="editReligion" class="form-label">Religion <span class="text-danger">*</span></label>
+                                <label for="editReligion" class="form-label">Religion</label>
                                 <input type="text" name="Religion" id="editReligion" class="form-control" placeholder="Enter religion" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editOccupation" class="form-label">Occupation <span class="text-danger">*</span></label>
+                                <label for="editOccupation" class="form-label">Occupation</label>
                                 <input type="text" name="Occupation" id="editOccupation" class="form-control" placeholder="Enter occupation" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editContactNo" class="form-label">Contact No. <span class="text-danger">*</span></label>
+                                <label for="editContactNo" class="form-label">Contact No.</label>
                                 <input type="text" name="ContactNo" id="editContactNo" class="form-control" placeholder="Enter contact number" required />
                             </div>
                         </div>
                     </div>
 
                     <div class="form-section">
-                        <h6 class="form-section-heading"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Obstetric Information</h6>
+                        <h6 class="form-section-heading">Obstetric Information</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label for="editLMP" class="form-label">LMP (Last Menstrual Period) <span class="text-danger">*</span></label>
+                                <label for="editLMP" class="form-label">LMP (Last Menstrual Period)</label>
                                 <input type="date" name="LMP" id="editLMP" class="form-control" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editAOG" class="form-label">AOG (Age of Gestation) <span class="text-danger">*</span></label>
+                                <label for="editAOG" class="form-label">AOG (Age of Gestation)</label>
                                 <input type="text" name="AOG" id="editAOG" class="form-control" placeholder="Enter weeks" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editEDC" class="form-label">EDC (Estimated Date of Confinement) <span class="text-danger">*</span></label>
+                                <label for="editEDC" class="form-label">EDC (Estimated Date of Confinement)</label>
                                 <input type="date" name="EDC" id="editEDC" class="form-control" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editMenarche" class="form-label">Menarche <span class="text-danger">*</span></label>
+                                <label for="editMenarche" class="form-label">Menarche</label>
                                 <input type="text" name="Menarche" id="editMenarche" class="form-control" placeholder="Age at first menstruation" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editGravida" class="form-label">Gravida <span class="text-danger">*</span></label>
+                                <label for="editGravida" class="form-label">Gravida</label>
                                 <input type="text" name="Gravida" id="editGravida" class="form-control" placeholder="Number of pregnancies" required />
                             </div>
                             <div class="col-md-4">
-                                <label for="editTFAL" class="form-label">TFAL (Term, Full-term, Abortions, Living) <span class="text-danger">*</span></label>
+                                <label for="editTFAL" class="form-label">TFAL (Term, Full-term, Abortions, Living)</label>
                                 <input type="text" name="TFAL" id="editTFAL" class="form-control" placeholder="e.g. 2-1-0-1" required />
                             </div>
                         </div>

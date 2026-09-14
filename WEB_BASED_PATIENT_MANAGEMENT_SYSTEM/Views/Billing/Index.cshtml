@@ -1,0 +1,141 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.BillingPageViewModel
+@{
+    ViewData["Title"] = "Payment/Billing";
+
+    // Messages shown inside the modals that billing.js opens.
+    var addPaymentError = TempData["AddPaymentError"] as string;
+    var paymentNotice = TempData["PaymentNotice"] as string;
+}
+@functions {
+    // Same rule as the Consultation list: linked to an appointment, otherwise a walk-in.
+    private static string VisitType(Consultation consultation) =>
+        consultation.AppointmentId.HasValue ? "Appointment" : "Walk-In";
+
+    private static string ConsultationDate(Consultation consultation) =>
+        (consultation.CompletedAt ?? consultation.StartedAt).ToString("MMM dd, yyyy");
+
+    private static string AppointmentInfo(Appointment? appointment) =>
+        appointment == null
+            ? "Walk-In (no appointment)"
+            : $"{appointment.AppointmentDate:MMM dd, yyyy} · {appointment.FormattedTime}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/billing/billing.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <div class="page-heading">
+        <h1>Payment/Billing</h1>
+        <p class="subtitle">Record payments for completed consultations and view saved transactions.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Payment
+        </button>
+    </div>
+</div>
+
+<partial name="_PageAlerts" />
+
+<div class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-title">Transaction List</h2>
+        <div class="search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="billingSearch" placeholder="Search by patient or payment method..." aria-label="Search transactions" />
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th class="col-fit">Consultation Date</th>
+                    <th>Consultation Type</th>
+                    <th class="col-fit">Amount</th>
+                    <th>Payment Method</th>
+                    <th class="col-fit">Payment Date</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="billingTableBody">
+                @if (!Model.Transactions.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="table-empty">No transactions found.</td>
+                    </tr>
+                }
+                @foreach (var payment in Model.Transactions)
+                {
+                    // Patient and consultation details are read through Payment → Consultation.
+                    // Payment.Id stays internal (data-payment-id opens the details modal).
+                    var consultation = payment.Consultation!;
+                    var patientName = consultation.Patient?.FullName ?? "Unknown";
+                    var amount = payment.Amount?.ToString("N2") ?? "0.00";
+                    var searchText = $"{patientName} {consultation.ServiceType} {payment.PaymentMethod}".ToLowerInvariant();
+
+                    <tr class="patient-row" data-search="@searchText">
+                        <td class="cell-name">@patientName</td>
+                        <td class="col-fit">@ConsultationDate(consultation)</td>
+                        <td>
+                            @consultation.ServiceType
+                            <span class="cell-sub">@VisitType(consultation)</span>
+                        </td>
+                        <td class="col-fit"><span class="amount-tag">&#8369; @amount</span></td>
+                        <td>@payment.PaymentMethod</td>
+                        <td class="col-fit">@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                        <td class="col-actions">
+                            <div class="action-btns">
+                                <button type="button" class="action-btn js-view-payment" title="View Details"
+                                        aria-label="View payment of @patientName"
+                                        data-bs-toggle="modal" data-bs-target="#viewPaymentModal"
+                                        data-payment-id="@payment.Id"
+                                        data-payment-date="@payment.PaymentDate.ToString("MMM dd, yyyy · h:mm tt")"
+                                        data-patient-name="@patientName"
+                                        data-patient-id="@consultation.PatientId"
+                                        data-consultation-date="@ConsultationDate(consultation)"
+                                        data-service-type="@consultation.ServiceType"
+                                        data-visit-type="@VisitType(consultation)"
+                                        data-appointment="@AppointmentInfo(consultation.Appointment)"
+                                        data-amount="@amount"
+                                        data-payment-method="@payment.PaymentMethod">
+                                    <i class="bi bi-eye" aria-hidden="true"></i><span class="action-label">View</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="~/Views/Billing/Modals/_AddPaymentModal.cshtml" model="Model" />
+<partial name="~/Views/Billing/Modals/_ViewPaymentModal.cshtml" />
+
+@section Scripts {
+    <script>
+        // Server-rendered values used by billing.js
+        window.billingPageData = {
+            consultations: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BillableConsultations.Select(c => new
+            {
+                id = c.Id,
+                patientId = c.PatientId,
+                patientName = c.Patient?.FullName ?? "Unknown",
+                contactNo = c.Patient?.ContactNo ?? "—",
+                consultationDate = ConsultationDate(c),
+                serviceType = c.ServiceType,
+                visitType = VisitType(c),
+                appointment = AppointmentInfo(c.Appointment),
+                serviceFee = Model.ServiceFees.ContainsKey(c.Id) ? Model.ServiceFees[c.Id] : (decimal?)null
+            }))),
+            openConsultationId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenConsultationId)),
+            openPaymentId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenPaymentId)),
+            addPaymentError: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(addPaymentError)),
+            paymentNotice: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(paymentNotice))
+        };
+    </script>
+    <script src="~/js/billing/billing.js" asp-append-version="true"></script>
+}

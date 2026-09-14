@@ -8,7 +8,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <span class="modal-icon" aria-hidden="true"><i class="bi bi-clipboard2-pulse"></i></span>
                     <div>
                         <h5 class="modal-title" id="viewServiceModalLabel">Service Details</h5>
                         <p class="modal-subtitle" id="viewServiceSubtitle"></p>
@@ -54,7 +53,6 @@
 
                 <div class="modal-header">
                     <div class="modal-title-wrap">
-                        <span class="modal-icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
                         <div>
                             <h5 class="modal-title" id="editServiceModalLabel">Edit Service</h5>
                             <p class="modal-subtitle">Update the selected patient or service.</p>
@@ -67,10 +65,10 @@
                     <div id="editServiceError" class="alert alert-danger d-none mb-3" role="alert"></div>
 
                     <div class="form-section">
-                        <h2 class="form-section-heading"><i class="bi bi-person" aria-hidden="true"></i> Patient</h2>
+                        <h2 class="form-section-heading">Patient</h2>
                         <div class="svc-patient-select">
                             <label for="editPatientId" class="form-label">
-                                Patient <span class="text-danger">*</span>
+                                Patient
                             </label>
                             <select name="patientId" id="editPatientId" class="form-select" required>
                                 <option value="">-- Select registered patient --</option>
@@ -83,7 +81,7 @@
                     </div>
 
                     <div class="form-section">
-                        <h2 class="form-section-heading"><i class="bi bi-grid" aria-hidden="true"></i> Select Service</h2>
+                        <h2 class="form-section-heading">Select Service</h2>
 
                         <div class="svc-section-label">General Services</div>
                         <div class="svc-grid svc-grid-general">

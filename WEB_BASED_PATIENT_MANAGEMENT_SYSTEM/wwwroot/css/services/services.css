@@ -11,22 +11,16 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* Column widths: Name · Service · Price · Action.
+/* Column widths: Name · Service · Price · Action, 25% each.
    Shares of the table width; a column is never squeezed below its content. */
-.data-table thead th:nth-child(1) {
-    width: 28%;
+.data-table thead th {
+    width: 25%;
 }
 
-.data-table thead th:nth-child(2) {
-    width: 34%;
-}
-
-.data-table thead th:nth-child(3) {
-    width: 14%;
-}
-
-.data-table thead th:nth-child(4) {
-    width: 24%;
+/* View · Edit · Delete stay one centred group with equal 8px gaps
+   (the shared .action-btns gap is 6px; this file only loads on Services). */
+.data-table .action-btns {
+    gap: var(--space-2);
 }
 
 /* ---- View Service modal width ---- */

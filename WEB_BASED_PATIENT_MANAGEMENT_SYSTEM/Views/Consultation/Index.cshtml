@@ -16,6 +16,21 @@
 
 <partial name="_PageAlerts" />
 
+@* Set by SaveService when a consultation is completed, so staff can continue straight to billing. *@
+@if (TempData["BillingConsultationId"] is int billingConsultationId)
+{
+    <div class="page-alerts">
+        <div class="alert alert-light align-items-center" role="status">
+            <i class="bi bi-receipt" aria-hidden="true"></i>
+            <span>The consultation is completed. You can now record its payment.</span>
+            <a asp-controller="Billing" asp-action="Index" asp-route-consultationId="@billingConsultationId"
+               class="btn-primary-dark btn-sm ms-auto">
+                Proceed to Billing <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+    </div>
+}
+
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Consultation</h2>
@@ -116,6 +131,18 @@
                                         <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="action-btn">
                                             <i class="bi bi-journal-medical" aria-hidden="true"></i> View Record
                                         </a>
+                                        @if (item.PaymentId.HasValue)
+                                        {
+                                            <a asp-controller="Billing" asp-action="Index" asp-route-paymentId="@item.PaymentId" class="action-btn" title="View payment transaction">
+                                                <i class="bi bi-receipt-cutoff" aria-hidden="true"></i> View Payment
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Billing" asp-action="Index" asp-route-consultationId="@item.ConsultationId" class="action-btn action-btn-primary" title="Proceed to Billing">
+                                                <i class="bi bi-receipt" aria-hidden="true"></i> Proceed to Billing
+                                            </a>
+                                        }
                                     }
                                 </div>
                             </td>
@@ -138,7 +165,6 @@
 
                 <div class="modal-header">
                     <div class="modal-title-wrap">
-                        <span class="modal-icon" aria-hidden="true"><i class="bi bi-play-circle"></i></span>
                         <div>
                             <h5 class="modal-title" id="beginConsultationTitle">Start Consultation</h5>
                         </div>
@@ -150,7 +176,7 @@
                     <div id="appointmentPatientNotice" class="alert alert-light border small d-none mb-3"></div>
 
                     <div class="mb-3 d-none">
-                        <label for="beginPatientId" class="form-label">Registered Patient <span class="text-danger">*</span></label>
+                        <label for="beginPatientId" class="form-label">Registered Patient</label>
                         <select name="patientId" id="beginPatientId" class="form-select" required>
                             <option value="">Select patient</option>
                             @foreach (var patient in Model.Patients)
@@ -161,7 +187,7 @@
                     </div>
 
                     <div class="mb-2 d-none">
-                        <label for="beginServiceType" class="form-label">Service <span class="text-danger">*</span></label>
+                        <label for="beginServiceType" class="form-label">Service</label>
                         <select name="serviceType" id="beginServiceType" class="form-select" required>
                             <option value="">Select service</option>
                             <option value="Prenatal">Prenatal</option>

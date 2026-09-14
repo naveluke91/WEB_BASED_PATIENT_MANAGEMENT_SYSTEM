@@ -89,14 +89,6 @@ document.getElementById('newDate').addEventListener('change', function () {
     );
 });
 
-document.getElementById('newDate').addEventListener('input', function () {
-    refreshTimeDropdown(
-        document.getElementById('newTimeSelect'),
-        document.getElementById('newTimeLoading'),
-        this.value
-    );
-});
-
 // ---------------------------------------------------------------
 // EXISTING APPOINTMENT modal — search + autofill name & contact
 // ---------------------------------------------------------------
@@ -222,8 +214,8 @@ async function openEditModal(id) {
         document.getElementById('editPatientId').value   = appt.patientId ?? '';
 
         // Remember ORIGINAL date/time so we can verify that a
-        // "Rescheduled" save really changed BOTH (client-side check;
-        // server re-validates against the DB record).
+        // "Rescheduled" save really changed the date or the time
+        // (client-side check; server re-validates against the DB record).
         const editForm = document.getElementById('formEditAppointment');
         editForm.dataset.origDate = appt.appointmentDate;  // "yyyy-MM-dd"
         editForm.dataset.origTime = appt.appointmentTime;  // "HH:mm"
@@ -388,14 +380,23 @@ document.getElementById('formConfirmNewPatient').addEventListener('submit', asyn
 
 editStatusSelect.addEventListener('change', handleEditStatusChange);
 
-document.getElementById('editDate').addEventListener('change', function () {
+document.getElementById('editDate').addEventListener('change', async function () {
     const id = document.getElementById('editId').value;
-    refreshTimeDropdown(
-        document.getElementById('editTimeSelect'),
+    const timeSelect = document.getElementById('editTimeSelect');
+    const selectedTime = timeSelect.value;
+
+    await refreshTimeDropdown(
+        timeSelect,
         document.getElementById('editTimeLoading'),
         this.value,
         id || null
     );
+
+    // Keep the chosen time when that slot is still free on the new date,
+    // so a reschedule can change only the date.
+    const stillFree = Array.from(timeSelect.options)
+        .some(option => option.value === selectedTime && !option.disabled);
+    if (selectedTime && stillFree) timeSelect.value = selectedTime;
 });
 
 // Handle Edit Form Submission via AJAX
@@ -403,8 +404,10 @@ document.getElementById('formEditAppointment').addEventListener('submit', async 
     e.preventDefault();
     hideModalError('editInlineError');
 
-    // Client-side pre-check: Rescheduled requires BOTH date AND time
-    // changed (server re-validates against the original DB record).
+    // Client-side pre-check, same rule as the server (which re-validates
+    // against the saved record): Rescheduled needs a new date OR a new time.
+    // Both sides use one format each — "yyyy-MM-dd" (date input / GetById)
+    // and "HH:mm" (time slot values / GetById).
     const status = document.getElementById('editStatus').value;
     if (status === 'Rescheduled') {
         const origDate = this.dataset.origDate || '';
@@ -412,8 +415,8 @@ document.getElementById('formEditAppointment').addEventListener('submit', async 
         const newDate  = document.getElementById('editDate').value;
         const newTime  = document.getElementById('editTimeSelect').value;
 
-        if (origDate === newDate || origTime === newTime) {
-            showModalError('editInlineError', 'Please change both the appointment date and time before rescheduling.');
+        if (origDate === newDate && origTime === newTime) {
+            showModalError('editInlineError', 'Please change the appointment date or time before rescheduling.');
             return;
         }
     }

@@ -4,7 +4,7 @@
 
     // The clinic logo is shown when it exists in wwwroot/images; otherwise a
     // neutral brand mark keeps the sidebar intact.
-    const string logoFileName = "espanola-birthing-home-logo.png";
+    const string logoFileName = "espanola-birthing-home-logo.jpg";
     var hasLogo = !string.IsNullOrEmpty(HostEnvironment.WebRootPath)
                   && System.IO.File.Exists(System.IO.Path.Combine(HostEnvironment.WebRootPath, "images", logoFileName));
 }
@@ -88,6 +88,13 @@
                    aria-current="@(controller == "Consultation" ? "page" : null)">
                     <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
                     <span>Consultation</span>
+                </a>
+
+                <a asp-controller="Billing" asp-action="Index" title="Payment/Billing"
+                   class="nav-item @(controller == "Billing" ? "active" : "")"
+                   aria-current="@(controller == "Billing" ? "page" : null)">
+                    <i class="bi bi-receipt" aria-hidden="true"></i>
+                    <span>Billing</span>
                 </a>
             </nav>
 
