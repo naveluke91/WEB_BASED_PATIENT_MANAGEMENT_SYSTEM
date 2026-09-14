@@ -9,3 +9,12 @@ function confirmDelete(event, formElement) {
         event.preventDefault();
     }
 }
+
+// Phone bottom bar: when the tabs scroll sideways, keep the current page's tab in view.
+(() => {
+    const nav = document.querySelector('.sidebar-nav');
+    const activeTab = nav?.querySelector('.nav-item.active');
+    if (!activeTab || !window.matchMedia('(max-width: 575.98px)').matches || nav.scrollWidth <= nav.clientWidth) return;
+
+    activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+})();

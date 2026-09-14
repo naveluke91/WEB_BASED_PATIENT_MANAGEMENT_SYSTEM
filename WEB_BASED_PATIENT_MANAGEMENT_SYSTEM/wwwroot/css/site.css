@@ -874,6 +874,21 @@ input[type="radio"] {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Logout signs out with a POST form. The form adds no box of its own, and the
+   button looks like the other navigation items. */
+.sidebar-footer form {
+    display: contents;
+}
+
+button.nav-item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
 /* ---- Main area ---- */
 .main-content {
     display: flex;
@@ -946,6 +961,16 @@ input[type="radio"] {
     font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--text-primary);
+}
+
+/* Role of the signed-in account (Admin or Staff) */
+.user-role {
+    padding: 1px 8px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border-radius: var(--radius-pill);
 }
 
 /* Content uses the full main-content width; only page padding separates it
@@ -1632,15 +1657,28 @@ input[type="radio"] {
         display: none;
     }
 
+    /* When the tabs don't fit (Admin also has User Management), they scroll
+       sideways while Logout stays in view. The top padding keeps the active
+       tab's indicator inside the scroll area. */
     .sidebar-nav {
-        flex: 4;
+        flex: 4 1 auto;
         flex-direction: row;
         gap: 2px;
+        min-width: 0;
+        margin-top: -6px;
+        padding-top: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .sidebar-footer {
         display: flex;
-        flex: 1;
+        flex: 1 0 auto;
         margin: 0;
         padding: 0 0 0 2px;
         border: 0;

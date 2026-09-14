@@ -1,0 +1,61 @@
+/* ============================================================
+   usermanagement.css — User Management module
+   Views/UserManagement/Index.cshtml and the modals in
+   Views/UserManagement/Modals/ (_AddUserModal, _EditUserModal).
+   ============================================================ */
+
+/* ---- User table ---- */
+/* Column widths: Name · Username · Role · Action.
+   Shares of the table width; a column is never squeezed below its content. */
+.data-table thead th:nth-child(1) {
+    width: 32%;
+}
+
+.data-table thead th:nth-child(2) {
+    width: 28%;
+}
+
+.data-table thead th:nth-child(3) {
+    width: 16%;
+}
+
+.data-table thead th:nth-child(4) {
+    width: 24%;
+}
+
+/* Marks the signed-in Admin's own account */
+.user-self {
+    display: inline-flex;
+    margin-left: var(--space-2);
+    padding: 1px 8px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    vertical-align: middle;
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    line-height: 1.5;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+}
+
+.role-badge-admin {
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border-color: #C9E7A0;
+}
+
+.role-badge-staff {
+    color: var(--info-text);
+    background: var(--info-surface);
+    border-color: var(--info-border);
+}

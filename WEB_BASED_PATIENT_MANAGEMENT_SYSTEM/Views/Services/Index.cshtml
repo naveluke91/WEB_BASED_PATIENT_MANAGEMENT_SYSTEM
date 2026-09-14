@@ -10,7 +10,7 @@
 <div class="page-header">
     <div class="page-heading">
         <h1>Services</h1>
-        <p class="subtitle">Welcome back, Admin</p>
+        <p class="subtitle">Welcome back, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</p>
     </div>
     <div class="page-actions">
         <button type="button" class="btn-primary-dark"

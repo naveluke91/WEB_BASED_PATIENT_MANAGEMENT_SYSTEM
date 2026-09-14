@@ -1,0 +1,41 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "_AuthLayout";
+
+    var errors = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+}
+
+<h1 class="auth-title">Sign in</h1>
+<p class="auth-subtitle">Use the account your Admin created for you.</p>
+
+@if (errors.Any())
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span>@string.Join(" ", errors)</span>
+    </div>
+}
+
+<form asp-action="Login" method="post">
+    <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+
+    <div class="auth-field">
+        <label for="loginUsername" class="form-label">Username</label>
+        <input type="text" name="Username" id="loginUsername" class="form-control"
+               value="@Model.Username" autocomplete="username" required autofocus />
+    </div>
+
+    <div class="auth-field">
+        <label for="loginPassword" class="form-label">Password</label>
+        <input type="password" name="Password" id="loginPassword" class="form-control"
+               autocomplete="current-password" required />
+    </div>
+
+    <button type="submit" class="btn-primary-dark auth-submit">Sign In</button>
+</form>

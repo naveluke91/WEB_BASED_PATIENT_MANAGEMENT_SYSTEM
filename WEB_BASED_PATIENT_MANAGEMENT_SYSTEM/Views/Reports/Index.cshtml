@@ -1,0 +1,292 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ReportsPageViewModel
+@{
+    ViewData["Title"] = "Reports";
+
+    var reportTitle = ReportsPageViewModel.ReportTypes.FirstOrDefault(type => type.Value == Model.ReportType).Label;
+    var hasDateRange = Model.DateFrom.HasValue || Model.DateTo.HasValue;
+    var rangeText = hasDateRange
+        ? $"{Model.DateFrom?.ToString("MMM dd, yyyy") ?? "Earliest"} – {Model.DateTo?.ToString("MMM dd, yyyy") ?? "Latest"}"
+        : "All dates";
+}
+@functions {
+    // Same rule as the Consultation list: linked to an appointment, otherwise a walk-in.
+    private static string VisitType(Consultation consultation) =>
+        consultation.AppointmentId.HasValue ? "Appointment" : "Walk-In";
+
+    private static string StatusPillClass(string status) => status switch
+    {
+        "Completed" => "status-pill-completed",
+        "In Progress" => "status-pill-inprogress",
+        _ => "status-pill-waiting"
+    };
+
+    // "1 patient", "2 patients"
+    private static string CountLabel(int count, string noun) => count == 1 ? noun : noun + "s";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reports/reports.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <div class="page-heading">
+        <h1>Reports</h1>
+        <p class="subtitle">Generate summaries of the patient, appointment, consultation and billing records.</p>
+    </div>
+    @if (Model.IsGenerated)
+    {
+        <div class="page-actions">
+            <button type="button" class="btn-cancel" id="printReport">
+                <i class="bi bi-printer" aria-hidden="true"></i> Print Report
+            </button>
+        </div>
+    }
+</div>
+
+<partial name="_PageAlerts" />
+
+<div class="content-card report-filters">
+    <div class="card-header-row">
+        <h2 class="card-title">Generate Reports</h2>
+    </div>
+
+    <form asp-action="Index" method="get" class="card-pad">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
+
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="reportType" class="form-label">Report Type</label>
+                <select name="reportType" id="reportType" class="form-select" required>
+                    <option value="">-- Select Report Type --</option>
+                    @foreach (var type in ReportsPageViewModel.ReportTypes)
+                    {
+                        if (type.Value == Model.ReportType)
+                        {
+                            <option value="@type.Value" selected>@type.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@type.Value">@type.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-6 col-md">
+                <label for="dateFrom" class="form-label">Date From</label>
+                <input type="date" name="dateFrom" id="dateFrom" class="form-control"
+                       value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-sm-6 col-md">
+                <label for="dateTo" class="form-label">Date To</label>
+                <input type="date" name="dateTo" id="dateTo" class="form-control"
+                       value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+            @* Sized to its label, so "Generate Report" is never cut off *@
+            <div class="col-md-auto">
+                <button type="submit" class="btn-primary-dark report-generate">Generate Report</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (Model.IsGenerated)
+{
+    <div class="content-card report-results">
+        <div class="card-header-row">
+            <div>
+                <h2 class="card-title">@reportTitle</h2>
+                <p class="report-meta">@rangeText · Generated @Model.GeneratedAt.ToString("MMM dd, yyyy h:mm tt")</p>
+            </div>
+        </div>
+
+        @if (Model.ReportType == ReportsPageViewModel.PatientReport)
+        {
+            <div class="report-section">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Patients.Count</strong> @CountLabel(Model.Patients.Count, "patient")</span>
+                </div>
+                @if (hasDateRange)
+                {
+                    <p class="report-note">Patient records have no registration date, so the date range does not filter this report.</p>
+                }
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th class="col-fit">Age</th>
+                                <th>Contact No.</th>
+                                <th>AOG</th>
+                                <th class="col-fit">EDC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Patients.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="table-empty">No patients found.</td>
+                                </tr>
+                            }
+                            @foreach (var patient in Model.Patients)
+                            {
+                                <tr>
+                                    <td class="cell-name">@patient.FullName</td>
+                                    <td class="col-fit">@patient.Age</td>
+                                    <td class="cell-nowrap">@patient.ContactNo</td>
+                                    <td>@(string.IsNullOrEmpty(patient.AOG) ? "—" : patient.AOG)</td>
+                                    <td class="col-fit">@(patient.EDC?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (Model.ReportType == ReportsPageViewModel.AppointmentReport)
+        {
+            <div class="report-section">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Appointments.Count</strong> @CountLabel(Model.Appointments.Count, "appointment")</span>
+                    @foreach (var status in new[] { "Pending", "Confirmed", "Rescheduled", "Cancelled" })
+                    {
+                        <span class="report-stat"><strong>@(Model.Appointments.Count(a => a.Status == status))</strong> @status.ToLowerInvariant()</span>
+                    }
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th class="col-fit">Appointment Date</th>
+                                <th class="col-fit">Time</th>
+                                <th>Service Type</th>
+                                <th class="col-status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Appointments.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="table-empty">No appointments found for this period.</td>
+                                </tr>
+                            }
+                            @foreach (var appointment in Model.Appointments)
+                            {
+                                <tr>
+                                    <td class="cell-name">@(appointment.Patient?.FullName ?? appointment.PatientName)</td>
+                                    <td class="col-fit">@appointment.AppointmentDate.ToString("MMM dd, yyyy")</td>
+                                    <td class="col-fit">@appointment.FormattedTime</td>
+                                    <td>@(string.IsNullOrWhiteSpace(appointment.ServiceType) ? "—" : appointment.ServiceType)</td>
+                                    <td class="col-status">
+                                        <span class="status-badge status-@appointment.Status.ToLowerInvariant()">@appointment.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (Model.ReportType == ReportsPageViewModel.ConsultationReport)
+        {
+            <div class="report-section">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Consultations.Count</strong> @CountLabel(Model.Consultations.Count, "consultation")</span>
+                    <span class="report-stat"><strong>@(Model.Consultations.Count(c => c.Status == "In Progress"))</strong> in progress</span>
+                    <span class="report-stat"><strong>@(Model.Consultations.Count(c => c.Status == "Completed"))</strong> completed</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th class="col-fit">Consultation Date</th>
+                                <th>Visit Type</th>
+                                <th>Consultation Type</th>
+                                <th class="col-status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Consultations.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="table-empty">No consultations found for this period.</td>
+                                </tr>
+                            }
+                            @foreach (var consultation in Model.Consultations)
+                            {
+                                <tr>
+                                    <td class="cell-name">@(consultation.Patient?.FullName ?? "Unknown")</td>
+                                    <td class="col-fit">@consultation.StartedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>@VisitType(consultation)</td>
+                                    <td>@consultation.ServiceType</td>
+                                    <td class="col-status">
+                                        <span class="status-pill @StatusPillClass(consultation.Status)">@consultation.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="report-section">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Payments.Count</strong> @CountLabel(Model.Payments.Count, "transaction")</span>
+                    <span class="report-stat">Total <strong>&#8369; @(Model.Payments.Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
+                    <span class="report-stat">Cash <strong>&#8369; @(Model.Payments.Where(p => p.PaymentMethod == "Cash").Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
+                    <span class="report-stat">GCash <strong>&#8369; @(Model.Payments.Where(p => p.PaymentMethod == "GCash").Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th>Consultation</th>
+                                <th class="col-fit">Amount</th>
+                                <th>Payment Method</th>
+                                <th class="col-fit">Payment Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Payments.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="table-empty">No transactions found for this period.</td>
+                                </tr>
+                            }
+                            @foreach (var payment in Model.Payments)
+                            {
+                                <tr>
+                                    <td class="cell-name">@(payment.Consultation?.Patient?.FullName ?? "Unknown")</td>
+                                    <td>
+                                        @(payment.Consultation?.ServiceType ?? "—")
+                                        @if (payment.Consultation != null)
+                                        {
+                                            <span class="report-sub">@((payment.Consultation.CompletedAt ?? payment.Consultation.StartedAt).ToString("MMM dd, yyyy"))</span>
+                                        }
+                                    </td>
+                                    <td class="col-fit"><span class="report-amount">&#8369; @(payment.Amount?.ToString("N2") ?? "0.00")</span></td>
+                                    <td>@payment.PaymentMethod</td>
+                                    <td class="col-fit">@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/reports/reports.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<html lang="en-GB">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta name="theme-color" content="#0A3D09" />
+
+    <title>@ViewData["Title"] · Española Birthing Home</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/css/account/account.css" asp-append-version="true" />
+
+</head>
+
+<body class="auth-body">
+
+    @* Sign-in pages (Views/Account): no sidebar, one centred card. *@
+    <main id="main-content" class="auth-page">
+        <div class="auth-card">
+            <div class="auth-brand">
+                <img src="~/images/espanola-birthing-home-logo.jpg" asp-append-version="true" alt="Española Birthing Home logo" />
+                <div>
+                    <span class="auth-brand-name">Española Birthing Home</span>
+                    <span class="auth-brand-sub">Patient Management System</span>
+                </div>
+            </div>
+
+            @RenderBody()
+        </div>
+    </main>
+
+</body>
+</html>

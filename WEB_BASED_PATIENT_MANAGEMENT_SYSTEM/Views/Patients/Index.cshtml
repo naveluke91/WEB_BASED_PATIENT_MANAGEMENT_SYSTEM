@@ -13,7 +13,7 @@
 <div class="page-header">
     <div class="page-heading">
         <h1>Patients</h1>
-        <p class="subtitle">Welcome back, Admin</p>
+        <p class="subtitle">Welcome back, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</p>
     </div>
     <div class="page-actions">
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalAddPatient">

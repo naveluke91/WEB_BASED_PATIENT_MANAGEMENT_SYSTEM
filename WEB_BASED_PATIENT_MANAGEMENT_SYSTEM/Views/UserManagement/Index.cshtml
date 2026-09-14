@@ -1,0 +1,122 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.UserManagementPageViewModel
+@{
+    ViewData["Title"] = "User Management";
+
+    // Set by UserManagementController when a form was rejected: reopens that modal.
+    var reopenForm = TempData["UserForm"] as string;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/usermanagement/usermanagement.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <div class="page-heading">
+        <h1>User Management</h1>
+        <p class="subtitle">Add, edit and delete the accounts that can sign in to the system.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus" aria-hidden="true"></i> Add User
+        </button>
+    </div>
+</div>
+
+<partial name="_PageAlerts" />
+
+<div class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-title">User List</h2>
+        <div class="search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="userSearch" placeholder="Search by name, username or role..." aria-label="Search users" />
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th class="col-status">Role</th>
+                    <th class="col-actions">Action</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                @if (!Model.Users.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="table-empty">No user accounts found.</td>
+                    </tr>
+                }
+                @foreach (var account in Model.Users)
+                {
+                    var isCurrentUser = account.Id == Model.CurrentUserId;
+                    var isLastAdmin = account.Role == UserRoles.Admin && Model.AdminCount <= 1;
+                    var searchText = $"{account.FullName} {account.Username} {account.Role}".ToLowerInvariant();
+                    var deleteMessage = $"Delete the account for {account.FullName}? They will no longer be able to sign in.";
+
+                    <tr class="patient-row" data-search="@searchText">
+                        <td class="cell-name">
+                            @account.FullName
+                            @if (isCurrentUser)
+                            {
+                                <span class="user-self">You</span>
+                            }
+                        </td>
+                        <td>@account.Username</td>
+                        <td class="col-status">
+                            <span class="role-badge @(account.Role == UserRoles.Admin ? "role-badge-admin" : "role-badge-staff")">@account.Role</span>
+                        </td>
+                        <td class="col-actions">
+                            <div class="action-btns">
+                                <button type="button" class="action-btn" title="Edit"
+                                        aria-label="Edit @account.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        data-user-id="@account.Id"
+                                        data-full-name="@account.FullName"
+                                        data-username="@account.Username"
+                                        data-role="@account.Role">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
+                                </button>
+                                @if (isCurrentUser || isLastAdmin)
+                                {
+                                    <button type="button" class="action-btn delete-btn" disabled
+                                            title="@(isCurrentUser ? "You can't delete the account you are signed in with" : "The system needs at least one Admin account")"
+                                            aria-label="Delete @account.FullName (not available)">
+                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <form asp-action="Delete" asp-route-id="@account.Id" method="post"
+                                          onsubmit="confirmDelete(event, this);" data-delete-message="@deleteMessage">
+                                        <button type="submit" class="action-btn delete-btn" title="Delete"
+                                                aria-label="Delete @account.FullName">
+                                            <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="~/Views/UserManagement/Modals/_AddUserModal.cshtml" />
+<partial name="~/Views/UserManagement/Modals/_EditUserModal.cshtml" />
+
+@section Scripts {
+    <script>
+        // Server-rendered values used by usermanagement.js
+        window.userManagementPageData = {
+            currentUserId: @Model.CurrentUserId,
+            reopenForm: @Html.Raw(reopenForm ?? "null")
+        };
+    </script>
+    <script src="~/js/usermanagement/usermanagement.js" asp-append-version="true"></script>
+}

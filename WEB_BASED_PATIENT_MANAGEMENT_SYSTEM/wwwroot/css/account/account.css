@@ -1,0 +1,82 @@
+/* ============================================================
+   account.css — sign-in pages
+   Views/Shared/_AuthLayout.cshtml, Views/Account/Login.cshtml and
+   Views/Account/Setup.cshtml.
+   ============================================================ */
+
+.auth-body {
+    background:
+        radial-gradient(120% 60% at 0% 0%, rgba(98, 176, 4, 0.14) 0%, rgba(98, 176, 4, 0) 60%),
+        var(--bg-app);
+}
+
+.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--space-6) var(--space-4);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: var(--space-7);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.auth-brand img {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.auth-brand-name {
+    display: block;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    color: var(--brand-dark);
+}
+
+.auth-brand-sub {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.auth-title {
+    margin: 0 0 4px;
+    font-size: var(--fs-xl);
+    font-weight: 700;
+}
+
+.auth-subtitle {
+    margin: 0 0 var(--space-5);
+    color: var(--text-secondary);
+}
+
+.auth-field + .auth-field {
+    margin-top: var(--space-4);
+}
+
+.auth-submit {
+    width: 100%;
+    margin-top: var(--space-6);
+}
+
+@media (max-width: 575.98px) {
+    .auth-card {
+        padding: var(--space-5);
+    }
+}

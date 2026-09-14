@@ -37,6 +37,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
         // Payment transaction recorded for a completed consultation
         public DbSet<Payment> Payments { get; set; }
 
+        // Accounts that can sign in (Admin or Staff)
+        public DbSet<UserAccount> UserAccounts { get; set; }
+
         /// <summary>
         /// I-configure ang relasyon tali sa Patient ug PrenatalRecord.
         /// Kung ma-delete ang Patient, ma-delete pud ang iyang PrenatalRecords (cascade).
@@ -114,6 +117,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .WithOne()
                 .HasForeignKey<Payment>(p => p.ConsultationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Usernames are used to sign in, so no two accounts can share one.
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
         }
     }
 }

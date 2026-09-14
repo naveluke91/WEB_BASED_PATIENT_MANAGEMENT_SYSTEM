@@ -1,0 +1,106 @@
+/* ============================================================
+   reports.css — Reports module
+   Views/Reports/Index.cshtml (Generate Reports).
+   ============================================================ */
+
+/* ---- Filters ---- */
+.report-filters {
+    margin-bottom: var(--space-5);
+}
+
+.report-generate {
+    width: 100%;
+}
+
+/* ---- Generated report ---- */
+.report-meta {
+    margin: 2px 0 0;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.report-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5) 0;
+}
+
+.report-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+}
+
+.report-stat strong {
+    font-size: var(--fs-md);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.report-note {
+    margin: var(--space-3) var(--space-5) 0;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.report-section .table-responsive {
+    margin-top: var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* The name column is the widest; the other columns size to their content. */
+.report-table thead th:first-child {
+    width: 24%;
+}
+
+.report-amount {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Consultation date shown under the service in the payment report */
+.report-sub {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+/* ---- Print Report: only the generated report is printed ---- */
+@media print {
+    .skip-link,
+    .sidebar,
+    .topbar,
+    .page-actions,
+    .page-alerts,
+    .report-filters {
+        display: none;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .page-body {
+        padding: 0;
+    }
+
+    .report-results {
+        border: 0;
+        box-shadow: none;
+    }
+
+    .table-responsive {
+        overflow: visible;
+    }
+}

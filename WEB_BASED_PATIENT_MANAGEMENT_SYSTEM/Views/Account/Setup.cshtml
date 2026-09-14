@@ -1,0 +1,52 @@
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.UserFormViewModel
+@{
+    ViewData["Title"] = "Create Admin Account";
+    Layout = "_AuthLayout";
+
+    var errors = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+}
+
+<h1 class="auth-title">Create the Admin account</h1>
+<p class="auth-subtitle">No user accounts exist yet. Create the first Admin account to start using the system.</p>
+
+@if (errors.Any())
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span>@string.Join(" ", errors)</span>
+    </div>
+}
+
+<form asp-action="Setup" method="post">
+    <div class="auth-field">
+        <label for="setupFullName" class="form-label">Full Name</label>
+        <input type="text" name="FullName" id="setupFullName" class="form-control"
+               value="@Model.FullName" maxlength="150" autocomplete="name" required autofocus />
+    </div>
+
+    <div class="auth-field">
+        <label for="setupUsername" class="form-label">Username</label>
+        <input type="text" name="Username" id="setupUsername" class="form-control"
+               value="@Model.Username" minlength="3" maxlength="50" pattern="[A-Za-z0-9._\-]+"
+               title="Letters, numbers, dots, dashes and underscores only" autocomplete="username" required />
+    </div>
+
+    <div class="auth-field">
+        <label for="setupPassword" class="form-label">Password</label>
+        <input type="password" name="Password" id="setupPassword" class="form-control"
+               minlength="8" maxlength="100" autocomplete="new-password" placeholder="At least 8 characters" required />
+    </div>
+
+    <div class="auth-field">
+        <label for="setupConfirmPassword" class="form-label">Confirm Password</label>
+        <input type="password" name="ConfirmPassword" id="setupConfirmPassword" class="form-control"
+               maxlength="100" autocomplete="new-password" required />
+    </div>
+
+    <button type="submit" class="btn-primary-dark auth-submit">Create Admin Account</button>
+</form>
