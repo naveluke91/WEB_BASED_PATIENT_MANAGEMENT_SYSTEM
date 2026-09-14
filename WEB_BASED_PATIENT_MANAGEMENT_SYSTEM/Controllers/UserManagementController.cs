@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +9,10 @@ using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
     /// <summary>
-    /// User Management — Admin only. Lists the accounts that can sign in and adds,
-    /// edits and deletes them. Healthcare records are not linked to user accounts,
-    /// so deleting an account never removes patient, consultation or billing data.
+    /// User Management. Lists the accounts that can sign in and adds, edits and
+    /// deletes them. Healthcare records are not linked to user accounts, so
+    /// deleting an account never removes patient, consultation or billing data.
     /// </summary>
-    [Authorize(Roles = UserRoles.Admin)]
     public class UserManagementController : Controller
     {
         private readonly ApplicationDbContext _context;

@@ -10,9 +10,12 @@ using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
     /// <summary>
-    /// Sign in and sign out. Every other page needs a signed-in account
-    /// (fallback authorization policy in Program.cs).
+    /// Sign in and sign out.
+    /// Switched off for now with [NonController]: the system runs without sign-in,
+    /// so /Account/Login and /Account/Setup don't exist. Remove the attribute in the
+    /// later Admin/Staff sign-in task.
     /// </summary>
+    [NonController]
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;

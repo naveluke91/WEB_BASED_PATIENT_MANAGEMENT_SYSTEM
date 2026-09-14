@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
@@ -10,7 +9,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// Reports → Generate Reports. Read-only summaries of the existing patient,
     /// appointment, consultation and payment records, for Admin and Staff.
     /// </summary>
-    [Authorize(Roles = UserRoles.Admin + "," + UserRoles.Staff)]
     public class ReportsController : Controller
     {
         private readonly ApplicationDbContext _context;
