@@ -115,7 +115,7 @@
         selectedPatient = patient;
         patientId.value = patient.id;
         search.value = patient.name;
-        search.style.borderColor = '#468403';
+        search.style.borderColor = 'var(--brand-action)'; // sunod sa theme (clinic = #468403)
         hideDropdown();
         loadAvailableAppointments(patient);
         validator.recheck();

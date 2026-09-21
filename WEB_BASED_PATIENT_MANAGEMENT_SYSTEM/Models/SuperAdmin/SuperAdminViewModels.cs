@@ -8,13 +8,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public string? ConfirmPassword { get; set; }
     }
 
-    // SuperAdmin → Add Account: naay Role, pero Admin o Staff ra.
-    public class SuperAdminAccountFormViewModel : UserFormViewModel
-    {
-        public string? Role { get; set; }
-    }
-
-    // SuperAdmin → Reset Password sa Admin o Staff.
+    // Users → Reset Password sa Admin o Staff (SuperAdmin ra).
     public class ResetAccountPasswordViewModel
     {
         public int Id { get; set; }
@@ -22,12 +16,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public string? NewPassword { get; set; }
 
         public string? ConfirmPassword { get; set; }
-    }
-
-    // SuperAdmin → Manage Users (Admin ug Staff ra ang listahan).
-    public class SuperAdminUsersPageViewModel
-    {
-        public List<UserAccount> Accounts { get; set; } = new();
     }
 
     // SuperAdmin → Settings (walay password o hash nga ipakita).

@@ -20,29 +20,24 @@ using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
     /// <summary>
-    /// SuperAdmin console with its own sign-in (/login.SupAdmin), cookie and theme.
-    /// Manages the Admin and Staff accounts, its own settings and Gmail recovery.
-    /// The hidden URL is only for privacy; every action checks the SuperAdmin role.
+    /// SuperAdmin sign-in (/login.SupAdmin), password recovery by Gmail and Settings.
+    /// The SuperAdmin uses the same clinic pages and the same cookie as Admin and Staff
+    /// (role claim = SuperAdmin); Users management lives in UserManagementController.
+    /// The hidden URL is only for privacy; every SuperAdmin-only action checks the role.
     /// </summary>
-    // SuperAdmin ra maka-access (lahi nga cookie).
-    [Authorize(AuthenticationSchemes = Scheme, Roles = UserRoles.SuperAdmin)]
+    // SuperAdmin ra maka-access (gawas sa login ug recovery).
+    [Authorize(Roles = UserRoles.SuperAdmin)]
     public class SuperAdminController : Controller
     {
-        public const string Scheme = "SuperAdmin";
         public const string RateLimitPolicy = "superadmin-sensitive";
         public const string LoginPath = "/login.SupAdmin";
 
-        // Session: 30 minutos nga walay lihok (Program.cs), 4 ka oras labing dugay.
-        public static readonly TimeSpan MaxSessionAge = TimeSpan.FromHours(4);
-
-        private const string SignedInClaim = "superadmin_signed_in";
         private const string NoticeKey = "SaNotice";
         private const string ErrorKey = "SaError";
         private const string FormKey = "SaForm";
 
         private const string GenericLoginError = "Invalid username or password.";
         private const string RecoverySentMessage = "If the recovery information is valid, a recovery code has been sent.";
-        private const string InvalidCodeMessage = "Invalid or expired code.";
 
         // Lockout: 5 ka sayop nga login → 15 minutos.
         private const int MaxFailedLogins = 5;
@@ -52,7 +47,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private const int MaxCodeAttempts = 5;
         private static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(10);
 
-        private static readonly Regex UsernamePattern = new(@"^[A-Za-z0-9._-]{3,50}$");
+        private static readonly Regex UsernamePattern = new(@"^[A-Za-z0-9._-]+$");
         private static readonly Regex CodePattern = new(@"^[0-9]{8}$");
 
         // Para parehas ang oras sa tubag bisan walay account.
@@ -71,21 +66,17 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _emailSender = emailSender;
         }
 
-        // Admin/Staff nga naka-login sa clinic: Access Denied bisan sa login ug recovery pages.
-        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        // Admin/Staff nga naka-login: Access Denied bisan sa login ug recovery pages.
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (!User.IsInRole(UserRoles.SuperAdmin)
-                && (await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme)).Succeeded)
-            {
+            if (User.Identity?.IsAuthenticated == true && !User.IsInRole(UserRoles.SuperAdmin))
                 context.Result = Redirect("/Account/AccessDenied");
-                return;
-            }
 
-            await next();
+            base.OnActionExecuting(context);
         }
 
         // =======================================================================
-        // Sign in / sign out
+        // Sign in (sign out = Account/Logout)
         // =======================================================================
 
         // GET /login.SupAdmin (walay link sa normal nga UI)
@@ -94,7 +85,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         public IActionResult Login()
         {
             if (User.IsInRole(UserRoles.SuperAdmin))
-                return RedirectToAction(nameof(ManageUsers));
+                return RedirectToAction("Index", "Patients");
 
             return View(new LoginViewModel());
         }
@@ -144,21 +135,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 account.SecurityStamp = AccountController.NewSecurityStamp();
             _context.SaveChanges();
 
-            await HttpContext.SignInAsync(Scheme, CreateSuperAdminPrincipal(account, now));
+            await SignInSuperAdminAsync(account, now);
 
-            // Temporary password: usbon una.
+            // Temporary password: usbon una. Kung dili, ang parehas nga Patients sa clinic.
             return account.MustChangePassword
                 ? RedirectToAction(nameof(ChangePassword))
-                : RedirectToAction(nameof(ManageUsers));
-        }
-
-        // POST /SuperAdmin/Logout
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(Scheme);
-            return Redirect(LoginPath);
+                : RedirectToAction("Index", "Patients");
         }
 
         // =======================================================================
@@ -170,9 +152,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
             if (!account.MustChangePassword)
-                return RedirectToAction(nameof(ManageUsers));
+                return RedirectToAction("Index", "Patients");
 
             return View(new ChangePasswordViewModel());
         }
@@ -184,9 +166,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
             if (!account.MustChangePassword)
-                return RedirectToAction(nameof(ManageUsers));
+                return RedirectToAction("Index", "Patients");
 
             AddNewPasswordErrors(account, model.NewPassword, model.ConfirmPassword);
             if (!ModelState.IsValid)
@@ -196,142 +178,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _context.SaveChanges();
 
             // Bag-o nga stamp: i-renew ang cookie.
-            await HttpContext.SignInAsync(Scheme, CreateSuperAdminPrincipal(account, SignedInAt(User) ?? DateTime.UtcNow));
-            TempData[NoticeKey] = "Password changed.";
-            return RedirectToAction(nameof(ManageUsers));
-        }
-
-        // =======================================================================
-        // Manage Users (Admin and Staff only)
-        // =======================================================================
-
-        [HttpGet]
-        public IActionResult ManageUsers()
-        {
-            // Admin ug Staff ra; ang SuperAdmin dili ma-lista.
-            var accounts = _context.UserAccounts
-                .AsNoTracking()
-                .Where(u => u.Role != UserRoles.SuperAdmin)
-                .OrderBy(u => u.Role)
-                .ThenBy(u => u.FullName)
-                .ToList();
-
-            return View(new SuperAdminUsersPageViewModel { Accounts = accounts });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult CreateAccount([Bind(nameof(SuperAdminAccountFormViewModel.FullName), nameof(SuperAdminAccountFormViewModel.Username),
-            nameof(SuperAdminAccountFormViewModel.Password), nameof(SuperAdminAccountFormViewModel.ConfirmPassword),
-            nameof(SuperAdminAccountFormViewModel.Role))] SuperAdminAccountFormViewModel model)
-        {
-            var errors = ModelErrors();
-            // Admin o Staff ra; ang SuperAdmin i-reject.
-            var role = AssignableRole(model.Role, errors);
-            ValidateAccountFields(model.FullName, model.Username, exceptId: null, errors);
-            var passwordError = AccountController.BasicPasswordError(model.Password);
-            if (passwordError != null)
-                errors[nameof(model.Password)] = passwordError;
-
-            var values = new { fullName = model.FullName, username = model.Username, role };
-            if (errors.Count > 0)
-                return BackToUsers("add", errors, values);
-
-            var account = new UserAccount
-            {
-                FullName = model.FullName.Trim(),
-                Username = model.Username.Trim(),
-                Role = role!,
-                RecoveryEmail = null,
-                SecurityStamp = AccountController.NewSecurityStamp()
-            };
-            // I-hash ang password.
-            account.PasswordHash = _passwordHasher.HashPassword(account, model.Password!);
-            _context.UserAccounts.Add(account);
-
-            if (!TrySave(errors))
-                return BackToUsers("add", errors, values);
-
-            TempData[NoticeKey] = $"{account.Role} account \"{account.FullName}\" was created.";
-            return RedirectToAction(nameof(ManageUsers));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult EditAccount([Bind(nameof(SuperAdminAccountFormViewModel.Id), nameof(SuperAdminAccountFormViewModel.FullName),
-            nameof(SuperAdminAccountFormViewModel.Username), nameof(SuperAdminAccountFormViewModel.Role))] SuperAdminAccountFormViewModel model)
-        {
-            var account = ManagedAccount(model.Id);
-            if (account == null)
-                return AccountNotAvailable();
-
-            var errors = ModelErrors();
-            // Dili pwede himuon nga SuperAdmin.
-            var role = AssignableRole(model.Role, errors);
-            ValidateAccountFields(model.FullName, model.Username, exceptId: account.Id, errors);
-
-            var values = new { id = account.Id, fullName = model.FullName, username = model.Username, role };
-            if (errors.Count > 0)
-                return BackToUsers("edit", errors, values);
-
-            account.FullName = model.FullName.Trim();
-            account.Username = model.Username.Trim();
-            account.Role = role!;
-
-            if (!TrySave(errors))
-                return BackToUsers("edit", errors, values);
-
-            TempData[NoticeKey] = $"Account \"{account.FullName}\" was updated.";
-            return RedirectToAction(nameof(ManageUsers));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult DeleteAccount(int id)
-        {
-            // Dili ma-delete ang SuperAdmin (bisan gi-forge ang request).
-            var account = ManagedAccount(id);
-            if (account == null)
-                return AccountNotAvailable();
-
-            // Login account ra; ang patient records dili apil.
-            _context.UserAccounts.Remove(account);
-            _context.SaveChanges();
-
-            TempData[NoticeKey] = $"{account.Role} account \"{account.FullName}\" was deleted.";
-            return RedirectToAction(nameof(ManageUsers));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult ResetAccountPassword(ResetAccountPasswordViewModel model)
-        {
-            var account = ManagedAccount(model.Id);
-            if (account == null)
-                return AccountNotAvailable();
-
-            var errors = new Dictionary<string, string>();
-            var passwordError = AccountController.BasicPasswordError(model.NewPassword);
-            if (passwordError != null)
-                errors[nameof(model.NewPassword)] = passwordError;
-            if (string.IsNullOrEmpty(model.ConfirmPassword))
-                errors[nameof(model.ConfirmPassword)] = "Kinahanglan kini nga field.";
-            else if (model.ConfirmPassword != model.NewPassword)
-                errors[nameof(model.ConfirmPassword)] = "Dili parehas ang password.";
-
-            if (errors.Count > 0)
-                return BackToUsers("reset", errors, new { id = account.Id, fullName = account.FullName });
-
-            // Temporary password: usbon sa sunod nga login; ang daan nga session mawala.
-            account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
-            account.MustChangePassword = true;
-            account.SecurityStamp = AccountController.NewSecurityStamp();
-            account.FailedLoginAttempts = 0;
-            account.LockoutEndUtc = null;
-            _context.SaveChanges();
-
-            TempData[NoticeKey] = $"Password reset for \"{account.FullName}\". They must change it at their next sign-in.";
-            return RedirectToAction(nameof(ManageUsers));
+            await SignInSuperAdminAsync(account, AccountController.SignedInAt(User) ?? DateTime.UtcNow);
+            return RedirectToAction("Index", "Patients");
         }
 
         // =======================================================================
@@ -343,7 +191,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
 
             return View(new SuperAdminSettingsViewModel
             {
@@ -360,20 +208,22 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
 
             var errors = new Dictionary<string, string>();
             CheckCurrentPassword(account, model.CurrentPassword, errors);
 
             var username = model.NewUsername?.Trim() ?? string.Empty;
             if (username.Length == 0)
-                errors[nameof(model.NewUsername)] = "Kinahanglan kini nga field.";
+                errors[nameof(model.NewUsername)] = AuthMessages.Required;
+            else if (username.Length < 3 || username.Length > 50)
+                errors[nameof(model.NewUsername)] = AuthMessages.UsernameLength;
             else if (!UsernamePattern.IsMatch(username))
-                errors[nameof(model.NewUsername)] = "3-50 ka letra, numero, . _ - lang.";
+                errors[nameof(model.NewUsername)] = AuthMessages.UsernameChars;
             else if (string.Equals(username, account.Username, StringComparison.OrdinalIgnoreCase))
-                errors[nameof(model.NewUsername)] = "Parehas ra sa karon nga username.";
+                errors[nameof(model.NewUsername)] = AuthMessages.SameUsername;
             else if (_context.UserAccounts.Any(u => u.Username == username && u.Id != account.Id))
-                errors[nameof(model.NewUsername)] = "Gigamit na kini nga username.";
+                errors[nameof(model.NewUsername)] = AuthMessages.UsernameInUse;
 
             if (errors.Count > 0)
                 return BackToSettings("username", errors, new { newUsername = model.NewUsername });
@@ -383,7 +233,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return BackToSettings("username", errors, new { newUsername = model.NewUsername });
 
             // I-renew ang claims (bag-o nga username).
-            await HttpContext.SignInAsync(Scheme, CreateSuperAdminPrincipal(account, SignedInAt(User) ?? DateTime.UtcNow));
+            await SignInSuperAdminAsync(account, AccountController.SignedInAt(User) ?? DateTime.UtcNow);
             TempData[NoticeKey] = "Username changed.";
             return RedirectToAction(nameof(Settings));
         }
@@ -395,7 +245,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
 
             var errors = new Dictionary<string, string>();
             CheckCurrentPassword(account, model.CurrentPassword, errors);
@@ -410,7 +260,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _context.SaveChanges();
 
             // Bag-o nga stamp: ang ubang session ma-logout; kini i-renew.
-            await HttpContext.SignInAsync(Scheme, CreateSuperAdminPrincipal(account, SignedInAt(User) ?? DateTime.UtcNow));
+            await SignInSuperAdminAsync(account, AccountController.SignedInAt(User) ?? DateTime.UtcNow);
             TempData[NoticeKey] = "Password changed.";
             return RedirectToAction(nameof(Settings));
         }
@@ -422,16 +272,16 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var account = CurrentSuperAdmin();
             if (account == null)
-                return Redirect(LoginPath);
+                return RedirectToAction("Login", "Account");
 
             var errors = new Dictionary<string, string>();
             CheckCurrentPassword(account, model.CurrentPassword, errors);
 
             var email = NormalizeEmail(model.RecoveryEmail);
             if (email.Length == 0)
-                errors[nameof(model.RecoveryEmail)] = "Kinahanglan kini nga field.";
+                errors[nameof(model.RecoveryEmail)] = AuthMessages.Required;
             else if (!IsValidEmail(email))
-                errors[nameof(model.RecoveryEmail)] = "Dili valid ang Gmail.";
+                errors[nameof(model.RecoveryEmail)] = AuthMessages.InvalidGmail;
 
             if (errors.Count > 0)
                 return BackToSettings("recovery", errors, new { recoveryEmail = model.RecoveryEmail });
@@ -461,7 +311,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var email = NormalizeEmail(model.Email);
             if (!IsValidEmail(email))
             {
-                ModelState.AddModelError(nameof(model.Email), email.Length == 0 ? "Kinahanglan kini nga field." : "Dili valid ang Gmail.");
+                ModelState.AddModelError(nameof(model.Email), email.Length == 0 ? AuthMessages.Required : AuthMessages.InvalidGmail);
                 return View(new ForgotPasswordViewModel { Email = model.Email });
             }
 
@@ -505,7 +355,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var code = model.Code?.Trim() ?? string.Empty;
             if (!CodePattern.IsMatch(code))
             {
-                ModelState.AddModelError(nameof(model.Code), "8 ka numero ang code.");
+                ModelState.AddModelError(nameof(model.Code), AuthMessages.CodeFormat);
                 return View(new VerifyCodeViewModel());
             }
 
@@ -627,43 +477,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
         }
 
-        // SuperAdmin cookie: account, role, stamp ug oras sa login.
-        [NonAction]
-        public static async Task ValidatePrincipalAsync(CookieValidatePrincipalContext context)
-        {
-            var principal = context.Principal;
-            var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-            var account = int.TryParse(principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var accountId)
-                ? await db.UserAccounts.AsNoTracking().FirstOrDefaultAsync(u => u.Id == accountId)
-                : null;
-            var signedInAt = SignedInAt(principal);
-
-            // SuperAdmin ra, parehas nga stamp, ug dili lapas sa 4 ka oras.
-            if (principal == null || account == null || account.Role != UserRoles.SuperAdmin
-                || !AccountController.StampMatches(principal, account)
-                || signedInAt == null || DateTime.UtcNow - signedInAt.Value > MaxSessionAge)
-            {
-                context.RejectPrincipal();
-                await context.HttpContext.SignOutAsync(Scheme);
-                return;
-            }
-
-            if (principal.FindFirst(ClaimTypes.Name)?.Value != account.Username
-                || principal.FindFirst(ClaimTypes.GivenName)?.Value != account.FullName)
-            {
-                context.ReplacePrincipal(CreateSuperAdminPrincipal(account, signedInAt.Value));
-                context.ShouldRenew = true;
-            }
-        }
-
-        // Admin/Staff nga naka-login: Access Denied. Wala naka-login: SuperAdmin login.
-        [NonAction]
-        public static async Task RedirectToLoginAsync(RedirectContext<CookieAuthenticationOptions> context)
-        {
-            var clinicUser = await context.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            context.Response.Redirect(clinicUser.Succeeded ? "/Account/AccessDenied" : LoginPath);
-        }
-
         // Rate limit: balik sa kilala nga GET page ra (walay open redirect).
         [NonAction]
         public static string BusyPage(PathString path)
@@ -683,12 +496,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [NonAction]
         public static string? StrongPasswordError(string? password)
         {
-            if (string.IsNullOrWhiteSpace(password)) return "Kinahanglan kini nga field.";
-            if (password.Length < 12) return "Labing menos 12 ka karakter.";
-            if (password.Length > 100) return "Hangtod 100 ka karakter lang.";
+            if (string.IsNullOrWhiteSpace(password)) return AuthMessages.Required;
+            if (password.Length < 12) return AuthMessages.PasswordMin12;
+            if (password.Length > 100) return AuthMessages.PasswordMax;
             if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit)
                 || !password.Any(c => !char.IsLetterOrDigit(c) && !char.IsWhiteSpace(c)))
-                return "Gamiti og dako ug gamay nga letra, numero, ug simbolo.";
+                return AuthMessages.PasswordComplexity;
             return null;
         }
 
@@ -696,34 +509,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // Helpers
         // =======================================================================
 
-        private static ClaimsPrincipal CreateSuperAdminPrincipal(UserAccount account, DateTime signedInUtc)
-        {
-            var principal = AccountController.CreatePrincipal(account, Scheme);
-            ((ClaimsIdentity)principal.Identity!).AddClaim(
-                new Claim(SignedInClaim, signedInUtc.Ticks.ToString(CultureInfo.InvariantCulture)));
-            return principal;
-        }
-
-        private static DateTime? SignedInAt(ClaimsPrincipal? principal) =>
-            long.TryParse(principal?.FindFirst(SignedInClaim)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
-                && ticks > 0 && ticks <= DateTime.MaxValue.Ticks
-                ? new DateTime(ticks, DateTimeKind.Utc)
-                : null;
+        // Parehas nga cookie sa clinic; ang SuperAdmin naay mubo nga idle timeout.
+        private Task SignInSuperAdminAsync(UserAccount account, DateTime signedInUtc) =>
+            HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+                AccountController.CreatePrincipal(account, signedInUtc), AccountController.SuperAdminProperties());
 
         private UserAccount? CurrentSuperAdmin() =>
             int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
                 ? _context.UserAccounts.FirstOrDefault(u => u.Id == id && u.Role == UserRoles.SuperAdmin)
                 : null;
-
-        // Admin o Staff ra (dili SuperAdmin, dili ang kaugalingon).
-        private UserAccount? ManagedAccount(int id) =>
-            _context.UserAccounts.FirstOrDefault(u => u.Id == id && u.Role != UserRoles.SuperAdmin);
-
-        private IActionResult AccountNotAvailable()
-        {
-            TempData[ErrorKey] = "That account can't be changed here.";
-            return RedirectToAction(nameof(ManageUsers));
-        }
 
         // Ang SuperAdmin kay walay code nga aktibo kung expired na.
         private UserAccount? ActiveRecoveryAccount()
@@ -748,7 +542,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         private IActionResult CodeFailed()
         {
-            ModelState.AddModelError(nameof(VerifyCodeViewModel.Code), InvalidCodeMessage);
+            ModelState.AddModelError(nameof(VerifyCodeViewModel.Code), AuthMessages.CodeInvalid);
             return View(nameof(VerifyCode), new VerifyCodeViewModel());
         }
 
@@ -778,46 +572,23 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (error != null)
                 ModelState.AddModelError(nameof(ChangePasswordViewModel.NewPassword), error);
             else if (_passwordHasher.VerifyHashedPassword(account, account.PasswordHash, newPassword!) != PasswordVerificationResult.Failed)
-                ModelState.AddModelError(nameof(ChangePasswordViewModel.NewPassword), "Gamita og bag-o nga password, dili ang karaan.");
+                ModelState.AddModelError(nameof(ChangePasswordViewModel.NewPassword), AuthMessages.NewPasswordNotCurrent);
 
             if (string.IsNullOrEmpty(confirmPassword))
-                ModelState.AddModelError(nameof(ChangePasswordViewModel.ConfirmPassword), "Kinahanglan kini nga field.");
+                ModelState.AddModelError(nameof(ChangePasswordViewModel.ConfirmPassword), AuthMessages.Required);
             else if (confirmPassword != newPassword)
-                ModelState.AddModelError(nameof(ChangePasswordViewModel.ConfirmPassword), "Dili parehas ang password.");
+                ModelState.AddModelError(nameof(ChangePasswordViewModel.ConfirmPassword), AuthMessages.PasswordMismatch);
         }
 
         private void CheckCurrentPassword(UserAccount account, string? currentPassword, Dictionary<string, string> errors)
         {
             if (string.IsNullOrEmpty(currentPassword))
-                errors["CurrentPassword"] = "Kinahanglan kini nga field.";
+                errors["CurrentPassword"] = AuthMessages.Required;
             else if (_passwordHasher.VerifyHashedPassword(account, account.PasswordHash, currentPassword) == PasswordVerificationResult.Failed)
-                errors["CurrentPassword"] = "Sayop ang current password.";
+                errors["CurrentPassword"] = AuthMessages.CurrentPasswordIncorrect;
         }
 
-        // Admin o Staff ra ang dawaton (eksakto).
-        private static string? AssignableRole(string? requestedRole, Dictionary<string, string> errors)
-        {
-            var role = UserRoles.Assignable.FirstOrDefault(r => r == requestedRole);
-            if (role == null)
-                errors[nameof(SuperAdminAccountFormViewModel.Role)] = "Pilia ang Admin o Staff.";
-            return role;
-        }
-
-        private void ValidateAccountFields(string? fullName, string? username, int? exceptId, Dictionary<string, string> errors)
-        {
-            if (!string.IsNullOrWhiteSpace(fullName) && !Patient.IsValidPersonName(fullName))
-                errors.TryAdd(nameof(UserFormViewModel.FullName), "Dili valid ang ngalan.");
-
-            var trimmed = username?.Trim();
-            if (!string.IsNullOrEmpty(trimmed) && _context.UserAccounts.Any(u => u.Username == trimmed && u.Id != exceptId))
-                errors.TryAdd(nameof(UserFormViewModel.Username), "That username is already taken.");
-        }
-
-        private Dictionary<string, string> ModelErrors() =>
-            ModelState.Where(entry => entry.Value?.Errors.Count > 0)
-                .ToDictionary(entry => entry.Key, entry => entry.Value!.Errors[0].ErrorMessage);
-
-        private bool TrySave(Dictionary<string, string> errors, string usernameField = nameof(UserFormViewModel.Username))
+        private bool TrySave(Dictionary<string, string> errors, string usernameField)
         {
             try
             {
@@ -826,18 +597,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
             catch (DbUpdateException)
             {
-                errors[usernameField] = "That username is already taken.";
+                errors[usernameField] = AuthMessages.UsernameInUse;
                 return false;
             }
         }
 
-        // Balik sa listahan; ablihan pag-usab ang modal (walay password nga ibalik).
-        private IActionResult BackToUsers(string form, Dictionary<string, string> errors, object values)
-        {
-            TempData[FormKey] = JsonSerializer.Serialize(new { form, errors, values });
-            return RedirectToAction(nameof(ManageUsers));
-        }
-
+        // Balik sa Settings; markahan ang mga field (walay password nga ibalik).
         private IActionResult BackToSettings(string form, Dictionary<string, string> errors, object values)
         {
             TempData[FormKey] = JsonSerializer.Serialize(new { form, errors, values });

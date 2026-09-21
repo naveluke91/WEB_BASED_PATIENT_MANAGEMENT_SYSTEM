@@ -22,7 +22,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Sign-in: an encrypted cookie holds the account's id, username, name and role.
+// Sign-in: an encrypted cookie holds the account's id, username, name and role
+// (SuperAdmin, Admin or Staff; one cookie for all three).
 // Passwords are stored as salted hashes by ASP.NET Core's built-in PasswordHasher.
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 
@@ -54,38 +55,33 @@ builder.Services
                 ? await db.UserAccounts.AsNoTracking().FirstOrDefaultAsync(u => u.Id == accountId)
                 : null;
 
-            // SuperAdmin dili sa clinic; bag-o nga password = logout sa daan nga session.
-            if (account == null || account.Role == UserRoles.SuperAdmin
-                || !AccountController.StampMatches(context.Principal!, account))
+            // Bag-o nga password = logout sa daan nga session.
+            var principal = context.Principal!;
+            if (account == null || !AccountController.StampMatches(principal, account))
             {
                 context.RejectPrincipal();
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return;
             }
 
-            var principal = context.Principal!;
+            // SuperAdmin: dili molapas sa 4 ka oras ang session.
+            var signedInAt = AccountController.SignedInAt(principal);
+            if (account.Role == UserRoles.SuperAdmin
+                && (signedInAt == null || DateTime.UtcNow - signedInAt.Value > AccountController.SuperAdminMaxSession))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
             if (principal.FindFirst(ClaimTypes.Role)?.Value != account.Role
                 || principal.FindFirst(ClaimTypes.Name)?.Value != account.Username
                 || principal.FindFirst(ClaimTypes.GivenName)?.Value != account.FullName)
             {
-                context.ReplacePrincipal(AccountController.CreatePrincipal(account));
+                context.ReplacePrincipal(AccountController.CreatePrincipal(account, signedInAt));
                 context.ShouldRenew = true;
             }
         };
-    })
-    // SuperAdmin: lahi nga cookie, mubo nga session, strict SameSite.
-    .AddCookie(SuperAdminController.Scheme, options =>
-    {
-        options.Cookie.Name = ".Espanola.SuperAdmin";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.LoginPath = SuperAdminController.LoginPath;
-        options.AccessDeniedPath = "/Account/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-        options.SlidingExpiration = true;
-        options.Events.OnValidatePrincipal = SuperAdminController.ValidatePrincipalAsync;
-        options.Events.OnRedirectToLogin = SuperAdminController.RedirectToLoginAsync;
     });
 
 // Kinahanglan naka-login sa tanan nga page; ang Login ug Setup [AllowAnonymous].
@@ -122,6 +118,10 @@ var app = builder.Build();
 
 // Usa ra ka SuperAdmin: himuon kung wala pa (temporary password, usbon sa una nga login).
 SuperAdminController.EnsureSuperAdmin(app.Services, app.Configuration, app.Logger);
+
+// Sample Staff1 ug Admin para sa local testing: Development ra, dili sa Production.
+if (app.Environment.IsDevelopment())
+    AccountController.EnsureSampleAccounts(app.Services, app.Logger);
 
 if (!app.Environment.IsDevelopment())
 {

@@ -1,0 +1,200 @@
+/* ============================================================
+   superadmin-theme.css — SupAdmin color theme (clinic pages)
+
+   Parehas nga pages ug layout sa Admin ug Staff (Patients, Services,
+   Appointments, Consultation, Billing, Reports, Users, Settings); kolor
+   ra ang lahi. Ang _Layout.cshtml mo-load niini ug mag-butang og
+   <body class="superadmin-theme"> kung ang role sa naka-login = SuperAdmin.
+   Ang Admin ug Staff dili mo-load niini, busa dili mausab ang ilang kolor.
+
+   Palette:  primary #1E293B · secondary #334155 · accent #6366F1
+             background #F8FAFC · sidebar #0F172A · hover #475569
+             active menu #4F46E5 · light accent #EEF2FF
+             danger #DC2626 · success #16A34A
+
+   1. Design tokens (giusab ang variables sa site.css)
+   2. Sidebar ug top bar
+   3. Buttons, forms, tables, modals
+   4. Status ug role badges (success = berde gihapon)
+   5. Module-specific nga kolor
+   ============================================================ */
+
+/* ============================================================
+   1. Design tokens
+   ============================================================ */
+body.superadmin-theme {
+    /* "brand" = accent sa SuperAdmin */
+    --brand-dark: #0F172A;            /* sidebar */
+    --brand-primary: #6366F1;         /* accent */
+    --brand-light: #C7D2FE;           /* hayag nga accent sa itom nga surface */
+    --brand-surface: #EEF2FF;         /* light accent: selected / highlight */
+    --brand-surface-soft: #F5F7FF;    /* hover ug subtle fills */
+
+    --brand-action: #4F46E5;          /* primary buttons (6.3:1 sa puti) */
+    --brand-action-hover: #4338CA;
+    --brand-action-active: #3730A3;
+    --brand-text: #3730A3;
+
+    /* ---- Neutrals (slate) ---- */
+    --surface: #FFFFFF;
+    --bg-app: #F8FAFC;
+    --bg-subtle: #F8FAFC;
+    --bg-muted: #F1F5F9;
+    --text-primary: #1E293B;
+    --text-secondary: #334155;
+    --text-muted: #64748B;
+    --border: #E2E8F0;
+    --border-strong: #CBD5E1;
+    --border-subtle: #EDF1F6;
+
+    /* ---- Semantic ---- */
+    --danger: #DC2626;
+    --danger-hover: #B91C1C;
+
+    /* ---- Elevation ---- */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.10);
+    --shadow-lg: 0 24px 56px rgba(15, 23, 42, 0.22);
+
+    --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.30);
+}
+
+/* ============================================================
+   2. Sidebar ug top bar
+   ============================================================ */
+.superadmin-theme .sidebar {
+    background:
+        radial-gradient(140% 55% at 0% 0%, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0) 62%),
+        #0F172A;
+    border-right-color: rgba(255, 255, 255, 0.05);
+}
+
+.superadmin-theme .brand-sub {
+    color: #C7D2FE;
+}
+
+.superadmin-theme .nav-item:hover {
+    background-color: #475569;
+    color: #fff;
+}
+
+/* Kinahanglan human sa :hover, aron ang active nga menu magpabilin nga #4F46E5 */
+.superadmin-theme .nav-item.active,
+.superadmin-theme .nav-item.active:hover {
+    background-color: #4F46E5;
+    color: #fff;
+}
+
+.superadmin-theme .nav-item.active::before {
+    background: #C7D2FE;
+}
+
+.superadmin-theme .nav-item.active i,
+.superadmin-theme .nav-item.active:hover i {
+    color: #fff;
+}
+
+.superadmin-theme .topbar {
+    box-shadow: inset 0 -2px 0 #6366F1;
+}
+
+/* Role sa naka-login: "SuperAdmin" sa accent color, subtle */
+.superadmin-theme .user-role {
+    color: #4338CA;
+    background: #EEF2FF;
+    border: 1px solid #C7D2FE;
+}
+
+/* ============================================================
+   3. Buttons, forms, tables, modals
+   ============================================================ */
+.superadmin-theme .btn-cancel:hover,
+.superadmin-theme .btn-secondary:hover,
+.superadmin-theme .btn-outline-secondary:hover,
+.superadmin-theme .btn-light:hover,
+.superadmin-theme .btn-cancel:active,
+.superadmin-theme .btn-secondary:active,
+.superadmin-theme .btn-outline-secondary:active,
+.superadmin-theme .btn-light:active {
+    border-color: #A5B4FC;
+}
+
+.superadmin-theme .form-select:hover:not(:disabled) {
+    border-color: #94A3B8;
+}
+
+/* Ang Delete magpabilin nga pula */
+.superadmin-theme .action-btn:not(.delete-btn):hover {
+    border-color: #A5B4FC;
+}
+
+.superadmin-theme .data-table thead th {
+    color: #334155;
+    background: #EEF2FF;
+    border-bottom-color: #C7D2FE;
+}
+
+.superadmin-theme .data-table tbody tr.patient-row:hover td {
+    background: #F5F7FF;
+}
+
+.superadmin-theme .modal-backdrop {
+    background-color: #0F172A;
+}
+
+.superadmin-theme .modal-header {
+    background: #EEF2FF;
+    border-bottom-color: #C7D2FE;
+    border-radius: calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px) 0 0;
+}
+
+/* ============================================================
+   4. Status ug role badges
+   Ang success magpabilin nga berde aron dali mailhan (Confirmed,
+   Completed, success alert). Ang pula sa validation ug Delete dili usbon.
+   ============================================================ */
+.superadmin-theme .alert-success,
+.superadmin-theme .status-confirmed,
+.superadmin-theme .status-pill-completed,
+.superadmin-theme .svc-price.svc-free {
+    color: #166534;
+    background-color: #F0FDF4;
+    border-color: #BBF7D0;
+}
+
+/* Users: Admin = accent, Staff = slate (dili parehas sa Admin) */
+.superadmin-theme .role-badge-admin {
+    color: #3730A3;
+    background: #EEF2FF;
+    border-color: #C7D2FE;
+}
+
+.superadmin-theme .role-badge-staff {
+    color: #334155;
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+}
+
+/* ============================================================
+   5. Module-specific nga kolor (parehas nga class, lain nga kolor)
+   ============================================================ */
+.superadmin-theme .svc-tile:hover,
+.superadmin-theme .confirm-choice-btn:hover {
+    border-color: #A5B4FC;
+}
+
+.superadmin-theme .svc-tile.selected,
+.superadmin-theme .confirm-choice-btn.active {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.superadmin-theme .btn-add-visit,
+.superadmin-theme .pn-assess-table th {
+    border-color: #C7D2FE;
+}
+
+.superadmin-theme .fp-yn-table tr:hover td,
+.superadmin-theme .fp-sti-table tr:hover td {
+    background: #F5F7FF;
+}

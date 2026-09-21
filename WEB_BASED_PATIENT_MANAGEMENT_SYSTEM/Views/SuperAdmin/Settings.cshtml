@@ -2,93 +2,144 @@
 @{
     ViewData["Title"] = "Settings";
 
-    // Gi-reject nga porma gikan sa server.
+    // Gi-reject nga porma gikan sa server (markahan ang mga field).
     var saForm = TempData["SaForm"] as string;
+    var notice = TempData["SaNotice"] as string;
+    var error = TempData["SaError"] as string;
+    var busy = Context.Request.Query["busy"] == "1";
 }
 
-<div class="sa-page-header">
-    <div>
-        <h1 class="sa-page-title">Settings</h1>
-        <p class="sa-page-sub">Your SuperAdmin account. Changes need your current password.</p>
+<div class="page-header">
+    <div class="page-heading">
+        <h1>Settings</h1>
     </div>
 </div>
 
-<section class="sa-panel sa-panel-pad" aria-label="Account">
-    <dl class="sa-summary">
-        <div><dt>Full Name</dt><dd>@Model.FullName</dd></div>
-        <div><dt>Username</dt><dd>@Model.Username</dd></div>
-        <div>
-            <dt>Recovery Gmail</dt>
-            <dd>
-                @if (string.IsNullOrEmpty(Model.RecoveryEmail))
-                {
-                    <span class="sa-muted">Not set. Forgot Password can't send a code until you add one.</span>
-                }
-                else
-                {
-                    @Model.RecoveryEmail
-                }
-            </dd>
+@if (busy || !string.IsNullOrWhiteSpace(notice) || !string.IsNullOrWhiteSpace(error))
+{
+    <div class="page-alerts">
+        @if (busy)
+        {
+            <div class="alert alert-light" role="alert">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                <span>Too many attempts. Please wait a minute and try again.</span>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(notice))
+        {
+            <div class="alert alert-success" role="status">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>@notice</span>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>@error</span>
+            </div>
+        }
+    </div>
+}
+
+@* Ang SuperAdmin account ra; walay password o hash nga ipakita. *@
+<div class="content-card mb-4">
+    <div class="card-header-row">
+        <h2 class="card-title">SuperAdmin Account</h2>
+    </div>
+    <div class="p-4">
+        <div class="detail-grid">
+            <div class="detail-item">
+                <label>Username</label>
+                <div class="detail-value">@Model.Username</div>
+            </div>
+            <div class="detail-item">
+                <label>Recovery Gmail</label>
+                <div class="detail-value">
+                    @if (string.IsNullOrEmpty(Model.RecoveryEmail))
+                    {
+                        <span class="text-muted">Not set. Forgot Password can't send a code until you add one.</span>
+                    }
+                    else
+                    {
+                        @Model.RecoveryEmail
+                    }
+                </div>
+            </div>
         </div>
-    </dl>
-</section>
+    </div>
+</div>
 
-<div class="sa-settings-grid">
-    <section class="sa-panel sa-panel-pad" aria-labelledby="saUsernameHeading">
-        <h2 class="sa-panel-title" id="saUsernameHeading"><i class="bi bi-person" aria-hidden="true"></i> Change Username</h2>
-        <form asp-controller="SuperAdmin" asp-action="ChangeUsername" method="post" id="saUsernameForm" novalidate>
-            <div class="sa-field">
-                <label for="saUsernameCurrent" class="sa-label">Current Password</label>
-                <input type="password" name="CurrentPassword" id="saUsernameCurrent" class="form-control sa-input" maxlength="100" autocomplete="current-password" />
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-row">
+                <h2 class="card-title">Change Username</h2>
             </div>
-            <div class="sa-field">
-                <label for="saNewUsername" class="sa-label">New Username</label>
-                <input type="text" name="NewUsername" id="saNewUsername" class="form-control sa-input" maxlength="50" autocomplete="off" />
-            </div>
-            <button type="submit" class="sa-btn sa-btn-primary">Save Username</button>
-        </form>
-    </section>
+            <form asp-controller="SuperAdmin" asp-action="ChangeUsername" method="post" id="saUsernameForm" class="p-4" novalidate>
+                <div class="mb-3">
+                    <label for="saUsernameCurrent" class="form-label">Current Password</label>
+                    <input type="password" name="CurrentPassword" id="saUsernameCurrent" class="form-control" maxlength="100" autocomplete="current-password" />
+                </div>
+                <div class="mb-4">
+                    <label for="saNewUsername" class="form-label">New Username</label>
+                    <input type="text" name="NewUsername" id="saNewUsername" class="form-control" maxlength="50" autocomplete="off" />
+                </div>
+                <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Username</button>
+            </form>
+        </div>
+    </div>
 
-    <section class="sa-panel sa-panel-pad" aria-labelledby="saPasswordHeading">
-        <h2 class="sa-panel-title" id="saPasswordHeading"><i class="bi bi-key" aria-hidden="true"></i> Change Password</h2>
-        <form asp-controller="SuperAdmin" asp-action="ChangeOwnPassword" method="post" id="saPasswordForm" novalidate>
-            <div class="sa-field">
-                <label for="saPasswordCurrent" class="sa-label">Current Password</label>
-                <input type="password" name="CurrentPassword" id="saPasswordCurrent" class="form-control sa-input" maxlength="100" autocomplete="current-password" />
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-row">
+                <h2 class="card-title">Change Password</h2>
             </div>
-            <div class="sa-field">
-                <label for="saPasswordNew" class="sa-label">New Password</label>
-                <input type="password" name="NewPassword" id="saPasswordNew" class="form-control sa-input" maxlength="100" autocomplete="new-password" />
-            </div>
-            <div class="sa-field">
-                <label for="saPasswordConfirm" class="sa-label">Confirm New Password</label>
-                <input type="password" name="ConfirmPassword" id="saPasswordConfirm" class="form-control sa-input" maxlength="100" autocomplete="new-password" />
-            </div>
-            <partial name="_PasswordRules" />
-            <button type="submit" class="sa-btn sa-btn-primary">Save Password</button>
-        </form>
-    </section>
+            <form asp-controller="SuperAdmin" asp-action="ChangeOwnPassword" method="post" id="saPasswordForm" class="p-4" novalidate>
+                <div class="mb-3">
+                    <label for="saPasswordCurrent" class="form-label">Current Password</label>
+                    <input type="password" name="CurrentPassword" id="saPasswordCurrent" class="form-control" maxlength="100" autocomplete="current-password" />
+                </div>
+                <div class="mb-3">
+                    <label for="saPasswordNew" class="form-label">New Password</label>
+                    <input type="password" name="NewPassword" id="saPasswordNew" class="form-control" maxlength="100" autocomplete="new-password" />
+                </div>
+                <div class="mb-3">
+                    <label for="saPasswordConfirm" class="form-label">Confirm Password</label>
+                    <input type="password" name="ConfirmPassword" id="saPasswordConfirm" class="form-control" maxlength="100" autocomplete="new-password" />
+                </div>
+                @* Parehas nga mga lagda sa password sa ubang SuperAdmin pages. *@
+                <div class="text-muted small mb-4"><partial name="_PasswordRules" /></div>
+                <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Password</button>
+            </form>
+        </div>
+    </div>
 
-    <section class="sa-panel sa-panel-pad" aria-labelledby="saRecoveryHeading">
-        <h2 class="sa-panel-title" id="saRecoveryHeading"><i class="bi bi-envelope" aria-hidden="true"></i> Recovery Gmail</h2>
-        <form asp-controller="SuperAdmin" asp-action="ChangeRecoveryEmail" method="post" id="saRecoveryForm" novalidate>
-            <div class="sa-field">
-                <label for="saRecoveryCurrent" class="sa-label">Current Password</label>
-                <input type="password" name="CurrentPassword" id="saRecoveryCurrent" class="form-control sa-input" maxlength="100" autocomplete="current-password" />
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-row">
+                <h2 class="card-title">Recovery Gmail</h2>
             </div>
-            <div class="sa-field">
-                <label for="saRecoveryEmailInput" class="sa-label">Recovery Gmail</label>
-                <input type="email" name="RecoveryEmail" id="saRecoveryEmailInput" class="form-control sa-input" maxlength="256"
-                       autocomplete="email" placeholder="name@gmail.com" value="@Model.RecoveryEmail" />
-            </div>
-            <p class="sa-help">Used only for Forgot Password on the SuperAdmin sign-in.</p>
-            <button type="submit" class="sa-btn sa-btn-primary">Save Recovery Gmail</button>
-        </form>
-    </section>
+            <form asp-controller="SuperAdmin" asp-action="ChangeRecoveryEmail" method="post" id="saRecoveryForm" class="p-4" novalidate>
+                <div class="mb-3">
+                    <label for="saRecoveryCurrent" class="form-label">Current Password</label>
+                    <input type="password" name="CurrentPassword" id="saRecoveryCurrent" class="form-control" maxlength="100" autocomplete="current-password" />
+                </div>
+                <div class="mb-3">
+                    <label for="saRecoveryEmailInput" class="form-label">Recovery Gmail</label>
+                    <input type="email" name="RecoveryEmail" id="saRecoveryEmailInput" class="form-control" maxlength="256"
+                           autocomplete="email" placeholder="name@gmail.com" value="@Model.RecoveryEmail" />
+                </div>
+                <p class="text-muted small mb-4">Used only for Forgot Password on the SuperAdmin sign-in.</p>
+                <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Recovery Gmail</button>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
         window.superAdminPageData = { form: @Html.Raw(saForm ?? "null") };
     </script>
+    <script src="~/js/superadmin/superadmin.js" asp-append-version="true"></script>
 }

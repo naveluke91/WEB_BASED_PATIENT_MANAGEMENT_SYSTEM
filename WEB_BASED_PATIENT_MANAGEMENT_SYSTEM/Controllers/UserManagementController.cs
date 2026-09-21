@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,11 +12,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// User Management. Lists the accounts that can sign in and adds, edits and
     /// deletes them. Healthcare records are not linked to user accounts, so
     /// deleting an account never removes patient, consultation or billing data.
+    /// SuperAdmin manages Admin and Staff accounts; Admin manages Staff only.
     /// </summary>
-    // Admin ra maka-access (Staff → Access Denied).
-    [Authorize(Roles = UserRoles.Admin)]
+    // SuperAdmin ug Admin ra maka-access (Staff → Access Denied).
+    [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.Admin)]
     public class UserManagementController : Controller
     {
+        private const string NotAllowedMessage = "You can't manage that account.";
+
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<UserAccount> _passwordHasher;
 
@@ -27,36 +29,60 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _passwordHasher = passwordHasher;
         }
 
+        // I-check ang role sa server: ang SuperAdmin dili gikan sa browser.
+        private bool IsSuperAdmin => User.IsInRole(UserRoles.SuperAdmin);
+
+        // SuperAdmin: Admin ug Staff. Admin: Staff ra. Ang SuperAdmin dili ma-manage.
+        private string[] ManagedRoles => IsSuperAdmin ? new[] { UserRoles.Admin, UserRoles.Staff } : new[] { UserRoles.Staff };
+
+        private UserAccount? ManagedAccount(int id)
+        {
+            var roles = ManagedRoles;
+            return _context.UserAccounts.FirstOrDefault(u => u.Id == id && roles.Contains(u.Role));
+        }
+
         // -----------------------------------------------------------------------
         // GET /UserManagement
         // -----------------------------------------------------------------------
         public IActionResult Index()
         {
-            // Staff ra ang ipakita sa Admin.
+            var roles = ManagedRoles;
             var users = _context.UserAccounts
                 .AsNoTracking()
-                .Where(u => u.Role == UserRoles.Staff)
+                .Where(u => roles.Contains(u.Role))
                 .OrderBy(u => u.FullName)
                 .ToList();
 
-            return View(new UserManagementPageViewModel
-            {
-                Users = users,
-                CurrentUserId = CurrentUserId,
-                AdminCount = users.Count(u => u.Role == UserRoles.Admin)
-            });
+            return View(new UserManagementPageViewModel { Users = users, IsSuperAdmin = IsSuperAdmin });
         }
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/Create
+        // SuperAdmin chooses Admin or Staff; Admin always creates Staff.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create([Bind(nameof(UserFormViewModel.FullName), nameof(UserFormViewModel.Username),
-            nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
+            nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword), nameof(UserFormViewModel.Role))] UserFormViewModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Password))
                 ModelState.AddModelError(nameof(UserFormViewModel.Password), "Password is required.");
+
+            // Admin: Staff kanunay, ang Role gikan sa browser dili gamiton.
+            // SuperAdmin: Admin o Staff ra (eksakto); ang SuperAdmin i-reject.
+            var role = UserRoles.Staff;
+            if (IsSuperAdmin)
+            {
+                var chosen = UserRoles.Assignable.FirstOrDefault(r => r == model.Role);
+                if (chosen == null)
+                    ModelState.AddModelError(nameof(UserFormViewModel.Role), AuthMessages.SelectRole);
+                else
+                    role = chosen;
+            }
+            else
+            {
+                model.Role = null;
+            }
 
             ValidateUsernameIsFree(model.Username, exceptId: null);
             ValidateFullName(model.FullName);
@@ -64,12 +90,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return ReopenForm("add", model);
 
-            // Staff ra ang himuon; ang Role gikan sa browser dili gamiton.
             var account = new UserAccount
             {
                 FullName = model.FullName.Trim(),
                 Username = model.Username.Trim(),
-                Role = UserRoles.Staff
+                Role = role,
+                SecurityStamp = AccountController.NewSecurityStamp()
             };
             // Only the salted hash is stored.
             account.PasswordHash = _passwordHasher.HashPassword(account, model.Password!);
@@ -84,25 +110,35 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/Edit
-        // Updates the name and username. The password is not changed here.
+        // Updates the name and username (and the Admin/Staff role, SuperAdmin only).
+        // The password is not changed here.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit([Bind(nameof(UserFormViewModel.Id), nameof(UserFormViewModel.FullName),
-            nameof(UserFormViewModel.Username))] UserFormViewModel model)
+            nameof(UserFormViewModel.Username), nameof(UserFormViewModel.Role))] UserFormViewModel model)
         {
-            var account = _context.UserAccounts.FirstOrDefault(u => u.Id == model.Id);
+            // Ang account nga ma-manage ra (dili SuperAdmin; ang Admin dili makausab sa Admin).
+            var account = ManagedAccount(model.Id);
             if (account == null)
             {
-                TempData["ErrorMessage"] = "That user account no longer exists.";
+                TempData["ErrorMessage"] = NotAllowedMessage;
                 return RedirectToAction(nameof(Index));
             }
 
-            // Staff ra ang ma-usab sa Admin.
-            if (account.Role != UserRoles.Staff)
+            // Ang Role sa database dili usbon gawas kung SuperAdmin ug Admin/Staff ang gipili.
+            var role = account.Role;
+            if (IsSuperAdmin)
             {
-                TempData["ErrorMessage"] = StaffOnlyMessage;
-                return RedirectToAction(nameof(Index));
+                var chosen = UserRoles.Assignable.FirstOrDefault(r => r == model.Role);
+                if (chosen == null)
+                    ModelState.AddModelError(nameof(UserFormViewModel.Role), AuthMessages.SelectRole);
+                else
+                    role = chosen;
+            }
+            else
+            {
+                model.Role = null;
             }
 
             ValidateUsernameIsFree(model.Username, exceptId: account.Id);
@@ -111,14 +147,54 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return ReopenForm("edit", model);
 
-            // Ang Role sa database dili usbon.
             account.FullName = model.FullName.Trim();
             account.Username = model.Username.Trim();
+            account.Role = role;
 
             if (!TrySave())
                 return ReopenForm("edit", model);
 
             TempData["SuccessMessage"] = $"User \"{account.FullName}\" was updated.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // -----------------------------------------------------------------------
+        // POST /UserManagement/ResetPassword
+        // SuperAdmin only: sets a temporary password for an Admin or Staff account.
+        // -----------------------------------------------------------------------
+        // SuperAdmin ra ang maka-reset.
+        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ResetPassword(ResetAccountPasswordViewModel model)
+        {
+            var account = ManagedAccount(model.Id);
+            if (account == null)
+            {
+                TempData["ErrorMessage"] = NotAllowedMessage;
+                return RedirectToAction(nameof(Index));
+            }
+
+            var passwordError = AccountController.BasicPasswordError(model.NewPassword);
+            if (passwordError != null)
+                ModelState.AddModelError(nameof(model.NewPassword), passwordError);
+            if (string.IsNullOrEmpty(model.ConfirmPassword))
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.Required);
+            else if (model.ConfirmPassword != model.NewPassword)
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.PasswordMismatch);
+
+            if (!ModelState.IsValid)
+                return ReopenForm("reset", new UserFormViewModel { Id = account.Id, FullName = account.FullName });
+
+            // I-hash ang temporary password; usbon sa sunod nga login, ug mawala ang daan nga session.
+            account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
+            account.MustChangePassword = true;
+            account.SecurityStamp = AccountController.NewSecurityStamp();
+            account.FailedLoginAttempts = 0;
+            account.LockoutEndUtc = null;
+            _context.SaveChanges();
+
+            TempData["UserNotice"] = $"Password reset for \"{account.FullName}\". They must change it at their next sign-in.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -129,19 +205,16 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
-            var account = _context.UserAccounts.FirstOrDefault(u => u.Id == id);
+            // Dili ma-delete ang SuperAdmin; ang Admin makadelete sa Staff ra.
+            var account = ManagedAccount(id);
 
             if (account == null)
             {
-                TempData["ErrorMessage"] = "That user account no longer exists.";
-            }
-            else if (account.Role != UserRoles.Staff)
-            {
-                // Staff ra ang ma-delete sa Admin.
-                TempData["ErrorMessage"] = StaffOnlyMessage;
+                TempData["ErrorMessage"] = NotAllowedMessage;
             }
             else
             {
+                // Login account ra; ang patient records dili apil.
                 _context.UserAccounts.Remove(account);
                 _context.SaveChanges();
                 TempData["SuccessMessage"] = $"User \"{account.FullName}\" was deleted.";
@@ -150,17 +223,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Id of the signed-in Admin (NameIdentifier claim set by AccountController).
-        private int CurrentUserId =>
-            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
-
-        private const string StaffOnlyMessage = "You can only manage Staff accounts.";
-
         // Valid nga ngalan lang (parehas sa Patient).
         private void ValidateFullName(string? fullName)
         {
             if (!string.IsNullOrWhiteSpace(fullName) && !Patient.IsValidPersonName(fullName))
-                ModelState.AddModelError(nameof(UserFormViewModel.FullName), "Dili valid ang ngalan.");
+                ModelState.AddModelError(nameof(UserFormViewModel.FullName), AuthMessages.InvalidName);
         }
 
         private void ValidateUsernameIsFree(string? requestedUsername, int? exceptId)
@@ -170,7 +237,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return;
 
             if (_context.UserAccounts.Any(u => u.Username == username && u.Id != exceptId))
-                ModelState.AddModelError(nameof(UserFormViewModel.Username), "That username is already taken.");
+                ModelState.AddModelError(nameof(UserFormViewModel.Username), AuthMessages.UsernameInUse);
         }
 
         // The unique Username index can still reject a name saved at the same moment.
@@ -183,7 +250,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
             catch (DbUpdateException)
             {
-                ModelState.AddModelError(nameof(UserFormViewModel.Username), "That username is already taken.");
+                ModelState.AddModelError(nameof(UserFormViewModel.Username), AuthMessages.UsernameInUse);
                 return false;
             }
         }
@@ -204,6 +271,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 id = model.Id,
                 fullName = model.FullName,
                 username = model.Username,
+                role = model.Role,
                 error,
                 // Ang field nga may sayop (para ma-marka og pula).
                 field = ModelState.FirstOrDefault(entry => entry.Value?.Errors.Count > 0).Key

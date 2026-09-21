@@ -1,4 +1,5 @@
-<!-- Edit User: name and username. Values come from the Edit button (usermanagement.js). -->
+@model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.UserManagementPageViewModel
+@* Edit User: name and username (Role: SuperAdmin ra). Values come from the Edit button (usermanagement.js). *@
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -24,14 +25,26 @@
                             <input type="text" name="FullName" id="editUserFullName" class="form-control"
                                    maxlength="150" required />
                         </div>
-                        @* Walay Role: dili usbon ang role sa database. *@
-                        <div class="col-12">
+                        @* Admin: walay Role, dili usbon ang role sa database. SuperAdmin: Admin o Staff ra. *@
+                        <div class="@(Model.IsSuperAdmin ? "col-sm-6" : "col-12")">
                             <label for="editUserUsername" class="form-label">Username</label>
                             <input type="text" name="Username" id="editUserUsername" class="form-control"
                                    minlength="3" maxlength="50" pattern="[A-Za-z0-9._\-]+"
                                    title="Letters, numbers, dots, dashes and underscores only"
                                    autocomplete="off" required />
                         </div>
+                        @if (Model.IsSuperAdmin)
+                        {
+                            <div class="col-sm-6">
+                                <label for="editUserRole" class="form-label">Role</label>
+                                <select name="Role" id="editUserRole" class="form-select" required>
+                                    @foreach (var role in UserRoles.Assignable)
+                                    {
+                                        <option value="@role">@role</option>
+                                    }
+                                </select>
+                            </div>
+                        }
                     </div>
                 </div>
 

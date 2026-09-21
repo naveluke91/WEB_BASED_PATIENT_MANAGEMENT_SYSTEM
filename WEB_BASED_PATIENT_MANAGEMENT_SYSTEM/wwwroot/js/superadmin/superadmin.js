@@ -1,7 +1,7 @@
 // ============================================================
-// superadmin.js — SuperAdmin pages (Views/SuperAdmin, _SuperAdminLayout)
-// Validation (same rules as SuperAdminController), modals on Manage Users,
-// and reopening a form the server rejected. Passwords are never refilled.
+// superadmin.js — SuperAdmin login / recovery pages (_SuperAdminLayout) and
+// Settings (Views/SuperAdmin/Settings.cshtml). Same rules as SuperAdminController.
+// Passwords are never refilled. Users management is in usermanagement.js.
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,42 +9,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!FV) return;
 
     const data = window.superAdminPageData || {};
-    const ROLES = ['Admin', 'Staff'];
 
-    // ---- Mga lagda (parehas sa server) ----
-    const required = value => FV.isBlank(value) ? FV.MSG.required : '';
+    // ---- Mga lagda (parehas sa server) ; ang mga mensahe English ----
+    const MSG = {
+        required: 'This field is required.',
+        usernameLength: 'Username must be 3 to 50 characters.',
+        usernameChars: 'Username can only use letters, numbers, dots, dashes and underscores.',
+        gmail: 'Enter a valid Gmail address.',
+        code: 'The recovery code must be 8 digits.',
+        min12: 'Use at least 12 characters.',
+        max: 'Use 100 characters or fewer.',
+        complexity: 'Use uppercase and lowercase letters, a number, and a symbol.',
+        mismatch: 'Passwords do not match.'
+    };
+
+    const required = value => FV.isBlank(value) ? MSG.required : '';
 
     function strongPassword(value) {
         const text = String(value ?? '');
-        if (!text.trim()) return FV.MSG.required;
-        if (text.length < 12) return 'Labing menos 12 ka karakter.';
-        if (text.length > 100) return 'Hangtod 100 ka karakter lang.';
+        if (!text.trim()) return MSG.required;
+        if (text.length < 12) return MSG.min12;
+        if (text.length > 100) return MSG.max;
         const hasSymbol = /[^\p{L}\p{N}\s]/u.test(text);
         if (!/\p{Lu}/u.test(text) || !/\p{Ll}/u.test(text) || !/\p{N}/u.test(text) || !hasSymbol)
-            return 'Gamiti og dako ug gamay nga letra, numero, ug simbolo.';
+            return MSG.complexity;
         return '';
-    }
-
-    function basicPassword(value) {
-        const text = String(value ?? '');
-        if (!text.trim()) return FV.MSG.required;
-        if (text.length < 8) return 'Labing menos 8 ka karakter.';
-        return text.length > 100 ? 'Hangtod 100 ka karakter lang.' : '';
     }
 
     function username(value) {
         const text = String(value ?? '').trim();
-        if (!text) return FV.MSG.required;
-        return /^[A-Za-z0-9._-]{3,50}$/.test(text) ? '' : '3-50 ka letra, numero, . _ - lang.';
+        if (!text) return MSG.required;
+        if (text.length < 3 || text.length > 50) return MSG.usernameLength;
+        return /^[A-Za-z0-9._-]+$/.test(text) ? '' : MSG.usernameChars;
     }
 
     function email(value) {
         const text = String(value ?? '').trim();
-        if (!text) return FV.MSG.required;
-        return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text) ? '' : 'Dili valid ang Gmail.';
+        if (!text) return MSG.required;
+        return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text) ? '' : MSG.gmail;
     }
 
-    const confirmOf = source => value => !value ? FV.MSG.required : (value !== source.value ? 'Dili parehas ang password.' : '');
+    const confirmOf = source => value => !value ? MSG.required : (value !== source.value ? MSG.mismatch : '');
 
     // Mensahe ubos sa field (dili absolute), para dili matabunan.
     const check = (field, test) => ({ field, test: el => test(el.value), inline: true });
@@ -94,42 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
     attach(byId('saForgotForm'), () => [check(byId('saRecoveryEmail'), email)]);
 
     attach(byId('saVerifyForm'), () => [
-        check(byId('saRecoveryCode'), value => /^\d{8}$/.test(String(value ?? '').trim()) ? '' : '8 ka numero ang code.')
+        check(byId('saRecoveryCode'), value => /^\d{8}$/.test(String(value ?? '').trim()) ? '' : MSG.code)
     ]);
 
-    // ---- Manage Users ----
-    const role = value => ROLES.includes(value) ? '' : 'Pilia ang Admin o Staff.';
-
+    // ---- Settings ----
     const forms = {
-        add: {
-            modal: byId('saAddModal'),
-            form: byId('saAddForm'),
-            checks: () => [
-                check(byId('saAddFullName'), FV.rules.personName),
-                check(byId('saAddUsername'), username),
-                check(byId('saAddRole'), role),
-                check(byId('saAddPassword'), basicPassword),
-                check(byId('saAddConfirmPassword'), confirmOf(byId('saAddPassword')))
-            ]
-        },
-        edit: {
-            modal: byId('saEditModal'),
-            form: byId('saEditForm'),
-            checks: () => [
-                check(byId('saEditFullName'), FV.rules.personName),
-                check(byId('saEditUsername'), username),
-                check(byId('saEditRole'), role)
-            ]
-        },
-        reset: {
-            modal: byId('saResetModal'),
-            form: byId('saResetForm'),
-            checks: () => [
-                check(byId('saResetNewPassword'), basicPassword),
-                check(byId('saResetConfirmPassword'), confirmOf(byId('saResetNewPassword')))
-            ]
-        },
-        // ---- Settings ----
         username: {
             form: byId('saUsernameForm'),
             checks: () => [check(byId('saUsernameCurrent'), required), check(byId('saNewUsername'), username)]
@@ -148,44 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    Object.values(forms).forEach(entry => {
-        entry.validator = attach(entry.form, entry.checks);
-        if (!entry.modal || !entry.form) return;
+    Object.values(forms).forEach(entry => { entry.validator = attach(entry.form, entry.checks); });
 
-        // Limpyo human sirado ang modal.
-        entry.modal.addEventListener('hidden.bs.modal', () => {
-            entry.form.reset();
-            entry.validator.reset();
-            entry.form.querySelector('[type="submit"]')?.removeAttribute('disabled');
-        });
-    });
-
-    // Punan ang modal gikan sa button (textContent ra, walay HTML).
-    function fillFromButton(modalId, handler) {
-        byId(modalId)?.addEventListener('show.bs.modal', event => {
-            const button = event.relatedTarget;
-            if (button) handler(button.dataset);
-        });
-    }
-
-    fillFromButton('saEditModal', d => {
-        byId('saEditId').value = d.id || '';
-        byId('saEditFullName').value = d.fullName || '';
-        byId('saEditUsername').value = d.username || '';
-        byId('saEditRole').value = d.role || '';
-    });
-
-    fillFromButton('saResetModal', d => {
-        byId('saResetId').value = d.id || '';
-        byId('saResetName').textContent = d.fullName || '';
-    });
-
-    fillFromButton('saDeleteModal', d => {
-        byId('saDeleteId').value = d.id || '';
-        byId('saDeleteMessage').textContent = `Delete ${d.roleLabel || 'account'} "${d.fullName || ''}"?`;
-    });
-
-    // Gi-reject sa server: ablihan pag-usab ug markahan ang mga field.
+    // Gi-reject sa server: markahan ang mga field.
     const rejected = data.form;
     const entry = rejected ? forms[rejected.form] : null;
     if (!entry?.form) return;
@@ -195,19 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const field = entry.form.elements[name];
         if (field && value !== undefined && value !== null) field.value = value;
     };
-    setValue('Id', values.id);
-    setValue('FullName', values.fullName);
-    setValue('Username', values.username);
-    setValue('Role', values.role);
     setValue('NewUsername', values.newUsername);
     setValue('RecoveryEmail', values.recoveryEmail);
-    if (rejected.form === 'reset') byId('saResetName').textContent = values.fullName || '';
 
-    const showErrors = () => entry.validator.showErrors(rejected.errors, key => entry.form.elements[key]);
-    if (entry.modal) {
-        entry.modal.addEventListener('shown.bs.modal', showErrors, { once: true });
-        bootstrap.Modal.getOrCreateInstance(entry.modal).show();
-    } else {
-        showErrors();
-    }
+    let first = null;
+    Object.entries(rejected.errors || {}).forEach(([key, message]) => {
+        const field = entry.form.elements[key];
+        if (!field) return;
+        FV.setError(field, message, { inline: true });
+        first = first || field;
+    });
+    first?.focus();
 });

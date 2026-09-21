@@ -4,6 +4,7 @@
 
     // Set by UserManagementController when a form was rejected: reopens that modal.
     var reopenForm = TempData["UserForm"] as string;
+    var notice = TempData["UserNotice"] as string;
 }
 
 @section Styles {
@@ -16,12 +17,23 @@
     </div>
     <div class="page-actions">
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#addUserModal">
-            <i class="bi bi-person-plus" aria-hidden="true"></i> Add User
+            <i class="bi bi-person-plus" aria-hidden="true"></i> @(Model.IsSuperAdmin ? "Add Account" : "Add User")
         </button>
     </div>
 </div>
 
 <partial name="_PageAlerts" />
+
+@if (!string.IsNullOrWhiteSpace(notice))
+{
+    @* Mensahe human sa Reset Password (walay success banner sa ubang aksyon). *@
+    <div class="page-alerts">
+        <div class="alert alert-success" role="status">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <span>@notice</span>
+        </div>
+    </div>
+}
 
 <div class="content-card">
     <div class="card-header-row">
@@ -51,19 +63,12 @@
                 }
                 @foreach (var account in Model.Users)
                 {
-                    var isCurrentUser = account.Id == Model.CurrentUserId;
-                    var isLastAdmin = account.Role == UserRoles.Admin && Model.AdminCount <= 1;
                     var searchText = $"{account.FullName} {account.Username} {account.Role}".ToLowerInvariant();
-                    var deleteMessage = $"Delete the account for {account.FullName}? They will no longer be able to sign in.";
+                    var roleLabel = account.Role == UserRoles.Admin ? "administrator" : "staff account";
+                    var deleteMessage = $"Delete {roleLabel} \"{account.FullName}\"? This action cannot be undone. Patient and clinic records are not affected.";
 
                     <tr class="patient-row" data-search="@searchText">
-                        <td class="cell-name">
-                            @account.FullName
-                            @if (isCurrentUser)
-                            {
-                                <span class="user-self">You</span>
-                            }
-                        </td>
+                        <td class="cell-name">@account.FullName</td>
                         <td>@account.Username</td>
                         <td class="col-status">
                             <span class="role-badge @(account.Role == UserRoles.Admin ? "role-badge-admin" : "role-badge-staff")">@account.Role</span>
@@ -75,27 +80,28 @@
                                         data-bs-toggle="modal" data-bs-target="#editUserModal"
                                         data-user-id="@account.Id"
                                         data-full-name="@account.FullName"
-                                        data-username="@account.Username">
+                                        data-username="@account.Username"
+                                        data-role="@account.Role">
                                     <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
                                 </button>
-                                @if (isCurrentUser || isLastAdmin)
+                                @* Ipakita ra sa SuperAdmin. *@
+                                @if (Model.IsSuperAdmin)
                                 {
-                                    <button type="button" class="action-btn delete-btn" disabled
-                                            title="@(isCurrentUser ? "You can't delete the account you are signed in with" : "The system needs at least one Admin account")"
-                                            aria-label="Delete @account.FullName (not available)">
-                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                    <button type="button" class="action-btn" title="Reset Password"
+                                            aria-label="Reset password of @account.FullName"
+                                            data-bs-toggle="modal" data-bs-target="#resetUserModal"
+                                            data-user-id="@account.Id"
+                                            data-full-name="@account.FullName">
+                                        <i class="bi bi-key" aria-hidden="true"></i><span class="action-label">Reset Password</span>
                                     </button>
                                 }
-                                else
-                                {
-                                    <form asp-action="Delete" asp-route-id="@account.Id" method="post"
-                                          onsubmit="confirmDelete(event, this);" data-delete-message="@deleteMessage">
-                                        <button type="submit" class="action-btn delete-btn" title="Delete"
-                                                aria-label="Delete @account.FullName">
-                                            <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
-                                        </button>
-                                    </form>
-                                }
+                                <form asp-action="Delete" asp-route-id="@account.Id" method="post"
+                                      onsubmit="confirmDelete(event, this);" data-delete-message="@deleteMessage">
+                                    <button type="submit" class="action-btn delete-btn" title="Delete"
+                                            aria-label="Delete @account.FullName">
+                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -107,12 +113,15 @@
 
 <partial name="~/Views/UserManagement/Modals/_AddUserModal.cshtml" />
 <partial name="~/Views/UserManagement/Modals/_EditUserModal.cshtml" />
+@if (Model.IsSuperAdmin)
+{
+    <partial name="~/Views/UserManagement/Modals/_ResetPasswordModal.cshtml" />
+}
 
 @section Scripts {
     <script>
         // Server-rendered values used by usermanagement.js
         window.userManagementPageData = {
-            currentUserId: @Model.CurrentUserId,
             reopenForm: @Html.Raw(reopenForm ?? "null")
         };
     </script>

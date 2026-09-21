@@ -8,10 +8,14 @@
     var hasLogo = !string.IsNullOrEmpty(HostEnvironment.WebRootPath)
                   && System.IO.File.Exists(System.IO.Path.Combine(HostEnvironment.WebRootPath, "images", logoFileName));
 
-    // Ang naka-login nga account (gikan sa claims).
-    var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
+    // Ang naka-login nga account (gikan sa claims). SuperAdmin: username ang ipakita.
+    var isSuperAdmin = User.IsInRole(UserRoles.SuperAdmin);
+    var displayName = isSuperAdmin
+        ? User.Identity?.Name
+        : User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
     var displayRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-    var isAdmin = User.IsInRole(UserRoles.Admin);
+    // Users: SuperAdmin ug Admin. Settings: SuperAdmin ra.
+    var canManageUsers = isSuperAdmin || User.IsInRole(UserRoles.Admin);
 }
 <!DOCTYPE html>
 
@@ -23,7 +27,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta name="theme-color" content="#0A3D09" />
+    <meta name="theme-color" content="@(isSuperAdmin ? "#0F172A" : "#0A3D09")" />
 
     <title>@ViewData["Title"] · Española Birthing Home</title>
 
@@ -39,9 +43,15 @@
 
     @await RenderSectionAsync("Styles", required: false)
 
+    @* I-apply ang SupAdmin theme (SuperAdmin ra); kinahanglan human sa mga module CSS. *@
+    @if (isSuperAdmin)
+    {
+        <link rel="stylesheet" href="~/css/superadmin/superadmin-theme.css" asp-append-version="true" />
+    }
+
 </head>
 
-<body>
+<body class="@(isSuperAdmin ? "superadmin-theme" : null)">
 
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
@@ -109,14 +119,25 @@
                     <span>Reports</span>
                 </a>
 
-                @* Ipakita ra sa Admin. *@
-                @if (isAdmin)
+                @* Ipakita ra sa SuperAdmin ug Admin. *@
+                @if (canManageUsers)
                 {
                     <a asp-controller="UserManagement" asp-action="Index" title="Users"
                        class="nav-item @(controller == "UserManagement" ? "active" : "")"
                        aria-current="@(controller == "UserManagement" ? "page" : null)">
                         <i class="bi bi-person-gear" aria-hidden="true"></i>
                         <span>Users</span>
+                    </a>
+                }
+
+                @* Ipakita ra sa SuperAdmin. *@
+                @if (isSuperAdmin)
+                {
+                    <a asp-controller="SuperAdmin" asp-action="Settings" title="Settings"
+                       class="nav-item @(controller == "SuperAdmin" ? "active" : "")"
+                       aria-current="@(controller == "SuperAdmin" ? "page" : null)">
+                        <i class="bi bi-gear" aria-hidden="true"></i>
+                        <span>Settings</span>
                     </a>
                 }
             </nav>

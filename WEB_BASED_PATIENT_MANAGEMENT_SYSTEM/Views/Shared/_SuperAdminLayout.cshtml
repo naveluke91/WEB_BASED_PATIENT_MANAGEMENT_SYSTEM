@@ -1,11 +1,6 @@
-@using System.Security.Claims
 @{
-    // SuperAdmin layout: lahi nga theme; walay link gikan sa clinic UI.
-    var isCard = ViewData["SaCard"] as bool? == true;
-    var showConsole = !isCard && User.IsInRole(UserRoles.SuperAdmin);
-    var action = ViewContext.RouteData.Values["action"]?.ToString();
-    var displayName = User.FindFirst(ClaimTypes.GivenName)?.Value;
-    var username = User.Identity?.Name;
+    // Layout sa SuperAdmin login ug recovery pages (wala pa naka-login): usa ka card.
+    // Human sa login, ang SuperAdmin naggamit sa parehas nga clinic layout (_Layout).
     var notice = TempData["SaNotice"] as string;
     var error = TempData["SaError"] as string;
     var busy = Context.Request.Query["busy"] == "1";
@@ -18,7 +13,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <meta name="theme-color" content="#0B1628" />
+    <meta name="theme-color" content="#0F172A" />
 
     <title>@ViewData["Title"] · SuperAdmin</title>
 
@@ -30,70 +25,21 @@
     <link rel="stylesheet" href="~/css/superadmin/superadmin.css" asp-append-version="true" />
 </head>
 
-<body class="sa-body @(isCard ? "sa-body-auth" : "sa-body-console")">
+<body class="sa-body">
 
-    @if (showConsole)
-    {
-        <header class="sa-topbar">
-            <div class="sa-topbar-inner">
-                <a asp-controller="SuperAdmin" asp-action="ManageUsers" class="sa-brand">
-                    <span class="sa-brand-mark" aria-hidden="true"><i class="bi bi-shield-lock-fill"></i></span>
-                    <span class="sa-brand-text">
-                        <span class="sa-brand-name">SuperAdmin</span>
-                        <span class="sa-brand-sub">Española Birthing Home</span>
-                    </span>
-                </a>
-
-                <nav class="sa-nav" aria-label="SuperAdmin navigation">
-                    <a asp-controller="SuperAdmin" asp-action="ManageUsers"
-                       class="sa-nav-link @(action == "ManageUsers" ? "active" : "")"
-                       aria-current="@(action == "ManageUsers" ? "page" : null)">
-                        <i class="bi bi-people" aria-hidden="true"></i><span>Manage Users</span>
-                    </a>
-                    <a asp-controller="SuperAdmin" asp-action="Settings"
-                       class="sa-nav-link @(action == "Settings" ? "active" : "")"
-                       aria-current="@(action == "Settings" ? "page" : null)">
-                        <i class="bi bi-gear" aria-hidden="true"></i><span>Settings</span>
-                    </a>
-                </nav>
-
-                <div class="sa-account">
-                    <span class="sa-account-avatar" aria-hidden="true"><i class="bi bi-person-badge"></i></span>
-                    <span class="sa-account-text">
-                        <span class="sa-account-name">@displayName</span>
-                        <span class="sa-account-user">@username</span>
-                    </span>
-                    @* Logout pinaagi sa POST (naay AntiForgeryToken). *@
-                    <form asp-controller="SuperAdmin" asp-action="Logout" method="post">
-                        <button type="submit" class="sa-btn sa-btn-ghost" title="Logout">
-                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Logout</span>
-                        </button>
-                    </form>
-                </div>
+    <main id="main-content" class="sa-auth">
+        <div class="sa-card">
+            <div class="sa-card-brand">
+                <span class="sa-brand-mark" aria-hidden="true"><i class="bi bi-shield-lock-fill"></i></span>
+                <span class="sa-brand-text">
+                    <span class="sa-brand-name">SuperAdmin</span>
+                    <span class="sa-brand-sub">Española Birthing Home</span>
+                </span>
             </div>
-        </header>
-
-        <main id="main-content" class="sa-main">
             <partial name="~/Views/SuperAdmin/_Alerts.cshtml" model="(notice, error, busy)" />
             @RenderBody()
-        </main>
-    }
-    else
-    {
-        <main id="main-content" class="sa-auth">
-            <div class="sa-card">
-                <div class="sa-card-brand">
-                    <span class="sa-brand-mark" aria-hidden="true"><i class="bi bi-shield-lock-fill"></i></span>
-                    <span class="sa-brand-text">
-                        <span class="sa-brand-name">SuperAdmin</span>
-                        <span class="sa-brand-sub">Española Birthing Home</span>
-                    </span>
-                </div>
-                <partial name="~/Views/SuperAdmin/_Alerts.cshtml" model="(notice, error, busy)" />
-                @RenderBody()
-            </div>
-        </main>
-    }
+        </div>
+    </main>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

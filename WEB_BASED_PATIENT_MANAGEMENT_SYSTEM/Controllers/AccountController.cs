@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication;
@@ -116,12 +117,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (passwordError != null)
                 ModelState.AddModelError(nameof(model.NewPassword), passwordError);
             else if (_passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.NewPassword!) != PasswordVerificationResult.Failed)
-                ModelState.AddModelError(nameof(model.NewPassword), "Gamita og bag-o nga password, dili ang temporary.");
+                ModelState.AddModelError(nameof(model.NewPassword), AuthMessages.NewPasswordNotTemporary);
 
             if (string.IsNullOrEmpty(model.ConfirmPassword))
-                ModelState.AddModelError(nameof(model.ConfirmPassword), "Kinahanglan kini nga field.");
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.Required);
             else if (model.ConfirmPassword != model.NewPassword)
-                ModelState.AddModelError(nameof(model.ConfirmPassword), "Dili parehas ang password.");
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.PasswordMismatch);
 
             if (!ModelState.IsValid)
                 return View(new ChangePasswordViewModel());
@@ -143,8 +144,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            var wasSuperAdmin = User.IsInRole(UserRoles.SuperAdmin);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction(nameof(Login));
+
+            // Ang SuperAdmin balik sa iyang login; ang uban sa normal nga login.
+            return wasSuperAdmin ? Redirect(SuperAdminController.LoginPath) : RedirectToAction(nameof(Login));
         }
 
         // -----------------------------------------------------------------------
@@ -196,7 +200,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             // Valid nga ngalan lang (parehas sa Users).
             if (!string.IsNullOrWhiteSpace(model.FullName) && !Patient.IsValidPersonName(model.FullName))
-                ModelState.AddModelError(nameof(UserFormViewModel.FullName), "Dili valid ang ngalan.");
+                ModelState.AddModelError(nameof(UserFormViewModel.FullName), AuthMessages.InvalidName);
 
             if (!ModelState.IsValid)
                 return View(model);
@@ -219,7 +223,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // The signed-in identity: account id, username, full name and role.
         // Also used by Program.cs to refresh the cookie when an account changes.
         [NonAction]
-        public static ClaimsPrincipal CreatePrincipal(UserAccount account, string scheme = CookieAuthenticationDefaults.AuthenticationScheme)
+        public static ClaimsPrincipal CreatePrincipal(UserAccount account, DateTime? signedInUtc = null)
         {
             var claims = new List<Claim>
             {
@@ -231,10 +235,31 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 new(SecurityStampClaim, account.SecurityStamp ?? string.Empty)
             };
 
-            return new ClaimsPrincipal(new ClaimsIdentity(claims, scheme));
+            // Oras sa login: gamiton sa SuperAdmin session limit.
+            if (signedInUtc.HasValue)
+                claims.Add(new Claim(SignedInClaim, signedInUtc.Value.Ticks.ToString(CultureInfo.InvariantCulture)));
+
+            return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
         }
 
         public const string SecurityStampClaim = "security_stamp";
+        public const string SignedInClaim = "signed_in_utc";
+
+        // SuperAdmin session: 30 minutos nga walay lihok, 4 ka oras labing dugay.
+        public static readonly TimeSpan SuperAdminIdleTimeout = TimeSpan.FromMinutes(30);
+        public static readonly TimeSpan SuperAdminMaxSession = TimeSpan.FromHours(4);
+
+        [NonAction]
+        public static DateTime? SignedInAt(ClaimsPrincipal? principal) =>
+            long.TryParse(principal?.FindFirst(SignedInClaim)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
+                && ticks > 0 && ticks <= DateTime.MaxValue.Ticks
+                ? new DateTime(ticks, DateTimeKind.Utc)
+                : null;
+
+        // Cookie sa SuperAdmin: mubo ang idle timeout kaysa sa clinic.
+        [NonAction]
+        public static AuthenticationProperties SuperAdminProperties() =>
+            new() { IsPersistent = false, AllowRefresh = true, ExpiresUtc = DateTimeOffset.UtcNow.Add(SuperAdminIdleTimeout) };
 
         // Parehas pa ba ang stamp sa cookie ug sa database?
         [NonAction]
@@ -248,10 +273,61 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [NonAction]
         public static string? BasicPasswordError(string? password)
         {
-            if (string.IsNullOrWhiteSpace(password)) return "Kinahanglan kini nga field.";
-            if (password.Length < 8) return "Labing menos 8 ka karakter.";
-            if (password.Length > 100) return "Hangtod 100 ka karakter lang.";
+            if (string.IsNullOrWhiteSpace(password)) return AuthMessages.Required;
+            if (password.Length < 8) return AuthMessages.PasswordMin8;
+            if (password.Length > 100) return AuthMessages.PasswordMax;
             return null;
+        }
+
+        // Sample nga Staff ug Admin para sa local testing (Development ra; tawagon sa Program.cs).
+        // Idempotent: kung naa na ang username, dili himuon ug dili usbon ang password.
+        // Ang password i-hash; walay plain text sa database.
+        [NonAction]
+        public static void EnsureSampleAccounts(IServiceProvider services, ILogger logger)
+        {
+            var samples = new[]
+            {
+                (FullName: "Staff One", Username: "Staff1", Password: "Staff123", Role: UserRoles.Staff),
+                (FullName: "System Admin", Username: "Admin", Password: "Admin123", Role: UserRoles.Admin)
+            };
+
+            using var scope = services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserAccount>>();
+
+            try
+            {
+                var created = new List<string>();
+                foreach (var sample in samples)
+                {
+                    if (db.UserAccounts.Any(u => u.Username == sample.Username))
+                        continue;
+
+                    var account = new UserAccount
+                    {
+                        FullName = sample.FullName,
+                        Username = sample.Username,
+                        Role = sample.Role,
+                        // Test account: pwede mag-login dayon; walay Gmail.
+                        MustChangePassword = false,
+                        RecoveryEmail = null,
+                        SecurityStamp = NewSecurityStamp()
+                    };
+                    account.PasswordHash = hasher.HashPassword(account, sample.Password);
+                    db.UserAccounts.Add(account);
+                    created.Add(sample.Username);
+                }
+
+                if (created.Count == 0)
+                    return;
+
+                db.SaveChanges();
+                logger.LogInformation("Development sample accounts created: {Accounts}.", string.Join(", ", created));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("The development sample accounts could not be created ({ErrorType}). Apply the latest database migration.", ex.GetType().Name);
+            }
         }
 
         // Ang naka-login nga account gikan sa database.

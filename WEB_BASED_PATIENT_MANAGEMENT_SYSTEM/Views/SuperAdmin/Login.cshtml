@@ -1,7 +1,7 @@
 @model LoginViewModel
 @{
     ViewData["Title"] = "Sign In";
-    ViewData["SaCard"] = true;
+    Layout = "_SuperAdminLayout";
 
     // Usa ra ka generic nga mensahe kung sayop ang login.
     var formError = ViewData.ModelState[string.Empty]?.Errors.FirstOrDefault()?.ErrorMessage;
