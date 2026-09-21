@@ -160,8 +160,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/ResetPassword
-        // Sets a temporary password. Admin: Staff accounts only.
-        // SuperAdmin: Admin and Staff accounts. Staff cannot reach this action.
+        // Sets the new password. Admin: Staff accounts only (the Staff signs in with it, no forced change).
+        // SuperAdmin: Admin and Staff accounts (temporary; they must change it). Staff cannot reach this action.
         // -----------------------------------------------------------------------
         // Admin: Staff ra. SupAdmin: Admin ug Staff. (Ang Staff dili maka-access.)
         [HttpPost]
@@ -194,9 +194,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return ReopenForm("reset", new UserFormViewModel { Id = account.Id, FullName = account.FullName });
 
-            // I-hash ang bag-ong password; usbon sa sunod nga login, ug mawala ang daan nga session.
+            // I-hash ang bag-ong password; mawala ang daan nga session.
             account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
-            account.MustChangePassword = true;
+
+            // Admin nag-reset sa Staff: gamiton na dayon ang bag-ong password (false, apil ang sayop
+            // nga true gikan sa daan). SupAdmin nag-reset: usbon pa gihapon sa sunod nga login.
+            account.MustChangePassword = IsSuperAdmin;
             account.SecurityStamp = AccountController.NewSecurityStamp();
             account.FailedLoginAttempts = 0;
             account.LockoutEndUtc = null;

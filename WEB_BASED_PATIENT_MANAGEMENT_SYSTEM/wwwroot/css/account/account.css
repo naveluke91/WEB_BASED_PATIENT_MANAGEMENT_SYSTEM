@@ -66,6 +66,11 @@
     color: var(--text-secondary);
 }
 
+/* Title nga walay subtitle: parehas nga gilay-on sa subtitle. */
+.auth-title-solo {
+    margin-bottom: var(--space-5);
+}
+
 .auth-field + .auth-field {
     margin-top: var(--space-4);
 }
