@@ -12,19 +12,17 @@
     const form = document.getElementById('addUserForm');
     const fullName = document.getElementById('addUserFullName');
     const username = document.getElementById('addUserUsername');
-    const role = document.getElementById('addUserRole');
     const password = document.getElementById('addUserPassword');
     const confirmPassword = document.getElementById('addUserConfirmPassword');
     const submitButton = document.getElementById('addUserSubmit');
     const error = document.getElementById('addUserError');
 
-    if (!data || !modal || !form || !fullName || !username || !role || !password || !confirmPassword || !submitButton || !error) return;
+    if (!data || !modal || !form || !fullName || !username || !password || !confirmPassword || !submitButton || !error) return;
 
     // Validation (parehas sa server); ang password dili ibalik sa page.
     const validator = FormValidation.create(form, () => [
         { field: fullName, test: el => FormValidation.rules.personName(el.value) },
         { field: username, test: el => checkUsername(el.value) },
-        { field: role, test: el => ['Admin', 'Staff'].includes(el.value) ? '' : 'Pilia ang Admin o Staff.' },
         {
             field: password, test: el => !el.value ? 'Kinahanglan kini nga field.'
                 : el.value.length < 8 ? 'Labing menos 8 ka karakter.'
@@ -55,8 +53,7 @@
     if (reopen && reopen.mode === 'add') {
         fullName.value = reopen.fullName || '';
         username.value = reopen.username || '';
-        role.value = reopen.role || '';
-        showServerError(modal, error, reopen, { FullName: fullName, Username: username, Role: role, Password: password, ConfirmPassword: confirmPassword });
+        showServerError(modal, error, reopen, { FullName: fullName, Username: username, Password: password, ConfirmPassword: confirmPassword });
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();
@@ -89,26 +86,16 @@ function showServerError(modal, errorBox, reopen, fields) {
     const id = document.getElementById('editUserId');
     const fullName = document.getElementById('editUserFullName');
     const username = document.getElementById('editUserUsername');
-    const role = document.getElementById('editUserRole');
-    const roleLocked = document.getElementById('editUserRoleLocked');
-    const roleNote = document.getElementById('editUserRoleNote');
     const submitButton = document.getElementById('editUserSubmit');
     const error = document.getElementById('editUserError');
 
-    if (!data || !modal || !form || !id || !fullName || !username || !role || !roleLocked || !roleNote || !submitButton || !error) return;
+    if (!data || !modal || !form || !id || !fullName || !username || !submitButton || !error) return;
 
-    // The signed-in Admin cannot change their own role, so the list is locked
-    // and the current role is sent in the hidden field instead.
+    // Ngalan ug username ra; ang role dili usbon.
     function fill(user) {
-        const isSelf = String(user.id) === String(data.currentUserId);
         id.value = user.id;
         fullName.value = user.fullName || '';
         username.value = user.username || '';
-        role.value = user.role || '';
-        roleLocked.value = user.role || '';
-        role.disabled = isSelf;
-        roleLocked.disabled = !isSelf;
-        roleNote.hidden = !isSelf;
     }
 
     function hideError() {
@@ -119,8 +106,7 @@ function showServerError(modal, errorBox, reopen, fields) {
     // Validation (parehas sa server).
     const validator = FormValidation.create(form, () => [
         { field: fullName, test: el => FormValidation.rules.personName(el.value) },
-        { field: username, test: el => checkUsername(el.value) },
-        { field: role, test: el => el.disabled || ['Admin', 'Staff'].includes(el.value) ? '' : 'Pilia ang Admin o Staff.' }
+        { field: username, test: el => checkUsername(el.value) }
     ]);
 
     modal.addEventListener('show.bs.modal', event => {
@@ -130,8 +116,7 @@ function showServerError(modal, errorBox, reopen, fields) {
         fill({
             id: button.dataset.userId,
             fullName: button.dataset.fullName,
-            username: button.dataset.username,
-            role: button.dataset.role
+            username: button.dataset.username
         });
         hideError();
         validator.reset();
@@ -155,7 +140,7 @@ function showServerError(modal, errorBox, reopen, fields) {
     const reopen = data.reopenForm;
     if (reopen && reopen.mode === 'edit') {
         fill(reopen);
-        showServerError(modal, error, reopen, { FullName: fullName, Username: username, Role: role });
+        showServerError(modal, error, reopen, { FullName: fullName, Username: username });
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();

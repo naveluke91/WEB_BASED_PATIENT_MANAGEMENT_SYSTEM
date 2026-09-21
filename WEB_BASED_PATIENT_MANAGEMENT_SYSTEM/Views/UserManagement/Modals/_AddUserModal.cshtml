@@ -23,22 +23,13 @@
                             <input type="text" name="FullName" id="addUserFullName" class="form-control"
                                    maxlength="150" placeholder="Enter full name" required />
                         </div>
-                        <div class="col-sm-6">
+                        @* Walay Role: ang bag-ong account kanunay Staff (server). *@
+                        <div class="col-12">
                             <label for="addUserUsername" class="form-label">Username</label>
                             <input type="text" name="Username" id="addUserUsername" class="form-control"
                                    minlength="3" maxlength="50" pattern="[A-Za-z0-9._\-]+"
                                    title="Letters, numbers, dots, dashes and underscores only"
                                    autocomplete="off" placeholder="e.g. mdelacruz" required />
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="addUserRole" class="form-label">Role</label>
-                            <select name="Role" id="addUserRole" class="form-select" required>
-                                <option value="">-- Select Role --</option>
-                                @foreach (var role in UserRoles.All)
-                                {
-                                    <option value="@role">@role</option>
-                                }
-                            </select>
                         </div>
                         <div class="col-sm-6">
                             <label for="addUserPassword" class="form-label">Password</label>

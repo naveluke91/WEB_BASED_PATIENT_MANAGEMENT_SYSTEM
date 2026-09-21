@@ -29,7 +29,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [Display(Name = "Confirm Password")]
         public string? ConfirmPassword { get; set; }
 
-        [Required(ErrorMessage = "Please select Admin or Staff.")]
-        public string Role { get; set; } = UserRoles.Staff;
+        // Walay Role diri: ang server ang mo-set (Setup = Admin, Add User = Staff).
     }
 }

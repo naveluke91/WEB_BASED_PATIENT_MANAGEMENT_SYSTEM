@@ -1,12 +1,10 @@
-<!-- Edit User: name, username and role. Values come from the Edit button (usermanagement.js). -->
+<!-- Edit User: name and username. Values come from the Edit button (usermanagement.js). -->
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form asp-controller="UserManagement" asp-action="Edit" method="post" id="editUserForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="Id" id="editUserId" />
-                @* Sent instead of the Role list when an Admin edits their own account, whose role can't change. *@
-                <input type="hidden" name="Role" id="editUserRoleLocked" disabled />
 
                 <div class="modal-header">
                     <div class="modal-title-wrap">
@@ -26,23 +24,13 @@
                             <input type="text" name="FullName" id="editUserFullName" class="form-control"
                                    maxlength="150" required />
                         </div>
-                        <div class="col-sm-6">
+                        @* Walay Role: dili usbon ang role sa database. *@
+                        <div class="col-12">
                             <label for="editUserUsername" class="form-label">Username</label>
                             <input type="text" name="Username" id="editUserUsername" class="form-control"
                                    minlength="3" maxlength="50" pattern="[A-Za-z0-9._\-]+"
                                    title="Letters, numbers, dots, dashes and underscores only"
                                    autocomplete="off" required />
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="editUserRole" class="form-label">Role</label>
-                            <select name="Role" id="editUserRole" class="form-select" required>
-                                <option value="">-- Select Role --</option>
-                                @foreach (var role in UserRoles.All)
-                                {
-                                    <option value="@role">@role</option>
-                                }
-                            </select>
-                            <div class="form-text" id="editUserRoleNote" hidden>Your own role can't be changed.</div>
                         </div>
                     </div>
                 </div>

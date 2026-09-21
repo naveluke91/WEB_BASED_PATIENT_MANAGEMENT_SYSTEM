@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// deletes them. Healthcare records are not linked to user accounts, so
     /// deleting an account never removes patient, consultation or billing data.
     /// </summary>
+    // Admin ra maka-access (Staff → Access Denied).
+    [Authorize(Roles = UserRoles.Admin)]
     public class UserManagementController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -48,23 +51,23 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create([Bind(nameof(UserFormViewModel.FullName), nameof(UserFormViewModel.Username),
-            nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword), nameof(UserFormViewModel.Role))] UserFormViewModel model)
+            nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Password))
                 ModelState.AddModelError(nameof(UserFormViewModel.Password), "Password is required.");
 
-            var role = ValidateRole(model.Role);
             ValidateUsernameIsFree(model.Username, exceptId: null);
             ValidateFullName(model.FullName);
 
             if (!ModelState.IsValid)
                 return ReopenForm("add", model);
 
+            // Staff ra ang himuon; ang Role gikan sa browser dili gamiton.
             var account = new UserAccount
             {
                 FullName = model.FullName.Trim(),
                 Username = model.Username.Trim(),
-                Role = role!
+                Role = UserRoles.Staff
             };
             // Only the salted hash is stored.
             account.PasswordHash = _passwordHasher.HashPassword(account, model.Password!);
@@ -79,12 +82,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/Edit
-        // Updates the name, username and role. The password is not changed here.
+        // Updates the name and username. The password is not changed here.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit([Bind(nameof(UserFormViewModel.Id), nameof(UserFormViewModel.FullName),
-            nameof(UserFormViewModel.Username), nameof(UserFormViewModel.Role))] UserFormViewModel model)
+            nameof(UserFormViewModel.Username))] UserFormViewModel model)
         {
             var account = _context.UserAccounts.FirstOrDefault(u => u.Id == model.Id);
             if (account == null)
@@ -93,29 +96,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var role = ValidateRole(model.Role);
             ValidateUsernameIsFree(model.Username, exceptId: account.Id);
             ValidateFullName(model.FullName);
-
-            if (role != null && role != account.Role)
-            {
-                if (account.Id == CurrentUserId)
-                {
-                    ModelState.AddModelError(nameof(UserFormViewModel.Role), "You can't change the role of the account you are signed in with.");
-                    model.Role = account.Role;
-                }
-                else if (account.Role == UserRoles.Admin && AdminCount() <= 1)
-                {
-                    ModelState.AddModelError(nameof(UserFormViewModel.Role), "The system needs at least one Admin account.");
-                }
-            }
 
             if (!ModelState.IsValid)
                 return ReopenForm("edit", model);
 
+            // Ang Role sa database dili usbon.
             account.FullName = model.FullName.Trim();
             account.Username = model.Username.Trim();
-            account.Role = role!;
 
             if (!TrySave())
                 return ReopenForm("edit", model);
@@ -161,19 +150,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         private int AdminCount() =>
             _context.UserAccounts.Count(u => u.Role == UserRoles.Admin);
-
-        // Accepts only Admin or Staff and returns the canonical spelling.
-        // A blank role is already reported by the [Required] attribute.
-        private string? ValidateRole(string? requestedRole)
-        {
-            var role = UserRoles.All.FirstOrDefault(r =>
-                string.Equals(r, requestedRole?.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            if (role == null && !string.IsNullOrWhiteSpace(requestedRole))
-                ModelState.AddModelError(nameof(UserFormViewModel.Role), "Please select Admin or Staff.");
-
-            return role;
-        }
 
         // Valid nga ngalan lang (parehas sa Patient).
         private void ValidateFullName(string? fullName)
@@ -223,7 +199,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 id = model.Id,
                 fullName = model.FullName,
                 username = model.Username,
-                role = model.Role,
                 error,
                 // Ang field nga may sayop (para ma-marka og pula).
                 field = ModelState.FirstOrDefault(entry => entry.Value?.Errors.Count > 0).Key

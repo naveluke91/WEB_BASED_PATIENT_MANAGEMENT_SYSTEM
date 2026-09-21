@@ -10,12 +10,9 @@ using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
     /// <summary>
-    /// Sign in and sign out.
-    /// Switched off for now with [NonController]: the system runs without sign-in,
-    /// so /Account/Login and /Account/Setup don't exist. Remove the attribute in the
-    /// later Admin/Staff sign-in task.
+    /// Sign in and sign out. Admin and Staff use the same Login; the Role saved in
+    /// UserAccounts decides what the account can open.
     /// </summary>
-    [NonController]
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -114,10 +111,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpGet]
         public IActionResult Setup()
         {
+            // Naa nay account: dili na pwede mag-himo og laing Admin.
             if (_context.UserAccounts.Any())
-                return RedirectToAction(nameof(Login));
+                return SetupClosed();
 
-            return View(new UserFormViewModel { Role = UserRoles.Admin });
+            return View(new UserFormViewModel());
         }
 
         // -----------------------------------------------------------------------
@@ -130,14 +128,19 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
         {
             if (_context.UserAccounts.Any())
-                return RedirectToAction(nameof(Login));
+                return SetupClosed();
 
             if (string.IsNullOrWhiteSpace(model.Password))
                 ModelState.AddModelError(nameof(UserFormViewModel.Password), "Password is required.");
 
+            // Valid nga ngalan lang (parehas sa Users).
+            if (!string.IsNullOrWhiteSpace(model.FullName) && !Patient.IsValidPersonName(model.FullName))
+                ModelState.AddModelError(nameof(UserFormViewModel.FullName), "Dili valid ang ngalan.");
+
             if (!ModelState.IsValid)
                 return View(model);
 
+            // Ang una nga account kanunay Admin; dili gikan sa form.
             var account = new UserAccount
             {
                 FullName = model.FullName.Trim(),
@@ -167,6 +170,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
         }
+
+        // Sirado na ang Setup: Patients kung naka-login, Login kung wala.
+        private IActionResult SetupClosed() =>
+            User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Patients") : RedirectToAction(nameof(Login));
 
         // Only local return URLs are followed, so a link cannot send the user elsewhere.
         private IActionResult RedirectToLocal(string? returnUrl) =>

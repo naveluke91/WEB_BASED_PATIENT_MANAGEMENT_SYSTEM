@@ -7,6 +7,11 @@
     const string logoFileName = "espanola-birthing-home-logo.jpg";
     var hasLogo = !string.IsNullOrEmpty(HostEnvironment.WebRootPath)
                   && System.IO.File.Exists(System.IO.Path.Combine(HostEnvironment.WebRootPath, "images", logoFileName));
+
+    // Ang naka-login nga account (gikan sa claims).
+    var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
+    var displayRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+    var isAdmin = User.IsInRole(UserRoles.Admin);
 }
 <!DOCTYPE html>
 
@@ -104,19 +109,26 @@
                     <span>Reports</span>
                 </a>
 
-                <a asp-controller="UserManagement" asp-action="Index" title="Users"
-                   class="nav-item @(controller == "UserManagement" ? "active" : "")"
-                   aria-current="@(controller == "UserManagement" ? "page" : null)">
-                    <i class="bi bi-person-gear" aria-hidden="true"></i>
-                    <span>Users</span>
-                </a>
+                @* Ipakita ra sa Admin. *@
+                @if (isAdmin)
+                {
+                    <a asp-controller="UserManagement" asp-action="Index" title="Users"
+                       class="nav-item @(controller == "UserManagement" ? "active" : "")"
+                       aria-current="@(controller == "UserManagement" ? "page" : null)">
+                        <i class="bi bi-person-gear" aria-hidden="true"></i>
+                        <span>Users</span>
+                    </a>
+                }
             </nav>
 
             <div class="sidebar-footer">
-                <a href="#" class="nav-item logout-link" title="Logout">
-                    <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
-                    <span>Logout</span>
-                </a>
+                @* Logout pinaagi sa POST (naay AntiForgeryToken). *@
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="nav-item logout-link" title="Logout">
+                        <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
 
         </aside>
@@ -131,7 +143,11 @@
                 </div>
                 <div class="topbar-user">
                     <span class="topbar-avatar" aria-hidden="true"><i class="bi bi-person"></i></span>
-                    <span class="user-name">Admin Name</span>
+                    <span class="user-name">@displayName</span>
+                    @if (!string.IsNullOrEmpty(displayRole))
+                    {
+                        <span class="user-role">@displayRole</span>
+                    }
                 </div>
             </header>
 

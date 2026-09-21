@@ -281,6 +281,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         /// Ipakita ang error page kapag may nangyari nga exception sa app.
         /// </summary>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous] // Makita bisan wala naka-login.
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });

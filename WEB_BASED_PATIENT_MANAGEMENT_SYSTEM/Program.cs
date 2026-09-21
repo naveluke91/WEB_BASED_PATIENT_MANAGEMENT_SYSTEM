@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers;
@@ -21,9 +22,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Passwords are stored as salted hashes by ASP.NET Core's built-in PasswordHasher.
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 
-// Sign-in is switched off for now: no page requires it and AccountController is
-// disabled, so this cookie setup never redirects anyone. Kept for the later
-// Admin/Staff sign-in task.
+// Kung wala naka-login, i-redirect sa /Account/Login.
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -62,6 +61,14 @@ builder.Services
         };
     });
 
+// Kinahanglan naka-login sa tanan nga page; ang Login ug Setup [AllowAnonymous].
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -74,6 +81,19 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
+
+// Dili i-cache ang page sa naka-login, aron dili makita pinaagi sa Back human sa logout.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        if (context.User.Identity?.IsAuthenticated == true)
+            context.Response.Headers.CacheControl = "no-store";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 app.UseAuthorization();
 
 // Default route — mag-sugod sa Patients Index page
