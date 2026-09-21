@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -53,7 +54,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return View(model);
 
             var username = model.Username.Trim();
-            var account = _context.UserAccounts.FirstOrDefault(u => u.Username == username);
+            // Admin ug Staff ra; ang SuperAdmin naa sa lahi nga login.
+            var account = _context.UserAccounts.FirstOrDefault(u => u.Username == username && u.Role != UserRoles.SuperAdmin);
             var result = account == null
                 ? PasswordVerificationResult.Failed
                 : _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.Password);
@@ -72,7 +74,66 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account));
+
+            // Temporary password: usbon una una makasulod.
+            if (account.MustChangePassword)
+                return RedirectToAction(nameof(ChangePassword));
+
             return RedirectToLocal(model.ReturnUrl);
+        }
+
+        // -----------------------------------------------------------------------
+        // GET /Account/ChangePassword
+        // Only after the SuperAdmin reset this account's password: the temporary
+        // password must be replaced before the system can be used.
+        // -----------------------------------------------------------------------
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            var account = CurrentAccount();
+            if (account == null)
+                return RedirectToAction(nameof(Login));
+            if (!account.MustChangePassword)
+                return RedirectToAction("Index", "Patients");
+
+            return View(new ChangePasswordViewModel());
+        }
+
+        // -----------------------------------------------------------------------
+        // POST /Account/ChangePassword
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            var account = CurrentAccount();
+            if (account == null)
+                return RedirectToAction(nameof(Login));
+            if (!account.MustChangePassword)
+                return RedirectToAction("Index", "Patients");
+
+            var passwordError = BasicPasswordError(model.NewPassword);
+            if (passwordError != null)
+                ModelState.AddModelError(nameof(model.NewPassword), passwordError);
+            else if (_passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.NewPassword!) != PasswordVerificationResult.Failed)
+                ModelState.AddModelError(nameof(model.NewPassword), "Gamita og bag-o nga password, dili ang temporary.");
+
+            if (string.IsNullOrEmpty(model.ConfirmPassword))
+                ModelState.AddModelError(nameof(model.ConfirmPassword), "Kinahanglan kini nga field.");
+            else if (model.ConfirmPassword != model.NewPassword)
+                ModelState.AddModelError(nameof(model.ConfirmPassword), "Dili parehas ang password.");
+
+            if (!ModelState.IsValid)
+                return View(new ChangePasswordViewModel());
+
+            // I-hash ang bag-o nga password; bag-o nga stamp = logout sa ubang session.
+            account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
+            account.MustChangePassword = false;
+            account.SecurityStamp = NewSecurityStamp();
+            _context.SaveChanges();
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account));
+            return RedirectToAction("Index", "Patients");
         }
 
         // -----------------------------------------------------------------------
@@ -158,18 +219,46 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // The signed-in identity: account id, username, full name and role.
         // Also used by Program.cs to refresh the cookie when an account changes.
         [NonAction]
-        public static ClaimsPrincipal CreatePrincipal(UserAccount account)
+        public static ClaimsPrincipal CreatePrincipal(UserAccount account, string scheme = CookieAuthenticationDefaults.AuthenticationScheme)
         {
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, account.Id.ToString()),
                 new(ClaimTypes.Name, account.Username),
                 new(ClaimTypes.GivenName, account.FullName),
-                new(ClaimTypes.Role, account.Role)
+                new(ClaimTypes.Role, account.Role),
+                // Security stamp: mausab kung mausab ang password.
+                new(SecurityStampClaim, account.SecurityStamp ?? string.Empty)
             };
 
-            return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+            return new ClaimsPrincipal(new ClaimsIdentity(claims, scheme));
         }
+
+        public const string SecurityStampClaim = "security_stamp";
+
+        // Parehas pa ba ang stamp sa cookie ug sa database?
+        [NonAction]
+        public static bool StampMatches(ClaimsPrincipal principal, UserAccount account) =>
+            (principal.FindFirst(SecurityStampClaim)?.Value ?? string.Empty) == (account.SecurityStamp ?? string.Empty);
+
+        [NonAction]
+        public static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+
+        // Password sa Admin ug Staff: 8-100 ka karakter, dili puro space.
+        [NonAction]
+        public static string? BasicPasswordError(string? password)
+        {
+            if (string.IsNullOrWhiteSpace(password)) return "Kinahanglan kini nga field.";
+            if (password.Length < 8) return "Labing menos 8 ka karakter.";
+            if (password.Length > 100) return "Hangtod 100 ka karakter lang.";
+            return null;
+        }
+
+        // Ang naka-login nga account gikan sa database.
+        private UserAccount? CurrentAccount() =>
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
+                ? _context.UserAccounts.FirstOrDefault(u => u.Id == id && u.Role != UserRoles.SuperAdmin)
+                : null;
 
         // Sirado na ang Setup: Patients kung naka-login, Login kung wala.
         private IActionResult SetupClosed() =>

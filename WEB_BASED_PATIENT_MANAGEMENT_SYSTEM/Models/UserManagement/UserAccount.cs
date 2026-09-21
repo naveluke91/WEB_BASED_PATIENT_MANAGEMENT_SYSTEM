@@ -26,20 +26,48 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [MaxLength(256)]
         public string PasswordHash { get; set; } = string.Empty;
 
-        // UserRoles.Admin or UserRoles.Staff
+        // UserRoles.SuperAdmin, UserRoles.Admin or UserRoles.Staff
         [Required]
         [MaxLength(20)]
         public string Role { get; set; } = UserRoles.Staff;
+
+        // Recovery Gmail sa SuperAdmin ra; NULL sa Admin ug Staff.
+        [MaxLength(256)]
+        public string? RecoveryEmail { get; set; }
+
+        // Kinahanglan usbon ang password sa sunod nga login.
+        public bool MustChangePassword { get; set; }
+
+        // Lockout sa SuperAdmin login.
+        public int FailedLoginAttempts { get; set; }
+
+        public DateTime? LockoutEndUtc { get; set; }
+
+        // Hash ra sa recovery code, dili ang code mismo.
+        [MaxLength(256)]
+        public string? PasswordResetCodeHash { get; set; }
+
+        public DateTime? PasswordResetCodeExpiresUtc { get; set; }
+
+        public int PasswordResetFailedAttempts { get; set; }
+
+        // Mausab kung mausab ang password, aron ma-logout ang daan nga session.
+        [Required]
+        [MaxLength(64)]
+        public string SecurityStamp { get; set; } = string.Empty;
     }
 
     /// <summary>
-    /// The two application roles. Staff covers midwives and other healthcare staff.
+    /// The application roles. Staff covers midwives and other healthcare staff.
+    /// There is only one SuperAdmin; it manages the Admin and Staff accounts.
     /// </summary>
     public static class UserRoles
     {
+        public const string SuperAdmin = "SuperAdmin";
         public const string Admin = "Admin";
         public const string Staff = "Staff";
 
-        public static readonly string[] All = { Admin, Staff };
+        // Mga role nga ma-pili sa SuperAdmin (dili SuperAdmin).
+        public static readonly string[] Assignable = { Admin, Staff };
     }
 }

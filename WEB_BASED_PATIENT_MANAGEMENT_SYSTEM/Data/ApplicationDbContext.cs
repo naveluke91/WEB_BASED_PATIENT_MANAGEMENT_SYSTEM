@@ -122,6 +122,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
             modelBuilder.Entity<UserAccount>()
                 .HasIndex(u => u.Username)
                 .IsUnique();
+
+            // Usa ra ka SuperAdmin (gibantayan sa database).
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.Role)
+                .IsUnique()
+                .HasFilter("[Role] = N'SuperAdmin'")
+                .HasDatabaseName("IX_UserAccounts_SingleSuperAdmin");
         }
     }
 }

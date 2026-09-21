@@ -1,0 +1,235 @@
+@model SuperAdminUsersPageViewModel
+@{
+    ViewData["Title"] = "Manage Users";
+
+    // Gi-reject nga porma gikan sa server (ablihan pag-usab ang modal).
+    var saForm = TempData["SaForm"] as string;
+}
+
+<div class="sa-page-header">
+    <div>
+        <h1 class="sa-page-title">Manage Users</h1>
+        <p class="sa-page-sub">Admin and Staff accounts that sign in to the clinic system.</p>
+    </div>
+    <button type="button" class="sa-btn sa-btn-primary" data-bs-toggle="modal" data-bs-target="#saAddModal">
+        <i class="bi bi-person-plus" aria-hidden="true"></i> Add Account
+    </button>
+</div>
+
+<section class="sa-panel" aria-label="Accounts">
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="sa-col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Accounts.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="sa-empty">No Admin or Staff accounts yet. Use Add Account to create one.</td>
+                    </tr>
+                }
+                @foreach (var account in Model.Accounts)
+                {
+                    var isAdmin = account.Role == UserRoles.Admin;
+                    var roleLabel = isAdmin ? "administrator" : "staff account";
+
+                    <tr>
+                        <td class="sa-cell-name">@account.FullName</td>
+                        <td>@account.Username</td>
+                        <td><span class="sa-badge @(isAdmin ? "sa-badge-admin" : "sa-badge-staff")">@account.Role</span></td>
+                        <td>
+                            @if (account.MustChangePassword)
+                            {
+                                <span class="sa-status sa-status-pending"><i class="bi bi-clock-history" aria-hidden="true"></i> Must change password</span>
+                            }
+                            else
+                            {
+                                <span class="sa-status sa-status-active"><i class="bi bi-check-circle" aria-hidden="true"></i> Active</span>
+                            }
+                        </td>
+                        <td class="sa-col-actions">
+                            <div class="sa-actions">
+                                <button type="button" class="sa-icon-btn" title="Edit" aria-label="Edit @account.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#saEditModal"
+                                        data-id="@account.Id" data-full-name="@account.FullName"
+                                        data-username="@account.Username" data-role="@account.Role">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i><span>Edit</span>
+                                </button>
+                                <button type="button" class="sa-icon-btn" title="Reset Password" aria-label="Reset password of @account.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#saResetModal"
+                                        data-id="@account.Id" data-full-name="@account.FullName">
+                                    <i class="bi bi-key" aria-hidden="true"></i><span>Reset Password</span>
+                                </button>
+                                <button type="button" class="sa-icon-btn sa-icon-btn-danger" title="Delete" aria-label="Delete @account.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#saDeleteModal"
+                                        data-id="@account.Id" data-full-name="@account.FullName" data-role-label="@roleLabel">
+                                    <i class="bi bi-trash" aria-hidden="true"></i><span>Delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@* ---- Add Account: Admin o Staff ra (walay SuperAdmin) ---- *@
+<div class="modal fade sa-modal" id="saAddModal" tabindex="-1" aria-labelledby="saAddTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="SuperAdmin" asp-action="CreateAccount" method="post" id="saAddForm" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title" id="saAddTitle">Add Account</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="sa-field">
+                        <label for="saAddFullName" class="sa-label">Full Name</label>
+                        <input type="text" name="FullName" id="saAddFullName" class="form-control sa-input" maxlength="150" placeholder="Enter full name" />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 sa-field">
+                            <label for="saAddUsername" class="sa-label">Username</label>
+                            <input type="text" name="Username" id="saAddUsername" class="form-control sa-input" maxlength="50" autocomplete="off" placeholder="e.g. mdelacruz" />
+                        </div>
+                        <div class="col-sm-6 sa-field">
+                            <label for="saAddRole" class="sa-label">Role</label>
+                            <select name="Role" id="saAddRole" class="form-select sa-input">
+                                <option value="">-- Select Role --</option>
+                                @foreach (var role in UserRoles.Assignable)
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-sm-6 sa-field">
+                            <label for="saAddPassword" class="sa-label">Password</label>
+                            <input type="password" name="Password" id="saAddPassword" class="form-control sa-input" maxlength="100" autocomplete="new-password" placeholder="At least 8 characters" />
+                        </div>
+                        <div class="col-sm-6 sa-field">
+                            <label for="saAddConfirmPassword" class="sa-label">Confirm Password</label>
+                            <input type="password" name="ConfirmPassword" id="saAddConfirmPassword" class="form-control sa-input" maxlength="100" autocomplete="new-password" placeholder="Re-enter password" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sa-btn sa-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-check-lg" aria-hidden="true"></i> Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ---- Edit Account ---- *@
+<div class="modal fade sa-modal" id="saEditModal" tabindex="-1" aria-labelledby="saEditTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="SuperAdmin" asp-action="EditAccount" method="post" id="saEditForm" novalidate>
+                <input type="hidden" name="Id" id="saEditId" />
+                <div class="modal-header">
+                    <h2 class="modal-title" id="saEditTitle">Edit Account</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="sa-field">
+                        <label for="saEditFullName" class="sa-label">Full Name</label>
+                        <input type="text" name="FullName" id="saEditFullName" class="form-control sa-input" maxlength="150" />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 sa-field">
+                            <label for="saEditUsername" class="sa-label">Username</label>
+                            <input type="text" name="Username" id="saEditUsername" class="form-control sa-input" maxlength="50" autocomplete="off" />
+                        </div>
+                        <div class="col-sm-6 sa-field">
+                            <label for="saEditRole" class="sa-label">Role</label>
+                            <select name="Role" id="saEditRole" class="form-select sa-input">
+                                @foreach (var role in UserRoles.Assignable)
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sa-btn sa-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ---- Reset Password (temporary; usbon sa sunod nga login) ---- *@
+<div class="modal fade sa-modal" id="saResetModal" tabindex="-1" aria-labelledby="saResetTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="SuperAdmin" asp-action="ResetAccountPassword" method="post" id="saResetForm" novalidate>
+                <input type="hidden" name="Id" id="saResetId" />
+                <div class="modal-header">
+                    <h2 class="modal-title" id="saResetTitle">Reset Password</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="sa-field">
+                        <span class="sa-label">Account Name</span>
+                        <p class="sa-readonly" id="saResetName"></p>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 sa-field">
+                            <label for="saResetNewPassword" class="sa-label">New Password</label>
+                            <input type="password" name="NewPassword" id="saResetNewPassword" class="form-control sa-input" maxlength="100" autocomplete="new-password" placeholder="At least 8 characters" />
+                        </div>
+                        <div class="col-sm-6 sa-field">
+                            <label for="saResetConfirmPassword" class="sa-label">Confirm Password</label>
+                            <input type="password" name="ConfirmPassword" id="saResetConfirmPassword" class="form-control sa-input" maxlength="100" autocomplete="new-password" />
+                        </div>
+                    </div>
+                    <p class="sa-help"><i class="bi bi-info-circle" aria-hidden="true"></i> This is a temporary password. The user must change it at their next sign-in.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sa-btn sa-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-key" aria-hidden="true"></i> Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ---- Delete confirmation ---- *@
+<div class="modal fade sa-modal" id="saDeleteModal" tabindex="-1" aria-labelledby="saDeleteTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="SuperAdmin" asp-action="DeleteAccount" method="post" id="saDeleteForm">
+                <input type="hidden" name="id" id="saDeleteId" />
+                <div class="modal-header">
+                    <h2 class="modal-title" id="saDeleteTitle">Delete Account</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="sa-confirm" id="saDeleteMessage"></p>
+                    <p class="sa-help">This action cannot be undone. Patient, appointment, consultation and billing records are not affected.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sa-btn sa-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="sa-btn sa-btn-danger"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.superAdminPageData = { form: @Html.Raw(saForm ?? "null") };
+    </script>
+}

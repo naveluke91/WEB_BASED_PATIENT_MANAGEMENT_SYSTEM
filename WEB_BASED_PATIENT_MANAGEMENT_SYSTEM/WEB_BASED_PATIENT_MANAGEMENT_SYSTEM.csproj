@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d003b221-3803-46ae-bc4d-58cbcc37a28e</UserSecretsId>
   </PropertyGroup>
 
   <!-- EF Core packages para sa SQL Server database connection -->

@@ -1,0 +1,41 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+    ViewData["SaCard"] = true;
+
+    // Usa ra ka generic nga mensahe kung sayop ang login.
+    var formError = ViewData.ModelState[string.Empty]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="sa-title">Sign in</h1>
+<p class="sa-subtitle">Account administration. Authorised access only.</p>
+
+@if (!string.IsNullOrEmpty(formError))
+{
+    <div class="sa-alert sa-alert-error" role="alert">
+        <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+        <span>@formError</span>
+    </div>
+}
+
+<form asp-controller="SuperAdmin" asp-action="Login" method="post" id="saLoginForm" novalidate>
+    <div class="sa-field">
+        <label for="saLoginUsername" class="sa-label">Username</label>
+        <input asp-for="Username" id="saLoginUsername" class="form-control sa-input" autocomplete="username" maxlength="50" autofocus />
+        <span asp-validation-for="Username"></span>
+    </div>
+
+    <div class="sa-field">
+        <label for="saLoginPassword" class="sa-label">Password</label>
+        <input asp-for="Password" id="saLoginPassword" class="form-control sa-input" autocomplete="current-password" maxlength="100" />
+        <span asp-validation-for="Password"></span>
+    </div>
+
+    <button type="submit" class="sa-btn sa-btn-primary sa-btn-block">
+        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign In
+    </button>
+</form>
+
+<div class="sa-card-links">
+    <a asp-controller="SuperAdmin" asp-action="ForgotPassword">Forgot password?</a>
+</div>

@@ -32,8 +32,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // -----------------------------------------------------------------------
         public IActionResult Index()
         {
+            // Staff ra ang ipakita sa Admin.
             var users = _context.UserAccounts
                 .AsNoTracking()
+                .Where(u => u.Role == UserRoles.Staff)
                 .OrderBy(u => u.FullName)
                 .ToList();
 
@@ -96,6 +98,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Staff ra ang ma-usab sa Admin.
+            if (account.Role != UserRoles.Staff)
+            {
+                TempData["ErrorMessage"] = StaffOnlyMessage;
+                return RedirectToAction(nameof(Index));
+            }
+
             ValidateUsernameIsFree(model.Username, exceptId: account.Id);
             ValidateFullName(model.FullName);
 
@@ -126,13 +135,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             {
                 TempData["ErrorMessage"] = "That user account no longer exists.";
             }
-            else if (account.Id == CurrentUserId)
+            else if (account.Role != UserRoles.Staff)
             {
-                TempData["ErrorMessage"] = "You can't delete the account you are signed in with.";
-            }
-            else if (account.Role == UserRoles.Admin && AdminCount() <= 1)
-            {
-                TempData["ErrorMessage"] = "The system needs at least one Admin account.";
+                // Staff ra ang ma-delete sa Admin.
+                TempData["ErrorMessage"] = StaffOnlyMessage;
             }
             else
             {
@@ -148,8 +154,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private int CurrentUserId =>
             int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
 
-        private int AdminCount() =>
-            _context.UserAccounts.Count(u => u.Role == UserRoles.Admin);
+        private const string StaffOnlyMessage = "You can only manage Staff accounts.";
 
         // Valid nga ngalan lang (parehas sa Patient).
         private void ValidateFullName(string? fullName)

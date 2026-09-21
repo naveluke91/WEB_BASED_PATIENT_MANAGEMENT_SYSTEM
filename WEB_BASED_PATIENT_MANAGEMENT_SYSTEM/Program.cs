@@ -1,12 +1,16 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
+using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +26,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Passwords are stored as salted hashes by ASP.NET Core's built-in PasswordHasher.
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 
+// Gmail SMTP para sa SuperAdmin recovery code (ang password gikan sa user-secrets o environment variable).
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddSingleton<EmailSender>();
+
 // Kung wala naka-login, i-redirect sa /Account/Login.
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -32,6 +40,9 @@ builder.Services
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        // Secure cookie kung HTTPS (production).
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
         // The account is checked on every request, so a deleted account is signed
         // out and a changed name or role takes effect straight away.
@@ -43,7 +54,9 @@ builder.Services
                 ? await db.UserAccounts.AsNoTracking().FirstOrDefaultAsync(u => u.Id == accountId)
                 : null;
 
-            if (account == null)
+            // SuperAdmin dili sa clinic; bag-o nga password = logout sa daan nga session.
+            if (account == null || account.Role == UserRoles.SuperAdmin
+                || !AccountController.StampMatches(context.Principal!, account))
             {
                 context.RejectPrincipal();
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -59,6 +72,20 @@ builder.Services
                 context.ShouldRenew = true;
             }
         };
+    })
+    // SuperAdmin: lahi nga cookie, mubo nga session, strict SameSite.
+    .AddCookie(SuperAdminController.Scheme, options =>
+    {
+        options.Cookie.Name = ".Espanola.SuperAdmin";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.LoginPath = SuperAdminController.LoginPath;
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+        options.Events.OnValidatePrincipal = SuperAdminController.ValidatePrincipalAsync;
+        options.Events.OnRedirectToLogin = SuperAdminController.RedirectToLoginAsync;
     });
 
 // Kinahanglan naka-login sa tanan nga page; ang Login ug Setup [AllowAnonymous].
@@ -69,7 +96,32 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+// Limitahi ang SuperAdmin login ug recovery: 10 ka request kada minuto kada IP.
+var superAdminPermitLimit = builder.Configuration.GetValue("SuperAdminRateLimit:PermitLimit", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy(SuperAdminController.RateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = superAdminPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Balik sa kilala nga page nga naay "paghulat" nga mensahe.
+    options.OnRejected = (context, _) =>
+    {
+        context.HttpContext.Response.Redirect(SuperAdminController.BusyPage(context.HttpContext.Request.Path));
+        return ValueTask.CompletedTask;
+    };
+});
+
 var app = builder.Build();
+
+// Usa ra ka SuperAdmin: himuon kung wala pa (temporary password, usbon sa una nga login).
+SuperAdminController.EnsureSuperAdmin(app.Services, app.Configuration, app.Logger);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -80,6 +132,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 
 // Dili i-cache ang page sa naka-login, aron dili makita pinaagi sa Back human sa logout.
@@ -87,6 +140,10 @@ app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
     {
+        // Security headers: walay framing, walay MIME sniffing, walay referrer sa gawas.
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers.XFrameOptions = "SAMEORIGIN";
+        context.Response.Headers["Referrer-Policy"] = "same-origin";
         if (context.User.Identity?.IsAuthenticated == true)
             context.Response.Headers.CacheControl = "no-store";
         return Task.CompletedTask;
@@ -95,6 +152,29 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthorization();
+
+// Temporary password: dili pa makasulod hangtod mausab ang password.
+app.Use(async (context, next) =>
+{
+    var endpoint = context.GetEndpoint();
+    var action = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
+    if (context.User.Identity?.IsAuthenticated == true && action != null
+        && endpoint!.Metadata.GetMetadata<IAllowAnonymous>() == null
+        && action.ActionName is not ("ChangePassword" or "Logout" or "AccessDenied")
+        && int.TryParse(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var accountId))
+    {
+        var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+        if (await db.UserAccounts.AnyAsync(u => u.Id == accountId && u.MustChangePassword))
+        {
+            context.Response.Redirect(context.User.IsInRole(UserRoles.SuperAdmin)
+                ? "/SuperAdmin/ChangePassword"
+                : "/Account/ChangePassword");
+            return;
+        }
+    }
+
+    await next();
+});
 
 // Default route — mag-sugod sa Patients Index page
 app.MapControllerRoute(
