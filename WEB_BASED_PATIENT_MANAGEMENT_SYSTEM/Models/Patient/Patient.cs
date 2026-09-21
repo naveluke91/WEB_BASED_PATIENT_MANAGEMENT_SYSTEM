@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.RegularExpressions;
 
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 {
@@ -171,6 +172,124 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
             }
 
             return age;
+        }
+
+        // ---- Validation (Patients ug Appointments) ----
+
+        // Mga field nga gikan sa patient form.
+        public const string FormFields = "FullName,Address,DateOfBirth,MaritalStatus,Religion,Occupation,ContactNo,LMP,AOG,EDC,Menarche,Gravida,TFAL";
+
+        // Mga pilianan sa marital status.
+        public static readonly string[] MaritalStatuses = { "Single", "Married", "Widowed", "Separated" };
+
+        private const string RequiredMessage = "Kinahanglan kini nga field.";
+
+        private static readonly Regex NamePattern = new(@"^[\p{L}\p{M} .'’\-]+$");
+        private static readonly Regex ContactPattern = new(@"^(09\d{9}|\+639\d{9})$");
+        private static readonly Regex TextPattern = new(@"^(?=.*\p{L})[\p{L}\p{M}\p{N} .,'’()&/\-]+$");
+        private static readonly Regex AogPattern = new(@"^(\d{1,2})(\.\d{1,2})?\s*(weeks?|wks?|w)?(\s*(and\s+)?[0-6]\s*(days?|d))?$", RegexOptions.IgnoreCase);
+        private static readonly Regex WholeNumberPattern = new(@"^\d{1,2}$");
+        private static readonly Regex TfalPattern = new(@"^\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}$");
+
+        // Letra, espasyo, . ' - lang; labing menos 2 ka letra.
+        public static bool IsValidPersonName(string? value) =>
+            !string.IsNullOrWhiteSpace(value)
+            && NamePattern.IsMatch(value.Trim())
+            && value.Count(char.IsLetter) >= 2;
+
+        // 09XXXXXXXXX o +639XXXXXXXXX lang.
+        public static bool IsValidContactNo(string? value) =>
+            !string.IsNullOrWhiteSpace(value) && ContactPattern.IsMatch(value.Trim());
+
+        // I-trim ang mga text nga gi-input.
+        public void TrimTextFields()
+        {
+            FullName = FullName?.Trim() ?? string.Empty;
+            Address = Address?.Trim() ?? string.Empty;
+            MaritalStatus = MaritalStatus?.Trim() ?? string.Empty;
+            Religion = Religion?.Trim();
+            Occupation = Occupation?.Trim();
+            ContactNo = ContactNo?.Trim() ?? string.Empty;
+            AOG = AOG?.Trim();
+            Menarche = Menarche?.Trim();
+            Gravida = Gravida?.Trim();
+            TFAL = TFAL?.Trim();
+        }
+
+        // I-validate ang patient form; ibalik ang sayop matag field.
+        public static Dictionary<string, string> ValidateInput(Patient patient)
+        {
+            var errors = new Dictionary<string, string>();
+            var today = DateTime.Today;
+
+            void Fail(string field, string message) => errors.TryAdd(field, message);
+
+            // Required nga text: dili blangko, dili lapas sa max.
+            bool CheckRequired(string? value, string field, int maxLength)
+            {
+                if (string.IsNullOrWhiteSpace(value)) { Fail(field, RequiredMessage); return false; }
+                if (value.Length > maxLength) { Fail(field, $"Hangtod {maxLength} ka karakter lang."); return false; }
+                return true;
+            }
+
+            if (CheckRequired(patient.FullName, nameof(FullName), 150) && !IsValidPersonName(patient.FullName))
+                Fail(nameof(FullName), "Dili valid ang ngalan.");
+
+            if (CheckRequired(patient.Address, nameof(Address), 250) && !patient.Address.Any(char.IsLetterOrDigit))
+                Fail(nameof(Address), "Dili valid ang address.");
+
+            var dateOfBirth = patient.DateOfBirth?.Date;
+            if (!dateOfBirth.HasValue) Fail(nameof(DateOfBirth), RequiredMessage);
+            else if (dateOfBirth > today) Fail(nameof(DateOfBirth), "Dili pwede future date.");
+            else if (CalculateAge(dateOfBirth.Value) > 130) Fail(nameof(DateOfBirth), "Dili pwede lapas 130 ang edad.");
+            bool dateOfBirthIsValid = dateOfBirth.HasValue && !errors.ContainsKey(nameof(DateOfBirth));
+
+            if (string.IsNullOrWhiteSpace(patient.MaritalStatus)) Fail(nameof(MaritalStatus), RequiredMessage);
+            else if (!MaritalStatuses.Contains(patient.MaritalStatus)) Fail(nameof(MaritalStatus), "Pilia ang valid nga opsyon.");
+
+            if (CheckRequired(patient.Religion, nameof(Religion), 100) && !TextPattern.IsMatch(patient.Religion!))
+                Fail(nameof(Religion), "Dili valid ang relihiyon.");
+
+            if (CheckRequired(patient.Occupation, nameof(Occupation), 100) && !TextPattern.IsMatch(patient.Occupation!))
+                Fail(nameof(Occupation), "Dili valid ang trabaho.");
+
+            if (string.IsNullOrWhiteSpace(patient.ContactNo)) Fail(nameof(ContactNo), RequiredMessage);
+            else if (!IsValidContactNo(patient.ContactNo)) Fail(nameof(ContactNo), "Dili valid ang contact number.");
+
+            var lmp = patient.LMP?.Date;
+            if (!lmp.HasValue) Fail(nameof(LMP), RequiredMessage);
+            else if (lmp > today) Fail(nameof(LMP), "Dili pwede future date.");
+            else if (dateOfBirthIsValid && lmp < dateOfBirth) Fail(nameof(LMP), "Dili pwede una sa petsa sa pagkatawo.");
+            bool lmpIsValid = lmp.HasValue && !errors.ContainsKey(nameof(LMP));
+
+            if (CheckRequired(patient.AOG, nameof(AOG), 50))
+            {
+                var aog = AogPattern.Match(patient.AOG!.Trim());
+                if (!aog.Success || int.Parse(aog.Groups[1].Value) > 45)
+                    Fail(nameof(AOG), "Dili valid ang AOG (pananglitan: 14 weeks).");
+            }
+
+            var edc = patient.EDC?.Date;
+            if (!edc.HasValue) Fail(nameof(EDC), RequiredMessage);
+            else if (lmpIsValid && edc <= lmp) Fail(nameof(EDC), "Kinahanglan human sa LMP.");
+            else if (lmpIsValid && edc > lmp!.Value.AddDays(315)) Fail(nameof(EDC), "Layo ra kaayo sa LMP.");
+
+            if (CheckRequired(patient.Menarche, nameof(Menarche), 50))
+            {
+                var menarche = patient.Menarche!.Trim();
+                if (!WholeNumberPattern.IsMatch(menarche) || int.Parse(menarche) < 5 || int.Parse(menarche) > 30)
+                    Fail(nameof(Menarche), "Dili valid ang edad sa menarche.");
+                else if (dateOfBirthIsValid && int.Parse(menarche) > CalculateAge(dateOfBirth!.Value))
+                    Fail(nameof(Menarche), "Dili pwede lapas sa edad sa pasyente.");
+            }
+
+            if (CheckRequired(patient.Gravida, nameof(Gravida), 50) && !WholeNumberPattern.IsMatch(patient.Gravida!.Trim()))
+                Fail(nameof(Gravida), "Numero lang (0-99), walay decimal.");
+
+            if (CheckRequired(patient.TFAL, nameof(TFAL), 50) && !TfalPattern.IsMatch(patient.TFAL!.Trim()))
+                Fail(nameof(TFAL), "Pormat: 2-1-0-1.");
+
+            return errors;
         }
     }
 }

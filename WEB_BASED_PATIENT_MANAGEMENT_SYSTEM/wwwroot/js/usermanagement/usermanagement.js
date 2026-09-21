@@ -20,24 +20,31 @@
 
     if (!data || !modal || !form || !fullName || !username || !role || !password || !confirmPassword || !submitButton || !error) return;
 
-    // The browser shows this message on Save while the passwords differ
-    // (the server checks it again).
-    function checkPasswordsMatch() {
-        const mismatch = confirmPassword.value !== '' && confirmPassword.value !== password.value;
-        confirmPassword.setCustomValidity(mismatch ? 'Passwords do not match.' : '');
-    }
-
-    password.addEventListener('input', checkPasswordsMatch);
-    confirmPassword.addEventListener('input', checkPasswordsMatch);
+    // Validation (parehas sa server); ang password dili ibalik sa page.
+    const validator = FormValidation.create(form, () => [
+        { field: fullName, test: el => FormValidation.rules.personName(el.value) },
+        { field: username, test: el => checkUsername(el.value) },
+        { field: role, test: el => ['Admin', 'Staff'].includes(el.value) ? '' : 'Pilia ang Admin o Staff.' },
+        {
+            field: password, test: el => !el.value ? 'Kinahanglan kini nga field.'
+                : el.value.length < 8 ? 'Labing menos 8 ka karakter.'
+                : el.value.length > 100 ? 'Hangtod 100 ka karakter lang.' : ''
+        },
+        { field: confirmPassword, test: el => !el.value ? 'Kinahanglan kini nga field.' : (el.value !== password.value ? 'Dili parehas ang password.' : '') }
+    ]);
 
     // A second click would submit the same account twice.
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', event => {
+        if (!validator.validate()) {
+            event.preventDefault();
+            return;
+        }
         submitButton.disabled = true;
     });
 
     modal.addEventListener('hidden.bs.modal', () => {
         form.reset();
-        checkPasswordsMatch();
+        validator.reset();
         error.textContent = '';
         error.classList.add('d-none');
         submitButton.disabled = false;
@@ -49,11 +56,29 @@
         fullName.value = reopen.fullName || '';
         username.value = reopen.username || '';
         role.value = reopen.role || '';
-        error.textContent = reopen.error;
-        error.classList.remove('d-none');
+        showServerError(modal, error, reopen, { FullName: fullName, Username: username, Role: role, Password: password, ConfirmPassword: confirmPassword });
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();
+
+// Username: 3-50 ka letra, numero, . _ - lang.
+function checkUsername(value) {
+    const text = String(value ?? '').trim();
+    if (!text) return 'Kinahanglan kini nga field.';
+    if (text.length < 3 || text.length > 50) return 'Gikan 3 hangtod 50 ka karakter.';
+    return /^[A-Za-z0-9._-]+$/.test(text) ? '' : 'Letra, numero, . _ - lang.';
+}
+
+// Sayop gikan sa server: i-marka ang field kung nahibaw-an, kung dili ipakita sa taas.
+function showServerError(modal, errorBox, reopen, fields) {
+    const field = reopen.field ? fields[reopen.field] : null;
+    if (field) {
+        modal.addEventListener('shown.bs.modal', () => FormValidation.setError(field, reopen.error), { once: true });
+    } else {
+        errorBox.textContent = reopen.error;
+        errorBox.classList.remove('d-none');
+    }
+}
 
 // ---- Edit User modal ----
 
@@ -91,6 +116,13 @@
         error.classList.add('d-none');
     }
 
+    // Validation (parehas sa server).
+    const validator = FormValidation.create(form, () => [
+        { field: fullName, test: el => FormValidation.rules.personName(el.value) },
+        { field: username, test: el => checkUsername(el.value) },
+        { field: role, test: el => el.disabled || ['Admin', 'Staff'].includes(el.value) ? '' : 'Pilia ang Admin o Staff.' }
+    ]);
+
     modal.addEventListener('show.bs.modal', event => {
         const button = event.relatedTarget;
         if (!button) return;
@@ -102,14 +134,20 @@
             role: button.dataset.role
         });
         hideError();
+        validator.reset();
     });
 
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', event => {
+        if (!validator.validate()) {
+            event.preventDefault();
+            return;
+        }
         submitButton.disabled = true;
     });
 
     modal.addEventListener('hidden.bs.modal', () => {
         hideError();
+        validator.reset();
         submitButton.disabled = false;
     });
 
@@ -117,8 +155,7 @@
     const reopen = data.reopenForm;
     if (reopen && reopen.mode === 'edit') {
         fill(reopen);
-        error.textContent = reopen.error;
-        error.classList.remove('d-none');
+        showServerError(modal, error, reopen, { FullName: fullName, Username: username, Role: role });
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();

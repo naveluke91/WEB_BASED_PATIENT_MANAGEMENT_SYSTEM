@@ -554,6 +554,21 @@ input[type="radio"] {
     font-weight: 500;
 }
 
+/* Mensahe sa sayop ubos sa field; dili mausab ang layout. */
+.fv-anchor {
+    position: relative;
+}
+
+.field-validation-error.fv-message {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 2;
+    margin-top: 2px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
 /* ============================================================
    5. Alerts
    ============================================================ */

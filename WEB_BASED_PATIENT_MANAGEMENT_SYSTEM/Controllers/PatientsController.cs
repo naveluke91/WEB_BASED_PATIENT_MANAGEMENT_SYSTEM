@@ -53,25 +53,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Patient patient)
+        public IActionResult Create([Bind(Patient.FormFields)] Patient patient)
         {
-            // Ang age awtomatikong kalkulado gikan sa gipili nga date of birth.
-            ModelState.Remove(nameof(Patient.Age));
-            if (patient.DateOfBirth.HasValue)
-            {
-                patient.Age = Patient.CalculateAge(patient.DateOfBirth.Value);
+            // I-trim ug i-validate pag-usab sa server; ang edad gikan sa DOB.
+            patient.TrimTextFields();
+            patient.Age = patient.DateOfBirth.HasValue ? Patient.CalculateAge(patient.DateOfBirth.Value) : 0;
+            ModelState.Clear();
+            var errors = Patient.ValidateInput(patient);
 
-                if (patient.DateOfBirth.Value.Date > DateTime.Today)
-                {
-                    ModelState.AddModelError(nameof(Patient.DateOfBirth), "Date of birth cannot be in the future.");
-                }
-                else if (patient.Age > 130)
-                {
-                    ModelState.AddModelError(nameof(Patient.DateOfBirth), "Age must be between 0 and 130.");
-                }
-            }
-
-            if (ModelState.IsValid)
+            if (errors.Count == 0)
             {
                 // I-add ang bag-ong pasyente sa database ug i-save
                 _context.Patients.Add(patient);
@@ -81,11 +71,34 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // ModelState invalid — redirect back to Index and re-open the modal
+            // Ablihi pag-usab ang modal uban ang sayop matag field.
             TempData["OpenAddModal"] = true;
-            TempData["ErrorMessage"] = "Please fill in all required fields correctly.";
+            TempData["PatientForm"] = PatientFormState(patient, errors);
             return RedirectToAction(nameof(Index));
         }
+
+        // Datos para ma-fill balik ang modal ug ma-marka ang sayop nga field.
+        private static string PatientFormState(Patient patient, Dictionary<string, string> errors) =>
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                values = new Dictionary<string, string?>
+                {
+                    [nameof(Patient.FullName)] = patient.FullName,
+                    [nameof(Patient.Address)] = patient.Address,
+                    [nameof(Patient.DateOfBirth)] = patient.DateOfBirth?.ToString("yyyy-MM-dd"),
+                    [nameof(Patient.MaritalStatus)] = patient.MaritalStatus,
+                    [nameof(Patient.Religion)] = patient.Religion,
+                    [nameof(Patient.Occupation)] = patient.Occupation,
+                    [nameof(Patient.ContactNo)] = patient.ContactNo,
+                    [nameof(Patient.LMP)] = patient.LMP?.ToString("yyyy-MM-dd"),
+                    [nameof(Patient.AOG)] = patient.AOG,
+                    [nameof(Patient.EDC)] = patient.EDC?.ToString("yyyy-MM-dd"),
+                    [nameof(Patient.Menarche)] = patient.Menarche,
+                    [nameof(Patient.Gravida)] = patient.Gravida,
+                    [nameof(Patient.TFAL)] = patient.TFAL
+                },
+                errors
+            });
 
         /// <summary>
         /// GET — Ibalik ang detalye sa usa ka pasyente sa JSON format para sa modal.
@@ -162,23 +175,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // Sigurohon nga ang Id sa URL ug sa form mao ra ang usa
             if (id != patient.Id) return NotFound();
 
-            // Ang age awtomatikong kalkulado gikan sa gipili nga date of birth.
-            ModelState.Remove(nameof(Patient.Age));
-            if (patient.DateOfBirth.HasValue)
-            {
-                patient.Age = Patient.CalculateAge(patient.DateOfBirth.Value);
+            // I-trim ug i-validate pag-usab sa server; ang edad gikan sa DOB.
+            patient.TrimTextFields();
+            patient.Age = patient.DateOfBirth.HasValue ? Patient.CalculateAge(patient.DateOfBirth.Value) : 0;
+            ModelState.Clear();
+            var errors = Patient.ValidateInput(patient);
 
-                if (patient.DateOfBirth.Value.Date > DateTime.Today)
-                {
-                    ModelState.AddModelError(nameof(Patient.DateOfBirth), "Date of birth cannot be in the future.");
-                }
-                else if (patient.Age > 130)
-                {
-                    ModelState.AddModelError(nameof(Patient.DateOfBirth), "Age must be between 0 and 130.");
-                }
-            }
-
-            if (ModelState.IsValid)
+            if (errors.Count == 0)
             {
                 // Pangitaon ang existing nga record sa database
                 var existing = _context.Patients.FirstOrDefault(p => p.Id == id);
@@ -209,7 +212,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             // The edit form is displayed in the Index modal, so reopen it after validation fails.
             TempData["OpenEditModalId"] = id;
-            TempData["ErrorMessage"] = "Please fill in all required fields correctly.";
+            TempData["PatientForm"] = PatientFormState(patient, errors);
             return RedirectToAction(nameof(Index));
         }
 

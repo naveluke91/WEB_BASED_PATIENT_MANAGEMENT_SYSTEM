@@ -55,6 +55,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             var role = ValidateRole(model.Role);
             ValidateUsernameIsFree(model.Username, exceptId: null);
+            ValidateFullName(model.FullName);
 
             if (!ModelState.IsValid)
                 return ReopenForm("add", model);
@@ -94,6 +95,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             var role = ValidateRole(model.Role);
             ValidateUsernameIsFree(model.Username, exceptId: account.Id);
+            ValidateFullName(model.FullName);
 
             if (role != null && role != account.Role)
             {
@@ -173,6 +175,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return role;
         }
 
+        // Valid nga ngalan lang (parehas sa Patient).
+        private void ValidateFullName(string? fullName)
+        {
+            if (!string.IsNullOrWhiteSpace(fullName) && !Patient.IsValidPersonName(fullName))
+                ModelState.AddModelError(nameof(UserFormViewModel.FullName), "Dili valid ang ngalan.");
+        }
+
         private void ValidateUsernameIsFree(string? requestedUsername, int? exceptId)
         {
             var username = requestedUsername?.Trim();
@@ -215,7 +224,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 fullName = model.FullName,
                 username = model.Username,
                 role = model.Role,
-                error
+                error,
+                // Ang field nga may sayop (para ma-marka og pula).
+                field = ModelState.FirstOrDefault(entry => entry.Value?.Errors.Count > 0).Key
             });
 
             return RedirectToAction(nameof(Index));

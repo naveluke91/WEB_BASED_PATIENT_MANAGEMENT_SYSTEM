@@ -127,9 +127,23 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(Appointment appointment)
         {
-            ModelState.Remove(nameof(Appointment.Patient));
+            // I-verify ang PatientId gikan sa form sa Patients table.
+            Patient? linkedPatient = null;
+            if (appointment.PatientId.HasValue)
+            {
+                linkedPatient = _context.Patients.FirstOrDefault(p => p.Id == appointment.PatientId.Value);
+                if (linkedPatient == null)
+                {
+                    TempData["ErrorMessage"] = "Wala makit-an ang pasyente. Pilia pag-usab gikan sa listahan.";
+                    return RedirectToAction(nameof(Index));
+                }
+                appointment.PatientName = linkedPatient.FullName;
+            }
 
-            if (ModelState.IsValid)
+            // I-validate pag-usab sa server (ngalan, contact, petsa, oras).
+            var errors = ValidateAppointmentInput(appointment, checkName: linkedPatient == null, checkSchedule: true);
+
+            if (errors.Count == 0)
             {
                 bool conflict = _context.Appointments
                     .AsEnumerable()
@@ -142,6 +156,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // Dili pagsaligan ang ubang field gikan sa form.
+                appointment.Id = 0;
+                appointment.Patient = null;
+                appointment.ServiceType = null;
+                appointment.InProcess = false;
                 appointment.CreatedAt = DateTime.Now;
                 appointment.Status = "Pending";
                 _context.Appointments.Add(appointment);
@@ -151,7 +170,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            TempData["ErrorMessage"] = "Adunay sayop sa form. Please check ang mga field.";
+            TempData["ErrorMessage"] = errors.Values.First();
             return RedirectToAction(nameof(Index));
         }
 
@@ -234,9 +253,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return NotFound();
             }
 
-            ModelState.Remove(nameof(Appointment.Patient));
-
-            if (ModelState.IsValid)
             {
                 var existing = _context.Appointments.FirstOrDefault(a => a.Id == id);
                 if (existing == null)
@@ -255,6 +271,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // I-validate pag-usab sa server; ang Cancelled dili na i-check ang petsa/oras.
+                bool isCancelled = appointment.Status == "Cancelled";
+                var errors = ValidateAppointmentInput(appointment, checkName: true, checkSchedule: !isCancelled);
+                if (!AllowedStatuses.Contains(appointment.Status))
+                    errors.TryAdd(nameof(Appointment.Status), "Pilia ang valid nga status.");
+
                 // -----------------------------------------------------------------
                 // PROBLEM 1: "Rescheduled" requires a new date OR a new time (or both).
                 // Compare values against the ORIGINAL saved record: the date part
@@ -265,16 +287,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 bool reschedDateChanged = existing.AppointmentDate.Date != appointment.AppointmentDate.Date;
                 bool reschedTimeChanged = TruncateToMinute(existing.AppointmentTime) != TruncateToMinute(appointment.AppointmentTime);
 
-                if (appointment.Status == "Rescheduled" && !reschedDateChanged && !reschedTimeChanged)
+                if (errors.Count == 0 && appointment.Status == "Rescheduled" && !reschedDateChanged && !reschedTimeChanged)
                 {
-                    const string reschedError = "Please change the appointment date or time before rescheduling.";
-                    if (isAjax) return Json(new { success = false, message = reschedError });
-                    TempData["ErrorMessage"] = reschedError;
-                    return RedirectToAction(nameof(Index));
+                    errors[nameof(Appointment.AppointmentDate)] = "Usba ang petsa o oras.";
+                    errors[nameof(Appointment.AppointmentTime)] = "Usba ang petsa o oras.";
                 }
 
                 // Skip conflict check for Cancelled appointments
-                if (appointment.Status != "Cancelled")
+                if (errors.Count == 0 && !isCancelled)
                 {
                     bool conflict = _context.Appointments
                         .AsEnumerable()
@@ -283,12 +303,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                                   a.AppointmentTime == appointment.AppointmentTime);
 
                     if (conflict)
-                    {
-                        if (isAjax) return Json(new { success = false, message = "That time slot is already booked. Please choose a different time." });
-                        TempData["ErrorMessage"] = "That time slot is already booked. Please choose a different time.";
-                        return RedirectToAction(nameof(Index));
-                    }
+                        errors[nameof(Appointment.AppointmentTime)] = "Nagamit na kini nga schedule.";
                 }
+
+                if (errors.Count > 0)
+                    return AppointmentValidationFailure(errors, isAjax);
 
                 // -----------------------------------------------------------------
                 // PROBLEMS 2 / 4 / 5: patient verification/creation happens FIRST.
@@ -318,11 +337,19 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                         {
                             // Verify the patient REALLY exists in the Patients table
                             // (source of truth) — never trust only the hidden PatientId.
-                            var foundPatient = _context.Patients
-                                .FirstOrDefault(p => p.FullName.ToLower() == appointment.PatientName.ToLower());
+                            // Kung daghan og parehas nga ngalan, gamita ang contact number.
+                            var nameMatches = _context.Patients
+                                .Where(p => p.FullName.ToLower() == appointment.PatientName.ToLower())
+                                .ToList();
+                            var candidates = nameMatches.Count > 1
+                                ? nameMatches.Where(p => p.ContactNo == appointment.ContactNo).ToList()
+                                : nameMatches;
+                            var foundPatient = candidates.Count == 1 ? candidates[0] : null;
                             if (foundPatient == null)
                             {
-                                var errMsg = $"Patient \"{appointment.PatientName}\" does not exist in the Patients records. Please select an existing patient or register as a New Patient.";
+                                var errMsg = nameMatches.Count > 1
+                                    ? "Daghan og pasyente nga parehas og ngalan; susiha ang contact number."
+                                    : $"Patient \"{appointment.PatientName}\" does not exist in the Patients records. Please select an existing patient or register as a New Patient.";
                                 if (isAjax) return Json(new { success = false, message = errMsg });
                                 TempData["ErrorMessage"] = errMsg;
                                 return RedirectToAction(nameof(Index));
@@ -336,31 +363,35 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                         {
                             // PROBLEM 4: validate the New Patient form BEFORE creating
                             // anything. If invalid → no patient created, not confirmed.
-                            if (string.IsNullOrWhiteSpace(NewPatientAddress) || !NewPatientDOB.HasValue)
+                            // Parehas nga rule sa Add Patient; ang edad gikan sa DOB.
+                            var newPatient = new Patient
                             {
-                                const string newPatErr = "Please complete the required new patient information (Address and Date of Birth) before confirming.";
+                                FullName       = appointment.PatientName,
+                                ContactNo      = appointment.ContactNo,
+                                Address        = NewPatientAddress ?? "",
+                                DateOfBirth    = NewPatientDOB,
+                                MaritalStatus  = NewPatientMaritalStatus ?? "",
+                                Religion       = NewPatientReligion,
+                                Occupation     = NewPatientOccupation,
+                                LMP            = NewPatientLMP,
+                                AOG            = NewPatientAOG,
+                                EDC            = NewPatientEDC,
+                                Menarche       = NewPatientMenarche,
+                                Gravida        = NewPatientGravida,
+                                TFAL           = NewPatientTFAL
+                            };
+                            newPatient.TrimTextFields();
+
+                            var newPatientErrors = Patient.ValidateInput(newPatient);
+                            if (newPatientErrors.Count > 0)
+                            {
+                                var newPatErr = "Kulang o sayop ang datos sa bag-ong pasyente: " + newPatientErrors.Values.First();
                                 if (isAjax) return Json(new { success = false, message = newPatErr });
                                 TempData["ErrorMessage"] = newPatErr;
                                 return RedirectToAction(nameof(Index));
                             }
 
-                            var newPatient = new Patient
-                            {
-                                FullName       = appointment.PatientName,
-                                ContactNo      = appointment.ContactNo,
-                                Address        = NewPatientAddress,
-                                DateOfBirth    = NewPatientDOB.Value,
-                                Age            = NewPatientAge ?? Patient.CalculateAge(NewPatientDOB.Value),
-                                MaritalStatus  = NewPatientMaritalStatus ?? "Single",
-                                Religion       = NewPatientReligion ?? "",
-                                Occupation     = NewPatientOccupation ?? "",
-                                LMP            = NewPatientLMP ?? DateTime.Today,
-                                AOG            = NewPatientAOG ?? "",
-                                EDC            = NewPatientEDC ?? DateTime.Today,
-                                Menarche       = NewPatientMenarche ?? "",
-                                Gravida        = NewPatientGravida ?? "",
-                                TFAL           = NewPatientTFAL ?? ""
-                            };
+                            newPatient.Age = Patient.CalculateAge(newPatient.DateOfBirth!.Value);
                             _context.Patients.Add(newPatient);
 
                             // Atomic: linking via navigation property makes EF insert the
@@ -383,7 +414,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 }
                 else
                 {
-                    existing.PatientId   = appointment.PatientId;
+                    // Dili usbon ang PatientId gikan sa hidden field sa form.
                     existing.PatientName = appointment.PatientName;
                     existing.ContactNo   = appointment.ContactNo;
                 }
@@ -405,11 +436,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 TempData["SuccessMessage"] = $"Appointment ni \"{existing.PatientName}\" na-update na.";
                 return RedirectToAction(nameof(Index));
             }
-
-            if (isAjax) return Json(new { success = false, message = "Adunay sayop sa pag-update. Please check the fields." });
-
-            TempData["ErrorMessage"] = "Adunay sayop sa pag-update. Please check ang mga field.";
-            return RedirectToAction(nameof(Index));
         }
 
         // -----------------------------------------------------------------------
@@ -427,6 +453,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var appointment = _context.Appointments.FirstOrDefault(a => a.Id == id);
             if (appointment == null) return NotFound();
 
+            // Dili na usbon ang confirmed; ang Rescheduled kinahanglan og bag-ong petsa o oras.
+            if (appointment.Status == "Confirmed" || status == "Rescheduled")
+            {
+                TempData["ErrorMessage"] = appointment.Status == "Confirmed"
+                    ? "Confirmed appointments can no longer be edited."
+                    : "Usba ang petsa o oras una i-reschedule.";
+                return RedirectToAction(nameof(Index));
+            }
+
             appointment.Status = status;
             _context.SaveChanges();
 
@@ -442,6 +477,27 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var appointment = _context.Appointments.FirstOrDefault(a => a.Id == id);
             if (appointment == null) return NotFound();
+
+            // I-validate ang bag-ong schedule sama sa Edit.
+            string? scheduleError = null;
+            if (appointment.Status == "Confirmed")
+                scheduleError = "Confirmed appointments can no longer be edited.";
+            else if (appointmentDate.Date < DateTime.Today.AddDays(1))
+                scheduleError = "Pilia ang petsa sugod ugma.";
+            else if (!AllowedTimeSlots.Contains(appointmentTime))
+                scheduleError = "Pilia ang valid nga oras.";
+            else if (appointment.AppointmentDate.Date == appointmentDate.Date && appointment.AppointmentTime == appointmentTime)
+                scheduleError = "Usba ang petsa o oras una i-reschedule.";
+            else if (_context.Appointments.AsEnumerable().Any(a => a.Id != id
+                         && a.AppointmentDate.Date == appointmentDate.Date
+                         && a.AppointmentTime == appointmentTime))
+                scheduleError = "Nagamit na kini nga schedule.";
+
+            if (scheduleError != null)
+            {
+                TempData["ErrorMessage"] = scheduleError;
+                return RedirectToAction(nameof(Index));
+            }
 
             appointment.AppointmentDate = appointmentDate.Date;
             appointment.AppointmentTime = appointmentTime;
@@ -461,6 +517,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         {
             var appointment = _context.Appointments.FirstOrDefault(a => a.Id == appointmentId);
             if (appointment == null) return NotFound();
+
+            // Dili na i-confirm pag-usab.
+            if (appointment.Status == "Confirmed")
+            {
+                TempData["ErrorMessage"] = "Na-confirm na kini nga appointment.";
+                return RedirectToAction(nameof(Index));
+            }
 
             var patient = _context.Patients.FirstOrDefault(p => p.Id == patientId);
             if (patient == null)
@@ -485,7 +548,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ConfirmNewPatient(int appointmentId, Patient patient)
+        public IActionResult ConfirmNewPatient(int appointmentId, [Bind(Patient.FormFields)] Patient patient)
         {
             bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
@@ -496,19 +559,25 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return NotFound();
             }
 
-            ModelState.Remove(nameof(Patient.Age));
-            if (patient.DateOfBirth.HasValue)
-                patient.Age = Patient.CalculateAge(patient.DateOfBirth.Value);
-
-            if (!ModelState.IsValid)
+            // Dili na pwede kung naa nay pasyente o confirmed na.
+            if (appointment.Status == "Confirmed" || appointment.PatientId.HasValue)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .FirstOrDefault();
+                const string linkedErr = "Naa nay pasyente o confirmed na kini nga appointment.";
+                if (isAjax) return Json(new { success = false, message = linkedErr });
+                TempData["ErrorMessage"] = linkedErr;
+                return RedirectToAction(nameof(Index));
+            }
 
-                var msg = !string.IsNullOrEmpty(errors) ? errors : "Please complete all required patient fields.";
-                if (isAjax) return Json(new { success = false, message = msg });
+            // Parehas nga rule sa Add Patient; ang edad gikan sa DOB.
+            patient.TrimTextFields();
+            patient.Age = patient.DateOfBirth.HasValue ? Patient.CalculateAge(patient.DateOfBirth.Value) : 0;
+            ModelState.Clear();
+
+            var errors = Patient.ValidateInput(patient);
+            if (errors.Count > 0)
+            {
+                var msg = errors.Values.First();
+                if (isAjax) return Json(new { success = false, message = msg, errors });
 
                 TempData["ErrorMessage"] = msg;
                 return RedirectToAction(nameof(Index));
@@ -607,6 +676,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Ang konsultasyon ra ang mo-usab sa InProcess kung naa na.
+            if (_context.Consultations.Any(c => c.AppointmentId == id))
+            {
+                TempData["ErrorMessage"] = "Naa nay konsultasyon kini nga appointment.";
+                return RedirectToAction(nameof(Index));
+            }
+
             appointment.InProcess = !appointment.InProcess;
             _context.SaveChanges();
 
@@ -617,5 +693,63 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // reschedule check compares them at that precision.
         private static TimeSpan TruncateToMinute(TimeSpan time) =>
             new TimeSpan(time.Days, time.Hours, time.Minutes, 0);
+
+        // Mga oras nga pwede (parehas sa ALL_SLOTS sa appointment.js).
+        private static readonly TimeSpan[] AllowedTimeSlots =
+        {
+            new(9, 0, 0), new(10, 0, 0), new(11, 0, 0), new(13, 0, 0), new(14, 0, 0), new(15, 0, 0)
+        };
+
+        // Mga status nga gidawat sa Edit.
+        private static readonly string[] AllowedStatuses = { "Pending", "Confirmed", "Cancelled", "Rescheduled" };
+
+        // I-validate ang ngalan, contact, petsa ug oras; ibalik ang sayop matag field.
+        private Dictionary<string, string> ValidateAppointmentInput(Appointment appointment, bool checkName, bool checkSchedule)
+        {
+            var errors = new Dictionary<string, string>();
+            appointment.PatientName = appointment.PatientName?.Trim() ?? string.Empty;
+            appointment.ContactNo = appointment.ContactNo?.Trim() ?? string.Empty;
+
+            if (checkName)
+            {
+                if (appointment.PatientName.Length == 0)
+                    errors[nameof(Appointment.PatientName)] = "Kinahanglan kini nga field.";
+                else if (appointment.PatientName.Length > 150 || !Patient.IsValidPersonName(appointment.PatientName))
+                    errors[nameof(Appointment.PatientName)] = "Dili valid ang ngalan.";
+            }
+
+            if (appointment.ContactNo.Length == 0)
+                errors[nameof(Appointment.ContactNo)] = "Kinahanglan kini nga field.";
+            else if (!Patient.IsValidContactNo(appointment.ContactNo))
+                errors[nameof(Appointment.ContactNo)] = "Dili valid ang contact number.";
+
+            if (checkSchedule)
+            {
+                // Sayop sa pag-bind = walay petsa o oras.
+                if (HasBindingError(nameof(Appointment.AppointmentDate)) || appointment.AppointmentDate == default)
+                    errors[nameof(Appointment.AppointmentDate)] = "Pilia ang petsa.";
+                else if (appointment.AppointmentDate.Date < DateTime.Today.AddDays(1))
+                    errors[nameof(Appointment.AppointmentDate)] = "Pilia ang petsa sugod ugma.";
+
+                // Valid ra nga oras.
+                if (HasBindingError(nameof(Appointment.AppointmentTime)) || !AllowedTimeSlots.Contains(appointment.AppointmentTime))
+                    errors[nameof(Appointment.AppointmentTime)] = "Pilia ang valid nga oras.";
+            }
+
+            return errors;
+        }
+
+        private bool HasBindingError(string key) =>
+            ModelState.TryGetValue(key, out var entry) && entry.Errors.Count > 0;
+
+        // Ibalik ang sayop matag field (AJAX) o sa TempData.
+        private IActionResult AppointmentValidationFailure(Dictionary<string, string> errors, bool isAjax)
+        {
+            var message = errors.Values.First();
+            if (isAjax) return Json(new { success = false, message, errors });
+
+            TempData["ErrorMessage"] = message;
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

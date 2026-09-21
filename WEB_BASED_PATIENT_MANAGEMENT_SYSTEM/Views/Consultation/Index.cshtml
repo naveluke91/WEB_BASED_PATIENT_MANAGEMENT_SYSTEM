@@ -275,7 +275,10 @@
                 .Select(p => new { id = p.Id, name = p.FullName }))),
             initialPatientId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((int?)ViewBag.InitialPatientId)),
             initialPatientName: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialPatientName)),
-            initialService: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialService))
+            initialService: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialService)),
+            // Mga rule ug sayop sa clinical form (gikan sa server).
+            fieldRules: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ClinicalRules)),
+            clinicalErrors: @Html.Raw(TempData["ClinicalErrors"] as string ?? "null")
         };
     </script>
     <script src="~/js/consultation/consultation.js" asp-append-version="true"></script>

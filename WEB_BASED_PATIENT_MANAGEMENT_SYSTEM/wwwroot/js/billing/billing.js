@@ -64,8 +64,31 @@
         showConsultation(consultations.get(consultationSelect.value) ?? null);
     });
 
+    // Kantidad: numero, dili negatibo, hangtod 2 ka decimal.
+    function checkAmount(el) {
+        const text = el.value.trim();
+        if (el.validity?.badInput) return 'Dili valid ang kantidad.';
+        if (!text) return 'Kinahanglan kini nga field.';
+        if (text.startsWith('-')) return 'Dili pwede negatibo.';
+        if (/\.\d{3,}$/.test(text)) return 'Hangtod 2 ka decimal lang.';
+        if (!/^\d{1,8}(\.\d{1,2})?$/.test(text)) return 'Dili valid ang kantidad.';
+        return Number(text) <= 99999999.99 ? '' : 'Sobra ra kadako ang kantidad.';
+    }
+
+    const paymentMethod = document.getElementById('paymentMethod');
+    const validator = FormValidation.create(form, () => [
+        { field: consultationSelect, test: el => consultations.has(el.value) ? '' : 'Pilia ang completed nga konsultasyon.' },
+        { field: amount, test: checkAmount },
+        { field: paymentMethod, test: el => ['Cash', 'GCash'].includes(el.value) ? '' : 'Pilia ang Cash o GCash.' }
+    ]);
+
     // A second click would only reach the server's duplicate check, so block it.
-    form.addEventListener('submit', () => {
+    // I-disable ra kung valid ang form.
+    form.addEventListener('submit', event => {
+        if (!validator.validate()) {
+            event.preventDefault();
+            return;
+        }
         submitButton.disabled = true;
     });
 
@@ -73,6 +96,7 @@
         form.reset();
         hideError();
         showConsultation(null);
+        validator.reset();
         submitButton.disabled = consultations.size === 0;
     });
 
@@ -81,7 +105,15 @@
     if (consultations.has(openId)) {
         consultationSelect.value = openId;
         showConsultation(consultations.get(openId));
-        if (data.addPaymentError) showError(data.addPaymentError);
+        if (data.addPaymentError) {
+            // I-marka ang field kung nahibaw-an; kung dili, ipakita sa taas.
+            const errorField = data.addPaymentErrorField ? form.querySelector(`[name="${data.addPaymentErrorField}"]`) : null;
+            if (errorField) {
+                modal.addEventListener('shown.bs.modal', () => FormValidation.setError(errorField, data.addPaymentError), { once: true });
+            } else {
+                showError(data.addPaymentError);
+            }
+        }
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();

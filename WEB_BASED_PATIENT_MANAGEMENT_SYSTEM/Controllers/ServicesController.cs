@@ -99,6 +99,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 appointment.Status == "Confirmed" &&
                 !appointment.InProcess &&
                 string.IsNullOrWhiteSpace(appointment.ServiceType) &&
+                !_context.Services.Any(service => service.AppointmentId == appointment.Id) &&
                 !_context.Consultations.Any(consultation => consultation.AppointmentId == appointment.Id));
 
             if (appointment == null)
@@ -217,6 +218,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return NotFound();
             }
 
+            // Dili na usbon kung nagsugod na ang konsultasyon niini.
+            if (HasConsultation(service))
+            {
+                TempData["ErrorMessage"] = "Nagsugod na ang konsultasyon niini nga serbisyo, dili na ma-edit.";
+                return RedirectToAction(nameof(Index));
+            }
+
             if (!TryGetService(serviceName, out var canonicalServiceName, out var price))
             {
                 TempData["ErrorMessage"] = "Please select a valid service.";
@@ -229,9 +237,25 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Ang serbisyo sa appointment dili ibalhin sa laing pasyente.
+            if (service.AppointmentId.HasValue && patientId != service.PatientId)
+            {
+                TempData["ErrorMessage"] = "Dili pwede ibalhin sa laing pasyente ang serbisyo nga naay appointment.";
+                return RedirectToAction(nameof(Index));
+            }
+
             service.PatientId = patientId;
             service.ServiceName = canonicalServiceName;
             service.Price = price;
+
+            // I-sync ang ServiceType sa appointment niini nga serbisyo.
+            if (service.AppointmentId.HasValue)
+            {
+                var appointment = _context.Appointments.Find(service.AppointmentId.Value);
+                if (appointment != null)
+                    appointment.ServiceType = canonicalServiceName;
+            }
+
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = "Service registration updated successfully.";
@@ -261,6 +285,21 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var service = _context.Services.Find(id);
             if (service != null)
             {
+                // Dili i-delete kung nagsugod na ang konsultasyon niini.
+                if (HasConsultation(service))
+                {
+                    TempData["ErrorMessage"] = "Nagsugod na ang konsultasyon niini nga serbisyo, dili na ma-delete.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Ibalik ang appointment nga walay serbisyo.
+                if (service.AppointmentId.HasValue)
+                {
+                    var appointment = _context.Appointments.Find(service.AppointmentId.Value);
+                    if (appointment != null)
+                        appointment.ServiceType = null;
+                }
+
                 _context.Services.Remove(service);
                 _context.SaveChanges();
                 TempData["SuccessMessage"] = "Service registration deleted successfully.";
@@ -268,6 +307,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // Naa bay konsultasyon gikan niini nga serbisyo (walk-in o appointment)?
+        private bool HasConsultation(Service service) =>
+            _context.Consultations.Any(c => c.ServiceId == service.Id
+                || (service.AppointmentId.HasValue && c.AppointmentId == service.AppointmentId));
 
         private static bool TryGetService(string? requestedServiceName, out string serviceName, out decimal price)
         {

@@ -137,6 +137,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 ModelState.AddModelError(nameof(Payment.PaymentMethod), "Please select a valid payment method.");
             }
 
+            // Hangtod 2 ka decimal lang ang kantidad.
+            if (payment.Amount.HasValue && decimal.Round(payment.Amount.Value, 2) != payment.Amount.Value)
+            {
+                ModelState.AddModelError(nameof(Payment.Amount), "Hangtod 2 ka decimal lang ang kantidad.");
+            }
+
             if (!ModelState.IsValid)
             {
                 // Reopen Add Payment for the same consultation with the first error.
@@ -145,6 +151,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     .Select(e => e.ErrorMessage)
                     .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message))
                     ?? "Please check the payment details.";
+                // Ang field nga may sayop (para ma-marka og pula).
+                TempData["AddPaymentErrorField"] = ModelState.FirstOrDefault(entry => entry.Value?.Errors.Count > 0).Key;
                 return RedirectToAction(nameof(Index), new { consultationId = consultation.Id });
             }
 

@@ -31,7 +31,9 @@
             item.style.cssText = 'display:flex; align-items:center; gap:0.65rem; padding:0.65rem 1rem; cursor:pointer; border-bottom:1px solid #f3f4f6;';
             item.innerHTML =
                 '<span style="color:#9ca3af; font-size:1.1rem;"><i class="bi bi-person-circle"></i></span>' +
-                '<span style="font-weight:600; font-size:0.9rem; color:#111827;">' + p.name + '</span>';
+                '<span style="font-weight:600; font-size:0.9rem; color:#111827;"></span>';
+            // Ang ngalan isip text (dili HTML) para luwas.
+            item.lastElementChild.textContent = p.name;
 
             item.addEventListener('mouseenter', function() { item.style.background = '#f3f4ff'; });
             item.addEventListener('mouseleave', function() { item.style.background = ''; });
@@ -431,6 +433,89 @@ function removeNbRow(btn, tbodyId, rowClass) {
         btn.closest('.' + rowClass).remove();
     }
 }
+
+// ---- Validation sa clinical form ----
+// Ang mga rule gikan sa server (ConsultationController.ClinicalRules).
+(() => {
+    const form = document.getElementById('consultationServiceForm');
+    const FV = window.FormValidation;
+    if (!form || !FV) return;
+    const rules = window.consultationPageData.fieldRules || [];
+
+    // Ang makita nga panel lang ang i-validate.
+    function visiblePanel() {
+        return ['prenatalRecordPanel', 'newbornPanel', 'familyPlanningPanel']
+            .map(id => document.getElementById(id))
+            .find(panel => panel && panel.style.display !== 'none');
+    }
+
+    function checkRule(rule, el, panel) {
+        if (el.validity?.badInput) return 'Dili valid ang gi-input.';
+        const text = el.value.trim();
+        if (!text) return '';
+        const range = `Gikan ${rule.Min} hangtod ${rule.Max} lang.`;
+
+        switch (rule.Type) {
+            case 'whole':
+                if (!/^\d{1,4}$/.test(text)) return rule.Message || 'Numero lang, walay decimal o negatibo.';
+                return Number(text) < rule.Min || Number(text) > rule.Max ? (rule.Message || range) : '';
+            case 'decimal':
+                if (!/^\d{1,4}(\.\d{1,2})?$/.test(text)) return 'Numero lang (pananglitan: 36.5).';
+                return Number(text) < rule.Min || Number(text) > rule.Max ? range : '';
+            case 'pattern':
+                return new RegExp(rule.Pattern, 'i').test(text) ? '' : rule.Message;
+            case 'date': {
+                const yearError = FV.rules.dateYear(text);
+                if (yearError) return yearError;
+                const date = FV.parseDate(text);
+                if (rule.NotFuture && date > FV.today()) return FV.MSG.futureDate;
+                if (rule.After) {
+                    const prefix = rule.Field.split('.')[0];
+                    const other = FV.parseDate(panel.querySelector(`[name="${prefix}.${rule.After}"]`)?.value);
+                    if (other && date <= other) return rule.Message;
+                }
+                return '';
+            }
+            default:
+                return '';
+        }
+    }
+
+    function checks() {
+        const panel = visiblePanel();
+        if (!panel) return [];
+        const list = [];
+        const ruled = new Set();
+
+        rules.filter(rule => rule.Type !== 'choice').forEach(rule => {
+            panel.querySelectorAll(`[name="${rule.Field}"]`).forEach(field => {
+                ruled.add(field);
+                list.push({ field, test: el => checkRule(rule, el, panel) });
+            });
+        });
+
+        // Ubang petsa (mga row sa table): valid nga tuig lang.
+        panel.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(field => {
+            if (!ruled.has(field)) list.push({ field, test: el => el.validity?.badInput ? FV.MSG.date : FV.rules.dateYear(el.value) });
+        });
+
+        return list;
+    }
+
+    const validator = FV.create(form, checks);
+    form.addEventListener('submit', event => {
+        if (!validator.validate()) event.preventDefault();
+    });
+
+    // Sayop gikan sa server: i-marka human ma-abli ang modal.
+    const serverErrors = window.consultationPageData.clinicalErrors;
+    const modal = document.getElementById('consultationServiceModal');
+    if (serverErrors && modal) {
+        modal.addEventListener('shown.bs.modal', () => {
+            validator.showErrors(serverErrors, name => form.querySelector(`[name="${name}"]`));
+        }, { once: true });
+    }
+})();
 
 // ---- Consultation queue page ----
 

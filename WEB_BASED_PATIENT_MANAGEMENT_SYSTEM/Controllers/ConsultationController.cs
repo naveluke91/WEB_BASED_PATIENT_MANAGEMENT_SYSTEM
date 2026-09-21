@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
@@ -156,6 +158,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             ViewBag.InitialPatientId = model.OpenConsultation?.PatientId;
             ViewBag.InitialPatientName = model.OpenConsultation?.Patient?.FullName;
             ViewBag.InitialService = model.OpenConsultation?.ServiceType;
+            ViewBag.ClinicalRules = ClinicalRules;
 
             return View(model);
         }
@@ -270,7 +273,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // of the same patient. A new appointment must never inherit a prior
                 // service selected for that patient.
                 var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
-                if (!AvailableServices.Contains(serviceType))
+                // Kinahanglan naay rehistradong serbisyo ang appointment.
+                if (!AvailableServices.Contains(serviceType)
+                    || !_context.Services.Any(s => s.AppointmentId == appointment.Id && s.PatientId == patientId))
                 {
                     TempData["ErrorMessage"] = "Please select a service for this appointment before starting consultation.";
                     return RedirectToAction(nameof(Index));
@@ -290,7 +295,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var service = _context.Services.FirstOrDefault(s => s.Id == serviceId.Value && s.PatientId == patientId);
+            // Walk-In ra: ang serbisyo sa appointment dili pwede diri.
+            var service = _context.Services.FirstOrDefault(s => s.Id == serviceId.Value && s.PatientId == patientId && s.AppointmentId == null);
             if (service == null)
             {
                 TempData["ErrorMessage"] = "That service is no longer available.";
@@ -407,6 +413,24 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             {
                 TempData["ErrorMessage"] = "This consultation is already completed.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            // I-validate ang clinical form sa server (numero, petsa, pilianan).
+            var (recordPrefix, record) = consultation.ServiceType switch
+            {
+                "Prenatal" => ("PrenatalRecord", (object)prenatalRecord),
+                "Normal Delivery Fee & Newborn Care Package" => ("NewbornRecord", newbornRecord),
+                _ => ("FamilyPlanningRecord", familyPlanningRecord)
+            };
+            ApplyMultiValueFields(record, recordPrefix);
+            familyPlanningRecord.Ack_MethodAccepted = consultation.ServiceType;
+
+            var clinicalErrors = ValidateClinicalRecord(record, recordPrefix);
+            if (clinicalErrors.Count > 0)
+            {
+                TempData["ErrorMessage"] = "Wala ma-save ang record. " + clinicalErrors.Values.First();
+                TempData["ClinicalErrors"] = System.Text.Json.JsonSerializer.Serialize(clinicalErrors);
+                return RedirectToAction(nameof(Index), new { openConsultationId = consultation.Id });
             }
 
             using var transaction = _context.Database.BeginTransaction();
@@ -542,6 +566,218 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ---- Validation sa clinical form ----
+
+        // Rule sa usa ka field (gamiton sa server ug sa consultation.js).
+        public sealed record ClinicalFieldRule(string Field, string Type, decimal? Min = null, decimal? Max = null,
+            bool NotFuture = false, string? After = null, string[]? Allowed = null, string? Pattern = null, string? Message = null);
+
+        private const string TfalRulePattern = @"^\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}$";
+        private const string AogRulePattern = @"^(\d{1,2})(\.\d{1,2})?\s*(weeks?|wks?|w)?(\s*(and\s+)?[0-6]\s*(days?|d))?$";
+        private const string BloodPressurePattern = @"^\d{2,3}\s*/\s*\d{2,3}(\s*mmhg)?$";
+
+        private static readonly List<ClinicalFieldRule> ClinicalRules = BuildClinicalRules();
+
+        // Mga checkbox group: i-save tanan nga gi-check, dili lang ang una.
+        private static readonly Dictionary<string, string[]> CheckboxGroups = new()
+        {
+            ["PrenatalRecord"] = new[] { "B2_QuickCheck_Checkboxes", "B3_RAM_Checkboxes", "PrioritySigns_Checkboxes", "ThirdTrimester_Checkboxes", "PatientProblems_Checkboxes" },
+            ["FamilyPlanningRecord"] = new[] { "ReasonForFP", "ReasonChanging", "MethodCurrentlyUsed", "VAW_ReferredTo", "PE_Skin", "PE_Conjunctiva", "PE_Neck", "PE_Breast", "PE_Abdomen", "PE_Extremities", "Pelvic_CervicalAbnormalities" }
+        };
+
+        // Mga field nga duha ka beses makita sa Newborn form.
+        private static readonly string[] NewbornRepeatedFields = { "BabyName", "BedNo", "ConsentClientName" };
+
+        private static List<ClinicalFieldRule> BuildClinicalRules()
+        {
+            var rules = new List<ClinicalFieldRule>();
+            void Whole(string field, decimal min, decimal max, string? message = null) => rules.Add(new(field, "whole", min, max, Message: message));
+            void Number(string field, decimal min, decimal max) => rules.Add(new(field, "decimal", min, max));
+            void Date(string field, bool notFuture = false, string? after = null, string? message = null) =>
+                rules.Add(new(field, "date", NotFuture: notFuture, After: after, Message: message));
+            void Choice(string field, params string[] allowed) => rules.Add(new(field, "choice", Allowed: allowed));
+            void Pattern(string field, string pattern, string message) => rules.Add(new(field, "pattern", Pattern: pattern, Message: message));
+            string[] yesNo = { "yes", "no" };
+
+            // Prenatal
+            foreach (var field in new[] { "Gravida", "G", "T", "P", "A", "L" }) Whole("PrenatalRecord." + field, 0, 99);
+            Whole("PrenatalRecord.Menarche", 5, 30, "Dili valid ang edad sa menarche.");
+            Number("PrenatalRecord.Weight", 1, 300);
+            Number("PrenatalRecord.Temperature", 30, 45);
+            Pattern("PrenatalRecord.TFAL", TfalRulePattern, "Pormat: 2-1-0-1.");
+            Pattern("PrenatalRecord.AOG", AogRulePattern, "Dili valid ang AOG (pananglitan: 14 weeks).");
+            Pattern("PrenatalRecord.BloodPressure", BloodPressurePattern, "Pormat: 120/80.");
+            Pattern("PrenatalRecord.C3_PreEclampsia_BP", BloodPressurePattern, "Pormat: 120/80.");
+            Date("PrenatalRecord.RecordDate");
+            Date("PrenatalRecord.AntenatalDate");
+            Date("PrenatalRecord.DateOfBirth", notFuture: true);
+            Date("PrenatalRecord.LMP", notFuture: true);
+            Date("PrenatalRecord.C2_LMP", notFuture: true);
+            Date("PrenatalRecord.EDC", after: "LMP", message: "Kinahanglan human sa LMP.");
+            Date("PrenatalRecord.C2_EDC", after: "C2_LMP", message: "Kinahanglan human sa LMP.");
+            Choice("PrenatalRecord.VisitType", "initial", "followup");
+            Choice("PrenatalRecord.PrioritySigns_YesNo", yesNo);
+            Choice("PrenatalRecord.PatientProblems_YesNo", yesNo);
+
+            // Newborn
+            Whole("NewbornRecord.ConsentClientAge", 0, 130);
+            Date("NewbornRecord.DateTimeOfAdmission", notFuture: true);
+            Date("NewbornRecord.DateTimeDelivered", notFuture: true);
+            Date("NewbornRecord.DateTimeOfDischarge");
+            Date("NewbornRecord.ConsentClientDate");
+            Date("NewbornRecord.ConsentMidwifeDate");
+            Choice("NewbornRecord.PlacentaOut", "complete", "incomplete");
+
+            // Family Planning
+            Whole("FamilyPlanningRecord.ClientAge", 0, 130);
+            Whole("FamilyPlanningRecord.SpouseAge", 0, 130);
+            foreach (var field in new[] { "NoOfLivingChildren", "OH_Gravida", "OH_Para", "OH_Abortion", "OH_LivingChildren" })
+                Whole("FamilyPlanningRecord." + field, 0, 99);
+            Number("FamilyPlanningRecord.PE_Height", 0.3m, 2.5m);
+            Number("FamilyPlanningRecord.PE_Weight", 1, 300);
+            Whole("FamilyPlanningRecord.PE_BloodPressure_Systolic", 40, 300);
+            Whole("FamilyPlanningRecord.PE_BloodPressure_Diastolic", 20, 200);
+            Whole("FamilyPlanningRecord.PE_PulseRate", 20, 250);
+            Number("FamilyPlanningRecord.Pelvic_UterineDepth", 0, 20);
+            foreach (var field in new[] { "ClientDateOfBirth", "SpouseDateOfBirth", "OH_DateOfLastDelivery", "OH_LastMenstrualPeriod", "OH_PreviousMenstrualPeriod" })
+                Date("FamilyPlanningRecord." + field, notFuture: true);
+            foreach (var field in new[] { "RecordDate", "Ack_ClientDate", "Ack_ParentDate" })
+                Date("FamilyPlanningRecord." + field);
+            Choice("FamilyPlanningRecord.CivilStatus", "Single", "Married", "Widowed", "Separated", "Live-in");
+            Choice("FamilyPlanningRecord.PlanMoreChildren", yesNo);
+            Choice("FamilyPlanningRecord.TypeOfClient", "new", "current", "changing", "clinic", "dropout");
+            foreach (var field in new[]
+            {
+                "MH_SevereHeadaches", "MH_StrokeHeartHypertension", "MH_HematomaBruising", "MH_BreastCancerMass",
+                "MH_SevereChestPain", "MH_Cough14Days", "MH_Jaundice", "MH_UnexplainedVaginalBleeding",
+                "MH_AbnormalVaginalDischarge", "MH_PhenobarbitalRifampicin", "MH_Smoker", "MH_WithDisability",
+                "STI_AbnormalDischarge", "STI_SoresUlcers", "STI_PainBurning", "STI_HistoryTreatment", "STI_HIV_PID",
+                "VAW_UnpleasantRelationship", "VAW_PartnerDisapprove", "VAW_HistoryDomesticViolence"
+            })
+                Choice("FamilyPlanningRecord." + field, yesNo);
+            Choice("FamilyPlanningRecord.OH_TypeOfLastDelivery", "vaginal", "cs");
+            Choice("FamilyPlanningRecord.OH_MenstrualFlow", "scanty", "moderate", "heavy");
+            Choice("FamilyPlanningRecord.STI_AbnormalDischarge_Loc", "vagina", "penis");
+            Choice("FamilyPlanningRecord.Pelvic_CervicalConsistency", "firm", "soft");
+            Choice("FamilyPlanningRecord.Pelvic_UterinePosition", "mid", "ante", "retro");
+            foreach (var field in new[]
+            {
+                "OH_FullTerm", "OH_Premature", "OH_Dysmenorrhea", "OH_HydatidiformMole", "OH_EctopicPregnancy",
+                "Pelvic_Normal", "Pelvic_Mass", "Pelvic_AbnormalDischarge", "Pelvic_CervicalTenderness", "Pelvic_AdnexalMassTenderness"
+            })
+                Choice("FamilyPlanningRecord." + field, "yes");
+
+            return rules;
+        }
+
+        // I-save tanan nga checkbox; ang doble nga field kuhaon ang may sulod.
+        private void ApplyMultiValueFields(object record, string prefix)
+        {
+            var type = record.GetType();
+
+            if (CheckboxGroups.TryGetValue(prefix, out var groups))
+            {
+                foreach (var name in groups)
+                {
+                    var values = Request.Form[$"{prefix}.{name}"].Where(v => !string.IsNullOrWhiteSpace(v)).ToArray();
+                    type.GetProperty(name)?.SetValue(record, values.Length > 0 ? string.Join(",", values) : null);
+                }
+            }
+
+            if (prefix == "NewbornRecord")
+            {
+                foreach (var name in NewbornRepeatedFields)
+                {
+                    var value = Request.Form[$"{prefix}.{name}"].FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                    type.GetProperty(name)?.SetValue(record, value?.Trim());
+                }
+            }
+        }
+
+        // I-validate ang record; ibalik ang sayop matag field (ngalan sa form).
+        private Dictionary<string, string> ValidateClinicalRecord(object record, string prefix)
+        {
+            var errors = new Dictionary<string, string>();
+
+            // Sayop sa pag-bind: dili valid nga petsa o numero.
+            foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0
+                && e.Key.StartsWith(prefix + ".", StringComparison.OrdinalIgnoreCase)))
+            {
+                errors.TryAdd(prefix + entry.Key[prefix.Length..], "Dili valid ang gi-input.");
+            }
+
+            foreach (var rule in ClinicalRules.Where(r => r.Field.StartsWith(prefix + ".")))
+            {
+                if (errors.ContainsKey(rule.Field))
+                    continue;
+
+                var property = record.GetType().GetProperty(rule.Field[(prefix.Length + 1)..]);
+                var message = property == null ? null : CheckClinicalRule(rule, property.GetValue(record), record);
+                if (message != null)
+                    errors[rule.Field] = message;
+            }
+
+            // Petsa sa mga row sa table (visits, vitals, medications).
+            var rowDates = record switch
+            {
+                PrenatalRecord prenatal => prenatal.PrenatalVisits.Select(v => v.RecordDate),
+                NewbornRecord newborn => newborn.Vitals.Select(v => v.DateTime).Concat(newborn.Medications.Select(m => m.DateTime)),
+                _ => Enumerable.Empty<DateTime?>()
+            };
+            if (rowDates.Any(d => d.HasValue && (d.Value.Year < 1900 || d.Value.Year > 2100)))
+                errors.TryAdd(prefix + ".Rows", "Dili valid ang petsa sa table.");
+
+            return errors;
+        }
+
+        private static string? CheckClinicalRule(ClinicalFieldRule rule, object? value, object record)
+        {
+            // Walay required nga field; blangko = OK.
+            if (value == null || (value is string blank && string.IsNullOrWhiteSpace(blank)))
+                return null;
+
+            var text = (value as string)?.Trim() ?? string.Empty;
+            var range = $"Gikan {rule.Min?.ToString("0.##", CultureInfo.InvariantCulture)} hangtod {rule.Max?.ToString("0.##", CultureInfo.InvariantCulture)} lang.";
+
+            switch (rule.Type)
+            {
+                case "whole":
+                {
+                    decimal number;
+                    if (value is int whole)
+                        number = whole;
+                    else if (!Regex.IsMatch(text, @"^\d{1,4}$") || !decimal.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out number))
+                        return rule.Message ?? "Numero lang, walay decimal o negatibo.";
+                    return number < rule.Min || number > rule.Max ? rule.Message ?? range : null;
+                }
+                case "decimal":
+                {
+                    if (!Regex.IsMatch(text, @"^\d{1,4}(\.\d{1,2})?$")
+                        || !decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
+                        return "Numero lang (pananglitan: 36.5).";
+                    return number < rule.Min || number > rule.Max ? range : null;
+                }
+                case "pattern":
+                    return Regex.IsMatch(text, rule.Pattern!, RegexOptions.IgnoreCase) ? null : rule.Message;
+                case "choice":
+                    return rule.Allowed!.Contains(text) ? null : "Pilia ang valid nga opsyon.";
+                case "date":
+                {
+                    var date = (DateTime)value;
+                    if (date.Year < 1900 || date.Year > 2100)
+                        return "Dili valid ang petsa.";
+                    if (rule.NotFuture && date.Date > DateTime.Today)
+                        return "Dili pwede future date.";
+                    if (rule.After != null && record.GetType().GetProperty(rule.After)?.GetValue(record) is DateTime other
+                        && date.Date <= other.Date)
+                        return rule.Message;
+                    return null;
+                }
+                default:
+                    return null;
+            }
         }
 
         private void RemoveLinkedClinicalRecord(Consultation consultation)

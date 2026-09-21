@@ -66,9 +66,91 @@ function hideModalError(id) {
 }
 
 // ---------------------------------------------------------------
+// Validation (pula nga field + mensahe; walay alert)
+// ---------------------------------------------------------------
+const FV = window.FormValidation;
+
+// Petsa sugod ugma lang.
+function checkApptDate(el) {
+    if (FV.isBlank(el.value)) return 'Pilia ang petsa.';
+    const date = FV.parseDate(el.value);
+    if (!date) return FV.MSG.date;
+    return date > FV.today() ? '' : 'Pilia ang petsa sugod ugma.';
+}
+
+// Valid ra nga oras nga dili pa booked.
+function checkApptTime(el) {
+    if (!el.value) return 'Pilia ang oras.';
+    if (!ALL_SLOTS.some(slot => slot.value === el.value)) return 'Pilia ang valid nga oras.';
+    return el.selectedOptions[0]?.disabled ? 'Nagamit na kini nga schedule.' : '';
+}
+
+// Mga field sa form base sa name (para sa sayop gikan sa server).
+const fieldByName = form => name => form.querySelector(`[name="${name}"]`);
+
+const newApptForm = document.getElementById('formNewAppointment');
+const newApptValidator = FV.create(newApptForm, () => [
+    { field: document.getElementById('newPatientName'), test: el => FV.rules.personName(el.value) },
+    { field: document.getElementById('newContactNo'), test: el => FV.rules.contact(el.value) },
+    { field: document.getElementById('newDate'), test: checkApptDate },
+    { field: document.getElementById('newTimeSelect'), test: checkApptTime }
+]);
+newApptForm.addEventListener('submit', e => {
+    if (!newApptValidator.validate()) e.preventDefault();
+});
+
+const existApptForm = document.getElementById('formExistingAppointment');
+const existApptValidator = FV.create(existApptForm, () => [
+    {
+        // Kinahanglan napili gikan sa listahan.
+        field: document.getElementById('existSearch'), test: el => {
+            const pickedName = document.getElementById('existPatientName').value;
+            const pickedId = document.getElementById('existPatientId').value;
+            return pickedId && pickedName && el.value.trim() === pickedName ? '' : 'Pilia ang pasyente gikan sa listahan.';
+        }
+    },
+    { field: document.getElementById('existContactNo'), test: el => FV.rules.contact(el.value) },
+    { field: document.getElementById('existDate'), test: checkApptDate },
+    { field: document.getElementById('existTimeSelect'), test: checkApptTime }
+]);
+existApptForm.addEventListener('submit', e => {
+    if (!existApptValidator.validate()) e.preventDefault();
+});
+
+const editApptForm = document.getElementById('formEditAppointment');
+const editApptValidator = FV.create(editApptForm, () => {
+    const status = document.getElementById('editStatus').value;
+    const isCancelled = status === 'Cancelled';
+    const choiceVisible = document.getElementById('editConfirmChoiceSection').style.display !== 'none';
+
+    // Rescheduled: kinahanglan mausab ang petsa o oras.
+    const unchangedReschedule = () => status === 'Rescheduled'
+        && document.getElementById('editDate').value === (editApptForm.dataset.origDate || '')
+        && document.getElementById('editTimeSelect').value === (editApptForm.dataset.origTime || '');
+
+    return [
+        { field: document.getElementById('editStatus'), test: el => ['Pending', 'Confirmed', 'Cancelled', 'Rescheduled'].includes(el.value) ? '' : 'Pilia ang valid nga status.' },
+        {
+            field: document.getElementById('editChoiceCards'),
+            highlight: [document.getElementById('editExistingBtn'), document.getElementById('editNewBtn')],
+            test: () => status === 'Confirmed' && choiceVisible && !document.getElementById('editPatientMode').value
+                ? 'Pilia ang Existing o New Patient.' : ''
+        },
+        { field: document.getElementById('editPatientName'), test: el => FV.rules.personName(el.value) },
+        { field: document.getElementById('editContactNo'), test: el => FV.rules.contact(el.value) },
+        { field: document.getElementById('editDate'), test: el => isCancelled ? '' : (checkApptDate(el) || (unchangedReschedule() ? 'Usba ang petsa o oras.' : '')) },
+        { field: document.getElementById('editTimeSelect'), test: el => isCancelled ? '' : (checkApptTime(el) || (unchangedReschedule() ? 'Usba ang petsa o oras.' : '')) }
+    ];
+});
+
+const confirmNewForm = document.getElementById('formConfirmNewPatient');
+const confirmNewValidator = FV.create(confirmNewForm, () => FV.patientChecks(confirmNewForm));
+
+// ---------------------------------------------------------------
 // NEW APPOINTMENT modal — populate time slots on date change
 // ---------------------------------------------------------------
 document.getElementById('modalNewAppointment').addEventListener('show.bs.modal', function () {
+    newApptValidator.reset();
     const dateInput = document.getElementById('newDate');
     if (dateInput && dateInput.value) {
         refreshTimeDropdown(
@@ -101,6 +183,9 @@ document.getElementById('existSearch').addEventListener('focus', function () {
 
 document.getElementById('existSearch').addEventListener('input', function () {
     clearTimeout(searchTimeout);
+    // Bag-ong type = wala pay napili nga pasyente.
+    document.getElementById('existPatientId').value = '';
+    document.getElementById('existPatientName').value = '';
     const q = this.value.trim();
     searchTimeout = setTimeout(() => fetchExistSuggestions(q), 250);
 });
@@ -146,6 +231,7 @@ function selectExistPatient(r) {
     document.getElementById('existPatientName').value = r.patientName;
     document.getElementById('existContactNo').value   = r.contactNo;
     document.getElementById('existPatientId').value   = r.patientId ?? '';
+    existApptValidator.recheck();
 }
 
 document.addEventListener('click', function (e) {
@@ -155,6 +241,7 @@ document.addEventListener('click', function (e) {
 });
 
 document.getElementById('modalExistingAppointment').addEventListener('show.bs.modal', function () {
+    existApptValidator.reset();
     document.getElementById('existSearch').value = '';
     document.getElementById('existPatientName').value = '';
     document.getElementById('existContactNo').value = '';
@@ -224,6 +311,7 @@ async function openEditModal(id) {
         statusSelect.value = appt.status;
 
         hideModalError('editInlineError');
+        editApptValidator.reset();
 
         // Reset active modes
         backToEditChoiceCards();
@@ -301,6 +389,7 @@ function toggleEditExistingCard() {
         existingBtn.classList.add('active');
         modeInput.value = 'existing';
     }
+    editApptValidator.recheck();
 }
 
 // Open separate New Patient modal from Edit modal
@@ -312,6 +401,8 @@ function openNewPatientModalFromEdit() {
     document.getElementById('confirmNewApptId').value   = apptId;
     document.getElementById('confirmNewFullName').value = name;
     document.getElementById('confirmNewContactNo').value = contact;
+    confirmNewValidator.reset();
+    hideModalError('confirmNewInlineError');
 
 
 
@@ -358,6 +449,8 @@ if (confirmNewDobInput) {
 document.getElementById('formConfirmNewPatient').addEventListener('submit', async function (e) {
     e.preventDefault();
     hideModalError('confirmNewInlineError');
+    // I-validate una; ayaw i-send kung naay sayop.
+    if (!confirmNewValidator.validate()) return;
     try {
         const formData = new FormData(this);
         const res = await fetch(this.action, {
@@ -368,7 +461,7 @@ document.getElementById('formConfirmNewPatient').addEventListener('submit', asyn
         const data = await res.json();
         if (data.success) {
             window.location.reload();
-        } else {
+        } else if (!confirmNewValidator.showErrors(data.errors, fieldByName(this))) {
             // Keep the modal open and show the message inline
             showModalError('confirmNewInlineError', data.message || 'Failed to save patient. Please check the fields.');
         }
@@ -404,22 +497,10 @@ document.getElementById('formEditAppointment').addEventListener('submit', async 
     e.preventDefault();
     hideModalError('editInlineError');
 
-    // Client-side pre-check, same rule as the server (which re-validates
-    // against the saved record): Rescheduled needs a new date OR a new time.
-    // Both sides use one format each — "yyyy-MM-dd" (date input / GetById)
-    // and "HH:mm" (time slot values / GetById).
-    const status = document.getElementById('editStatus').value;
-    if (status === 'Rescheduled') {
-        const origDate = this.dataset.origDate || '';
-        const origTime = this.dataset.origTime || '';
-        const newDate  = document.getElementById('editDate').value;
-        const newTime  = document.getElementById('editTimeSelect').value;
-
-        if (origDate === newDate && origTime === newTime) {
-            showModalError('editInlineError', 'Please change the appointment date or time before rescheduling.');
-            return;
-        }
-    }
+    // Client-side pre-check, same rules as the server (which re-validates
+    // against the saved record), including: Rescheduled needs a new date OR
+    // a new time.
+    if (!editApptValidator.validate()) return;
 
     try {
         const formData = new FormData(this);
@@ -431,7 +512,7 @@ document.getElementById('formEditAppointment').addEventListener('submit', async 
         const data = await res.json();
         if (data.success) {
             window.location.reload();
-        } else {
+        } else if (!editApptValidator.showErrors(data.errors, fieldByName(this))) {
             // Keep the modal open and show the message inline
             showModalError('editInlineError', data.message || 'Failed to save appointment. Please check the fields.');
         }

@@ -133,6 +133,7 @@
             openConsultationId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenConsultationId)),
             openPaymentId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenPaymentId)),
             addPaymentError: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(addPaymentError)),
+            addPaymentErrorField: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["AddPaymentErrorField"] as string)),
             paymentNotice: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(paymentNotice))
         };
     </script>

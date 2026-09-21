@@ -324,15 +324,19 @@
 @section Scripts {
     <script src="~/js/patient/patient.js" asp-append-version="true"></script>
     <script>
+        // Datos ug sayop gikan sa server (kung naa).
+        const patientFormState = @Html.Raw(TempData["PatientForm"] as string ?? "null");
+
         // Auto-open modal if redirect back after failed validation
         @if (TempData["OpenAddModal"] != null)
         {
-            <text>new bootstrap.Modal(document.getElementById('modalAddPatient')).show();</text>
+            <text>new bootstrap.Modal(document.getElementById('modalAddPatient')).show();
+            applyPatientFormState('formAddPatient', patientFormState);</text>
         }
 
         @if (!string.IsNullOrWhiteSpace(openEditPatientId))
         {
-            <text>openPatientEditModal(Number('@openEditPatientId'));</text>
+            <text>openPatientEditModal(Number('@openEditPatientId'), patientFormState);</text>
         }
     </script>
 }

@@ -145,10 +145,49 @@ document.getElementById('addDateOfBirth')?.addEventListener('change', function (
     document.getElementById('addAge').value = age >= 0 ? age : '';
 });
 
+// ---- Validation sa Add / Edit Patient ----
+
+// Validator sa usa ka patient form; dili i-submit kung naay sayop.
+function createPatientValidator(formId) {
+    const form = document.getElementById(formId);
+    if (!form || !window.FormValidation) return null;
+
+    const validator = FormValidation.create(form, () => FormValidation.patientChecks(form));
+    form.addEventListener('submit', event => {
+        if (!validator.validate()) event.preventDefault();
+    });
+    return validator;
+}
+
+const addPatientValidator = createPatientValidator('formAddPatient');
+const editPatientValidator = createPatientValidator('formEditPatient');
+
+// I-fill balik ang form ug i-marka ang sayop gikan sa server.
+function applyPatientFormState(formId, state) {
+    const form = document.getElementById(formId);
+    if (!form || !state) return;
+
+    Object.entries(state.values || {}).forEach(([name, value]) => {
+        const field = form.querySelector(`[name="${name}"]`);
+        if (field) field.value = value ?? '';
+    });
+    // I-calculate balik ang edad gikan sa DOB.
+    form.querySelector('[name="DateOfBirth"]')?.dispatchEvent(new Event('change'));
+
+    const validator = formId === 'formAddPatient' ? addPatientValidator : editPatientValidator;
+    validator?.showErrors(state.errors, name => form.querySelector(`[name="${name}"]`));
+}
+
 // Reset modal form on close
 document.getElementById('modalAddPatient')?.addEventListener('hidden.bs.modal', function () {
     document.getElementById('formAddPatient').reset();
     document.getElementById('addAge').value = '';
+    addPatientValidator?.reset();
+});
+
+// I-reset ang sayop inig sira sa Edit modal.
+document.getElementById('modalEditPatient')?.addEventListener('hidden.bs.modal', function () {
+    editPatientValidator?.reset();
 });
 
 function calculateEditAge(dateOfBirth) {
@@ -173,8 +212,10 @@ function setEditFieldValue(id, value) {
 }
 
 // Fetch the existing patient data before showing the edit modal.
-async function openPatientEditModal(id) {
+// Ang state = sayop gikan sa server (kung naa).
+async function openPatientEditModal(id, state = null) {
     try {
+        editPatientValidator?.reset();
         const response = await fetch(`/Patients/GetById/${encodeURIComponent(id)}`);
         if (!response.ok) throw new Error('Patient not found');
 
@@ -201,6 +242,7 @@ async function openPatientEditModal(id) {
         document.getElementById('editPatientSubtitle').textContent = patient.fullName;
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditPatient')).show();
+        applyPatientFormState('formEditPatient', state);
     } catch (error) {
         console.error('Failed to load patient for editing:', error);
     }
@@ -225,7 +267,15 @@ async function openPatientDetailsModal(id) {
         document.getElementById('viewDetailMaritalStatus').textContent = p.maritalStatus;
         document.getElementById('viewDetailReligion').textContent      = p.religion;
         document.getElementById('viewDetailLMP').textContent           = p.lmp;
-        document.getElementById('viewDetailAOG').innerHTML             = p.aog !== '—' ? `<span class="aog-highlight">${p.aog}</span>` : '—';
+        // Ipakita isip text (dili HTML) para luwas.
+        const aogCell = document.getElementById('viewDetailAOG');
+        aogCell.textContent = '—';
+        if (p.aog !== '—') {
+            const aogBadge = document.createElement('span');
+            aogBadge.className = 'aog-highlight';
+            aogBadge.textContent = p.aog;
+            aogCell.replaceChildren(aogBadge);
+        }
         document.getElementById('viewDetailEDC').textContent           = p.edc;
         document.getElementById('viewDetailMenarche').textContent      = p.menarche;
         document.getElementById('viewDetailContactNo').textContent     = p.contactNo;

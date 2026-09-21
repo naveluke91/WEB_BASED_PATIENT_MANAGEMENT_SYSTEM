@@ -24,6 +24,18 @@
     let selectedPatient = null;
     let availableAppointments = [];
 
+    // Validation: pasyente gikan sa listahan, usa ka serbisyo, valid nga appointment.
+    const registerTiles = Array.from(document.querySelectorAll('#addServiceModal .svc-tile'));
+    const validator = FormValidation.create(form, () => [
+        { field: search, test: () => selectedPatient && patientId.value ? '' : 'Pilia ang pasyente gikan sa listahan.' },
+        {
+            field: document.querySelector('#addServiceModal .svc-grid-family'),
+            highlight: registerTiles, inline: true,
+            test: () => serviceName.value ? '' : 'Pilia ang usa ka serbisyo.'
+        },
+        { field: appointmentId, test: el => !el.value || availableAppointments.some(a => String(a.id) === el.value) ? '' : 'Pilia ang valid nga appointment.' }
+    ]);
+
     function hideDropdown() {
         dropdown.style.display = 'none';
     }
@@ -106,6 +118,7 @@
         search.style.borderColor = '#468403';
         hideDropdown();
         loadAvailableAppointments(patient);
+        validator.recheck();
     }
 
     function showPatients(matches) {
@@ -145,16 +158,14 @@
             document.querySelectorAll('#addServiceModal .svc-tile').forEach(item => item.classList.remove('selected'));
             tile.classList.add('selected');
             serviceName.value = tile.dataset.service;
+            validator.recheck();
         });
     });
 
     form.addEventListener('submit', event => {
         // Appointment selection is optional: leaving it blank registers a
         // Walk-In service; picking one applies it to that appointment.
-        if (selectedPatient && patientId.value && serviceName.value) return;
-        event.preventDefault();
-        error.textContent = 'Please select a registered patient and one service.';
-        error.classList.remove('d-none');
+        if (!validator.validate()) event.preventDefault();
     });
 
     modal?.addEventListener('hidden.bs.modal', () => {
@@ -167,6 +178,7 @@
         error.classList.add('d-none');
         document.querySelectorAll('#addServiceModal .svc-tile').forEach(tile => tile.classList.remove('selected'));
         hideDropdown();
+        validator.reset();
     });
 })();
 
@@ -188,6 +200,16 @@
 
     const editTiles = Array.from(editModalElement.querySelectorAll('.svc-tile'));
     let viewedService = null;
+
+    // Validation: rehistradong pasyente ug usa ka serbisyo.
+    const editValidator = FormValidation.create(editForm, () => [
+        { field: editPatientId, test: el => el.value && Array.from(el.options).some(option => option.value === el.value) ? '' : 'Pilia ang rehistradong pasyente.' },
+        {
+            field: editModalElement.querySelector('.svc-grid-family'),
+            highlight: editTiles, inline: true,
+            test: () => editServiceName.value ? '' : 'Pilia ang usa ka serbisyo.'
+        }
+    ]);
 
     function getServiceFromButton(button) {
         return {
@@ -223,17 +245,14 @@
     });
 
     editTiles.forEach(tile => {
-        tile.addEventListener('click', () => selectEditService(tile.dataset.service));
+        tile.addEventListener('click', () => {
+            selectEditService(tile.dataset.service);
+            editValidator.recheck();
+        });
     });
 
     editForm.addEventListener('submit', event => {
-        if (editPatientId.value && editServiceName.value) {
-            return;
-        }
-
-        event.preventDefault();
-        editError.textContent = 'Please select a registered patient and one service.';
-        editError.classList.remove('d-none');
+        if (!editValidator.validate()) event.preventDefault();
     });
 
     editModalElement.addEventListener('hidden.bs.modal', () => {
@@ -242,6 +261,7 @@
         selectEditService('');
         editError.classList.add('d-none');
         editError.textContent = '';
+        editValidator.reset();
     });
 
     viewModalElement.addEventListener('show.bs.modal', event => {
