@@ -2,7 +2,7 @@
 // usermanagement.js — User Management module (Views/UserManagement/Index.cshtml)
 // Add / Edit / Reset Password modals and table search. Server-rendered values are
 // provided by the view as window.userManagementPageData before this file loads.
-// Ang Role field ug ang Reset Password modal makita sa SuperAdmin ra.
+// Ang Role field makita sa SuperAdmin ra; ang Reset Password modal para sa Admin (Staff) ug SuperAdmin (Admin ug Staff).
 // ============================================================
 
 // ---- Validation messages (English, same rules as UserManagementController) ----
@@ -189,7 +189,7 @@ function showServerError(modal, errorBox, reopen, fields) {
     }
 })();
 
-// ---- Reset Password modal (SuperAdmin ra) ----
+// ---- Reset Password modal (Admin: Staff ra; SupAdmin: Admin ug Staff) ----
 
 (() => {
     const data = window.userManagementPageData;

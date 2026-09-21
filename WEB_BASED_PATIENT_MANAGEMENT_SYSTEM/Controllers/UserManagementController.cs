@@ -160,18 +160,26 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/ResetPassword
-        // SuperAdmin only: sets a temporary password for an Admin or Staff account.
+        // Sets a temporary password. Admin: Staff accounts only.
+        // SuperAdmin: Admin and Staff accounts. Staff cannot reach this action.
         // -----------------------------------------------------------------------
-        // SuperAdmin ra ang maka-reset.
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        // Admin: Staff ra. SupAdmin: Admin ug Staff. (Ang Staff dili maka-access.)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ResetPassword(ResetAccountPasswordViewModel model)
         {
-            var account = ManagedAccount(model.Id);
+            // Kuhaa ang target sa database ug i-check ang tinuod nga Role niini;
+            // ang role gikan sa browser dili gamiton.
+            var account = _context.UserAccounts.FirstOrDefault(u => u.Id == model.Id);
             if (account == null)
             {
-                TempData["ErrorMessage"] = NotAllowedMessage;
+                TempData["ErrorMessage"] = AuthMessages.AccountNotFound;
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!ManagedRoles.Contains(account.Role))
+            {
+                TempData["ErrorMessage"] = IsSuperAdmin ? AuthMessages.ResetAdminStaffOnly : AuthMessages.ResetStaffOnly;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -186,7 +194,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return ReopenForm("reset", new UserFormViewModel { Id = account.Id, FullName = account.FullName });
 
-            // I-hash ang temporary password; usbon sa sunod nga login, ug mawala ang daan nga session.
+            // I-hash ang bag-ong password; usbon sa sunod nga login, ug mawala ang daan nga session.
             account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
             account.MustChangePassword = true;
             account.SecurityStamp = AccountController.NewSecurityStamp();
@@ -194,7 +202,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             account.LockoutEndUtc = null;
             _context.SaveChanges();
 
-            TempData["UserNotice"] = $"Password reset for \"{account.FullName}\". They must change it at their next sign-in.";
+            // Ang password dili ipakita o i-log.
+            TempData["UserNotice"] = $"Password for \"{account.FullName}\" was reset successfully.";
             return RedirectToAction(nameof(Index));
         }
 

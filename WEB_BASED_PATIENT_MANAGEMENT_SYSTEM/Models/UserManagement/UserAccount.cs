@@ -92,6 +92,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public const string NewPasswordNotTemporary = "Choose a new password, not the temporary one.";
         public const string CurrentPasswordIncorrect = "Current password is incorrect.";
         public const string SelectRole = "Select Admin or Staff.";
+        public const string AccountNotFound = "That user account no longer exists.";
+        public const string ResetStaffOnly = "You can only reset passwords for Staff accounts.";
+        public const string ResetAdminStaffOnly = "You can only reset passwords for Admin and Staff accounts.";
         public const string InvalidGmail = "Enter a valid Gmail address.";
         public const string CodeFormat = "The recovery code must be 8 digits.";
 

@@ -84,8 +84,8 @@
                                         data-role="@account.Role">
                                     <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
                                 </button>
-                                @* Ipakita ra sa SuperAdmin. *@
-                                @if (Model.IsSuperAdmin)
+                                @* Admin: Staff ra. SupAdmin: Admin ug Staff. (Server ang mo-check gihapon.) *@
+                                @if (Model.IsSuperAdmin || account.Role == UserRoles.Staff)
                                 {
                                     <button type="button" class="action-btn" title="Reset Password"
                                             aria-label="Reset password of @account.FullName"
@@ -113,10 +113,7 @@
 
 <partial name="~/Views/UserManagement/Modals/_AddUserModal.cshtml" />
 <partial name="~/Views/UserManagement/Modals/_EditUserModal.cshtml" />
-@if (Model.IsSuperAdmin)
-{
-    <partial name="~/Views/UserManagement/Modals/_ResetPasswordModal.cshtml" />
-}
+<partial name="~/Views/UserManagement/Modals/_ResetPasswordModal.cshtml" />
 
 @section Scripts {
     <script>
