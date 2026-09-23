@@ -1441,7 +1441,7 @@ button.nav-item {
 
 /* Labels show when the card has room; otherwise labelled actions become
    icon buttons (each keeps its title and aria-label). */
-@container (max-width: 1119.98px) {
+@ racontainer (max-width: 1119.98px) {
     .action-label {
         display: none;
     }

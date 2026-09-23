@@ -44,15 +44,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
             var body = $"""
 Hello {username},
 
-We received a request to reset the password for your account.
-
-Your verification code is:
+Your password reset verification code is:
 
 {code}
 
 This code will expire in {lifetime.TotalMinutes:0} minutes.
 
-If you did not request a password reset, you may ignore this email.
+If you did not request a password reset, you can ignore this email.
 
 Española Birthing Home
 Patient Management System
@@ -105,9 +103,17 @@ Patient Management System
 
                 stage = "sending the message";
                 await client.SendAsync(message);
+                _logger.LogInformation("Password reset email sent through {Host}:{Port}.", _settings.Host, _settings.Port);
 
-                stage = "disconnecting";
-                await client.DisconnectAsync(true);
+                // Na-send na ang email; dili i-failure kung ang disconnect ra ang napakyas.
+                try
+                {
+                    await client.DisconnectAsync(true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "SMTP disconnect failed after the email was already sent.");
+                }
                 return true;
             }
             catch (AuthenticationException ex)
