@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Net.Mail;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
-using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services;
 
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
@@ -18,8 +15,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// deletes them. Healthcare records are not linked to user accounts, so
     /// deleting an account never removes patient, consultation or billing data.
     /// Admin manages both Admin and Staff accounts, but an Admin account can
-    /// never be deleted here. A new or changed Recovery Email must be proven
-    /// reachable with a MailKit-sent code before Forgot Password will trust it.
+    /// never be deleted here.
     /// </summary>
     // Admin can manage Staff accounts; Staff is denied access.
     [Authorize(Roles = UserRoles.Admin)]
@@ -28,25 +24,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private const string NotAllowedMessage = "You can't manage that account.";
         private const string AdminNotDeletableMessage = "Admin accounts cannot be deleted.";
 
-        private const int EmailVerificationMaxAttempts = 5;
-        private static readonly TimeSpan EmailVerificationCodeLifetime = TimeSpan.FromMinutes(10);
-        private static readonly TimeSpan EmailVerificationResendCooldown = TimeSpan.FromMinutes(1);
-        private static readonly Regex VerificationCodePattern = new(@"^[0-9]{6}$");
-
-        // Session-tracked, this Admin's own pending verification only (not the target account's).
-        private const string PendingCreateVerifyAccountIdKey = "usermgmt-pending-create-verify-id";
-        private const string PendingEditVerifyAccountIdKey = "usermgmt-pending-edit-verify-id";
-        private const string PendingEditNewEmailKey = "usermgmt-pending-edit-new-email";
-
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<UserAccount> _passwordHasher;
-        private readonly EmailSender _emailSender;
 
-        public UserManagementController(ApplicationDbContext context, IPasswordHasher<UserAccount> passwordHasher, EmailSender emailSender)
+        public UserManagementController(ApplicationDbContext context, IPasswordHasher<UserAccount> passwordHasher)
         {
             _context = context;
             _passwordHasher = passwordHasher;
-            _emailSender = emailSender;
         }
 
         // Edit can target either an Admin or a Staff account (role itself is never editable).
@@ -72,13 +56,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // POST /UserManagement/Create
-        // Admin picks the role (Admin or Staff); anything else is rejected. The
-        // account is created right away but stays unverified until the entered
-        // Recovery Email is proven reachable by a MailKit-sent code.
+        // Admin picks the role (Admin or Staff); anything else is rejected.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind(nameof(UserFormViewModel.FullName), nameof(UserFormViewModel.Username),
+        public IActionResult Create([Bind(nameof(UserFormViewModel.FullName), nameof(UserFormViewModel.Username),
             nameof(UserFormViewModel.Email), nameof(UserFormViewModel.Role), nameof(UserFormViewModel.Password),
             nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
         {
@@ -102,7 +84,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 Username = model.Username.Trim(),
                 Role = model.Role!,
                 RecoveryEmail = model.Email,
-                IsRecoveryEmailVerified = false,
                 SecurityStamp = AccountController.NewSecurityStamp()
             };
             // Only the salted hash is stored.
@@ -112,71 +93,18 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!TrySave())
                 return ReopenForm("add", model);
 
-            HttpContext.Session.SetInt32(PendingCreateVerifyAccountIdKey, account.Id);
-            var sent = await GenerateAndSendEmailVerificationCodeAsync(account, account.RecoveryEmail!);
-            return ReopenVerifyForm("addVerify", account, account.RecoveryEmail!,
-                sent ? null : "Unable to send verification code. Please try again.");
-        }
-
-        // -----------------------------------------------------------------------
-        // POST /UserManagement/VerifyNewAccountEmail
-        // -----------------------------------------------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult VerifyNewAccountEmail(string? code)
-        {
-            var accountId = HttpContext.Session.GetInt32(PendingCreateVerifyAccountIdKey);
-            var account = accountId.HasValue ? _context.UserAccounts.FirstOrDefault(u => u.Id == accountId) : null;
-            if (account == null)
-            {
-                TempData["ErrorMessage"] = NotAllowedMessage;
-                return RedirectToAction(nameof(Index));
-            }
-
-            var (success, error) = VerifyPendingCode(account, code);
-            if (!success)
-                return ReopenVerifyForm("addVerify", account, account.RecoveryEmail!, error);
-
-            account.IsRecoveryEmailVerified = true;
-            _context.SaveChanges();
-            HttpContext.Session.Remove(PendingCreateVerifyAccountIdKey);
-
             TempData["SuccessMessage"] = $"User \"{account.FullName}\" was added.";
             return RedirectToAction(nameof(Index));
         }
 
         // -----------------------------------------------------------------------
-        // POST /UserManagement/ResendNewAccountVerificationCode
-        // -----------------------------------------------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResendNewAccountVerificationCode()
-        {
-            var accountId = HttpContext.Session.GetInt32(PendingCreateVerifyAccountIdKey);
-            var account = accountId.HasValue ? _context.UserAccounts.FirstOrDefault(u => u.Id == accountId) : null;
-            if (account == null)
-            {
-                TempData["ErrorMessage"] = NotAllowedMessage;
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (WasCodeSentRecently(account, DateTime.UtcNow))
-                return ReopenVerifyForm("addVerify", account, account.RecoveryEmail!, "Please wait a moment before requesting another code.");
-
-            var sent = await GenerateAndSendEmailVerificationCodeAsync(account, account.RecoveryEmail!);
-            return ReopenVerifyForm("addVerify", account, account.RecoveryEmail!,
-                sent ? null : "Unable to send verification code. Please try again.");
-        }
-
-        // -----------------------------------------------------------------------
         // POST /UserManagement/Edit
-        // Updates the name and username immediately. A changed Recovery Email is
-        // NOT applied yet: the old (already verified) email stays active until
-        // the new one is proven reachable by a MailKit-sent code.
+        // Updates the name, username, and registered email for an Admin or Staff
+        // account. The role and the password are not changed here.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([Bind(nameof(UserFormViewModel.Id), nameof(UserFormViewModel.FullName),
+        public IActionResult Edit([Bind(nameof(UserFormViewModel.Id), nameof(UserFormViewModel.FullName),
             nameof(UserFormViewModel.Username), nameof(UserFormViewModel.Email))] UserFormViewModel model)
         {
             var account = ManagedAccount(model.Id);
@@ -196,79 +124,18 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             account.FullName = model.FullName.Trim();
             account.Username = model.Username.Trim();
-
-            var emailChanged = !string.IsNullOrEmpty(model.Email)
-                && !string.Equals(account.RecoveryEmail, model.Email, StringComparison.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(model.Email)
+                && !string.Equals(account.RecoveryEmail, model.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                account.RecoveryEmail = model.Email;
+                ClearPasswordResetState(account);
+            }
 
             if (!TrySave())
                 return ReopenForm("edit", model);
 
-            if (!emailChanged)
-            {
-                TempData["SuccessMessage"] = $"User \"{account.FullName}\" was updated.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            HttpContext.Session.SetInt32(PendingEditVerifyAccountIdKey, account.Id);
-            HttpContext.Session.SetString(PendingEditNewEmailKey, model.Email!);
-            var sent = await GenerateAndSendEmailVerificationCodeAsync(account, model.Email!);
-            return ReopenVerifyForm("editVerify", account, model.Email!,
-                sent ? null : "Unable to send verification code. Please try again.");
-        }
-
-        // -----------------------------------------------------------------------
-        // POST /UserManagement/VerifyEditedAccountEmail
-        // -----------------------------------------------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult VerifyEditedAccountEmail(string? code)
-        {
-            var accountId = HttpContext.Session.GetInt32(PendingEditVerifyAccountIdKey);
-            var pendingEmail = HttpContext.Session.GetString(PendingEditNewEmailKey);
-            var account = accountId.HasValue ? ManagedAccount(accountId.Value) : null;
-            if (account == null || string.IsNullOrEmpty(pendingEmail))
-            {
-                TempData["ErrorMessage"] = NotAllowedMessage;
-                return RedirectToAction(nameof(Index));
-            }
-
-            var (success, error) = VerifyPendingCode(account, code);
-            if (!success)
-                return ReopenVerifyForm("editVerify", account, pendingEmail, error);
-
-            // Only now does the new email replace the old (previously verified) one.
-            account.RecoveryEmail = pendingEmail;
-            account.IsRecoveryEmailVerified = true;
-            _context.SaveChanges();
-            HttpContext.Session.Remove(PendingEditVerifyAccountIdKey);
-            HttpContext.Session.Remove(PendingEditNewEmailKey);
-
             TempData["SuccessMessage"] = $"User \"{account.FullName}\" was updated.";
             return RedirectToAction(nameof(Index));
-        }
-
-        // -----------------------------------------------------------------------
-        // POST /UserManagement/ResendEditedAccountVerificationCode
-        // -----------------------------------------------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResendEditedAccountVerificationCode()
-        {
-            var accountId = HttpContext.Session.GetInt32(PendingEditVerifyAccountIdKey);
-            var pendingEmail = HttpContext.Session.GetString(PendingEditNewEmailKey);
-            var account = accountId.HasValue ? ManagedAccount(accountId.Value) : null;
-            if (account == null || string.IsNullOrEmpty(pendingEmail))
-            {
-                TempData["ErrorMessage"] = NotAllowedMessage;
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (WasCodeSentRecently(account, DateTime.UtcNow))
-                return ReopenVerifyForm("editVerify", account, pendingEmail, "Please wait a moment before requesting another code.");
-
-            var sent = await GenerateAndSendEmailVerificationCodeAsync(account, pendingEmail);
-            return ReopenVerifyForm("editVerify", account, pendingEmail,
-                sent ? null : "Unable to send verification code. Please try again.");
         }
 
         // -----------------------------------------------------------------------
@@ -421,89 +288,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // Reopens the Add/Edit modal at its "enter the code" stage. error == null means the code
-        // was just sent with nothing wrong yet; the Verification Code field carries no message then.
-        private IActionResult ReopenVerifyForm(string mode, UserAccount account, string email, string? error)
-        {
-            TempData["UserForm"] = JsonSerializer.Serialize(new
-            {
-                mode,
-                id = account.Id,
-                fullName = account.FullName,
-                username = account.Username,
-                email,
-                role = account.Role,
-                error,
-                field = error != null ? "Code" : null
-            });
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        // Shared by account-creation and edited-email verification. Reuses the same
-        // code-hash/expiry/attempts fields the Forgot Password flow uses, since this
-        // account already exists either way by the time a code is being checked.
-        private (bool Success, string? Error) VerifyPendingCode(UserAccount account, string? code)
-        {
-            var trimmed = code?.Trim() ?? string.Empty;
-            if (trimmed.Length == 0)
-                return (false, "Verification code is required.");
-
-            if (!VerificationCodePattern.IsMatch(trimmed) || account.PasswordResetCodeHash == null)
-                return (false, "Invalid verification code.");
-
-            var now = DateTime.UtcNow;
-            if (account.PasswordResetCodeExpiresUtc is null || account.PasswordResetCodeExpiresUtc <= now)
-            {
-                ClearPasswordResetState(account);
-                _context.SaveChanges();
-                return (false, "The verification code has expired. Please request a new code.");
-            }
-
-            if (_passwordHasher.VerifyHashedPassword(account, account.PasswordResetCodeHash, trimmed) == PasswordVerificationResult.Failed)
-            {
-                account.PasswordResetFailedAttempts++;
-                if (account.PasswordResetFailedAttempts >= EmailVerificationMaxAttempts)
-                    ClearPasswordResetState(account);
-                _context.SaveChanges();
-                return (false, "Invalid verification code.");
-            }
-
-            // Single-use: cleared whether this call is consumed as a success or not reused again.
-            ClearPasswordResetState(account);
-            return (true, null);
-        }
-
-        private async Task<bool> GenerateAndSendEmailVerificationCodeAsync(UserAccount account, string email)
-        {
-            var previousCodeHash = account.PasswordResetCodeHash;
-            string code;
-            do
-            {
-                code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
-            }
-            while (previousCodeHash != null
-                && _passwordHasher.VerifyHashedPassword(account, previousCodeHash, code) != PasswordVerificationResult.Failed);
-
-            account.PasswordResetCodeHash = _passwordHasher.HashPassword(account, code);
-            account.PasswordResetCodeExpiresUtc = DateTime.UtcNow.Add(EmailVerificationCodeLifetime);
-            account.PasswordResetFailedAttempts = 0;
-            _context.SaveChanges();
-
-            var sent = await _emailSender.SendEmailVerificationCodeAsync(email, account.Username, code, EmailVerificationCodeLifetime);
-            if (sent)
-                return true;
-
-            // Do not leave an active code when mail delivery could not be started.
-            ClearPasswordResetState(account);
-            _context.SaveChanges();
-            return false;
-        }
-
-        private static bool WasCodeSentRecently(UserAccount account, DateTime now) =>
-            account.PasswordResetCodeHash != null
-            && account.PasswordResetCodeExpiresUtc > now.Add(EmailVerificationCodeLifetime - EmailVerificationResendCooldown);
 
         private static string NormalizeEmail(string? email) => email?.Trim().ToLowerInvariant() ?? string.Empty;
 

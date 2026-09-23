@@ -49,15 +49,7 @@ function checkConfirm(value, password) {
     const submitButton = document.getElementById('addUserSubmit');
     const error = document.getElementById('addUserError');
 
-    const verifyForm = document.getElementById('addUserVerifyForm');
-    const verifyEmailLabel = document.getElementById('addUserVerifyEmail');
-    const verifyCode = document.getElementById('addUserVerifyCode');
-    const verifySubmit = document.getElementById('addUserVerifySubmit');
-    const verifyResend = document.getElementById('addUserResendCode');
-    const verifyError = document.getElementById('addUserVerifyError');
-
-    if (!data || !modal || !form || !fullName || !username || !email || !role || !password || !confirmPassword || !submitButton || !error
-        || !verifyForm || !verifyEmailLabel || !verifyCode || !verifySubmit || !verifyResend || !verifyError) return;
+    if (!data || !modal || !form || !fullName || !username || !email || !role || !password || !confirmPassword || !submitButton || !error) return;
 
     // Validation (parehas sa server); ang password dili ibalik sa page.
     const validator = FormValidation.create(form, () => [
@@ -67,9 +59,6 @@ function checkConfirm(value, password) {
         { field: role, test: el => checkRole(el.value) },
         { field: password, test: el => checkPassword(el.value) },
         { field: confirmPassword, test: el => checkConfirm(el.value, password.value) }
-    ]);
-    const codeValidator = FormValidation.create(verifyForm, () => [
-        { field: verifyCode, test: el => checkVerificationCode(el.value) }
     ]);
 
     // A second click would submit the same account twice.
@@ -81,33 +70,12 @@ function checkConfirm(value, password) {
         submitButton.disabled = true;
     });
 
-    verifyForm.addEventListener('submit', event => {
-        // Resend Code only needs a valid antiforgery token, not a code.
-        if (event.submitter === verifyResend) {
-            verifyResend.disabled = true;
-            return;
-        }
-        if (!codeValidator.validate()) {
-            event.preventDefault();
-            return;
-        }
-        verifySubmit.disabled = true;
-    });
-
     modal.addEventListener('hidden.bs.modal', () => {
         form.reset();
         validator.reset();
         error.textContent = '';
         error.classList.add('d-none');
         submitButton.disabled = false;
-
-        showAddStage(form, verifyForm);
-        verifyForm.reset();
-        codeValidator.reset();
-        verifyError.textContent = '';
-        verifyError.classList.add('d-none');
-        verifySubmit.disabled = false;
-        verifyResend.disabled = false;
     });
 
     // Reopened after the server rejected the form (passwords are never sent back).
@@ -119,28 +87,8 @@ function checkConfirm(value, password) {
         role.value = reopen.role || 'Staff';
         showServerError(modal, error, reopen, { FullName: fullName, Username: username, Email: email, Role: role, Password: password, ConfirmPassword: confirmPassword });
         bootstrap.Modal.getOrCreateInstance(modal).show();
-    } else if (reopen && reopen.mode === 'addVerify') {
-        showAddStage(verifyForm, form);
-        verifyEmailLabel.textContent = reopen.email || '';
-        if (reopen.error) {
-            showServerError(modal, verifyError, reopen, { Code: verifyCode });
-        }
-        bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();
-
-// Shows `stageToShow` and hides `stageToHide` within the same modal (Add/Edit User's two-step flow).
-function showAddStage(stageToShow, stageToHide) {
-    stageToHide.classList.add('d-none');
-    stageToShow.classList.remove('d-none');
-}
-
-// Verification code: 6 digits lang.
-function checkVerificationCode(value) {
-    const text = String(value ?? '').trim();
-    if (!text) return UM_MSG.required;
-    return /^[0-9]{6}$/.test(text) ? '' : 'Invalid verification code.';
-}
 
 // Role: Admin or Staff lang.
 function checkRole(value) {
@@ -192,15 +140,7 @@ function showServerError(modal, errorBox, reopen, fields) {
     const submitButton = document.getElementById('editUserSubmit');
     const error = document.getElementById('editUserError');
 
-    const verifyForm = document.getElementById('editUserVerifyForm');
-    const verifyEmailLabel = document.getElementById('editUserVerifyEmail');
-    const verifyCode = document.getElementById('editUserVerifyCode');
-    const verifySubmit = document.getElementById('editUserVerifySubmit');
-    const verifyResend = document.getElementById('editUserResendCode');
-    const verifyError = document.getElementById('editUserVerifyError');
-
-    if (!data || !modal || !form || !id || !fullName || !username || !email || !submitButton || !error
-        || !verifyForm || !verifyEmailLabel || !verifyCode || !verifySubmit || !verifyResend || !verifyError) return;
+    if (!data || !modal || !form || !id || !fullName || !username || !email || !submitButton || !error) return;
 
     function fill(user) {
         id.value = user.id;
@@ -219,9 +159,6 @@ function showServerError(modal, errorBox, reopen, fields) {
         { field: fullName, test: el => checkFullName(el.value) },
         { field: username, test: el => checkUsername(el.value) },
         { field: email, test: el => checkEmail(el.value) }
-    ]);
-    const codeValidator = FormValidation.create(verifyForm, () => [
-        { field: verifyCode, test: el => checkVerificationCode(el.value) }
     ]);
 
     modal.addEventListener('show.bs.modal', event => {
@@ -246,31 +183,10 @@ function showServerError(modal, errorBox, reopen, fields) {
         submitButton.disabled = true;
     });
 
-    verifyForm.addEventListener('submit', event => {
-        // Resend Code only needs a valid antiforgery token, not a code.
-        if (event.submitter === verifyResend) {
-            verifyResend.disabled = true;
-            return;
-        }
-        if (!codeValidator.validate()) {
-            event.preventDefault();
-            return;
-        }
-        verifySubmit.disabled = true;
-    });
-
     modal.addEventListener('hidden.bs.modal', () => {
         hideError();
         validator.reset();
         submitButton.disabled = false;
-
-        showAddStage(form, verifyForm);
-        verifyForm.reset();
-        codeValidator.reset();
-        verifyError.textContent = '';
-        verifyError.classList.add('d-none');
-        verifySubmit.disabled = false;
-        verifyResend.disabled = false;
     });
 
     // Reopened after the server rejected the form.
@@ -278,14 +194,6 @@ function showServerError(modal, errorBox, reopen, fields) {
     if (reopen && reopen.mode === 'edit') {
         fill(reopen);
         showServerError(modal, error, reopen, { FullName: fullName, Username: username, Email: email });
-        bootstrap.Modal.getOrCreateInstance(modal).show();
-    } else if (reopen && reopen.mode === 'editVerify') {
-        fill(reopen);
-        showAddStage(verifyForm, form);
-        verifyEmailLabel.textContent = reopen.email || '';
-        if (reopen.error) {
-            showServerError(modal, verifyError, reopen, { Code: verifyCode });
-        }
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();

@@ -220,12 +220,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return View(model);
             }
 
-            if (!account.IsRecoveryEmailVerified)
-            {
-                ModelState.AddModelError(nameof(model.Email), AuthMessages.NoVerifiedRecoveryEmail);
-                return View(model);
-            }
-
             // A code was already sent moments ago: let the user keep using it instead of sending another.
             if (WasPasswordResetCodeSentRecently(account, DateTime.UtcNow))
             {
@@ -275,7 +269,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 ClearPasswordResetState(account);
                 _context.SaveChanges();
                 ClearPasswordResetFlow();
-                ModelState.AddModelError(nameof(model.Code), "The verification code has expired. Please request a new code.");
+                ModelState.AddModelError(nameof(model.Code), "Verification code has expired.");
                 return ForgotPasswordCard(account);
             }
 

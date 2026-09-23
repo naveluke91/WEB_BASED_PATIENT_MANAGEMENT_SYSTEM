@@ -61,38 +61,22 @@ Patient Management System
             return SendAsync(recipient, "Password Reset Verification Code", body);
         }
 
-        // Proves the account holder can access a Recovery Email, at account creation or when it is
-        // changed. Uses the same SMTP path as the password-reset code, just different wording.
-        public Task<bool> SendEmailVerificationCodeAsync(string recipient, string username, string code, TimeSpan lifetime)
-        {
-            var body = $"""
-Hello {username},
-
-Please verify this email address for your account.
-
-Your verification code is:
-
-{code}
-
-This code will expire in {lifetime.TotalMinutes:0} minutes.
-
-If you did not request this, you may ignore this email.
-
-Española Birthing Home
-Patient Management System
-""";
-
-            return SendAsync(recipient, "Email Verification Code", body);
-        }
-
         private async Task<bool> SendAsync(string recipient, string subject, string body)
         {
-            if (string.IsNullOrWhiteSpace(_settings.Host) || string.IsNullOrWhiteSpace(_settings.SenderAddress)
-                || string.IsNullOrWhiteSpace(_settings.AppPassword))
+            // Key names only, never the values.
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(_settings.Host)) missing.Add("Smtp:Host");
+            if (string.IsNullOrWhiteSpace(_settings.SenderAddress)) missing.Add("Smtp:SenderAddress");
+            if (string.IsNullOrWhiteSpace(_settings.AppPassword)) missing.Add("Smtp:AppPassword");
+            if (missing.Count > 0)
             {
-                _logger.LogWarning("Verification email was not sent because SMTP settings are incomplete.");
+                _logger.LogWarning("Password reset email was not sent: missing configuration {MissingKeys}. Set them with dotnet user-secrets.",
+                    string.Join(", ", missing));
                 return false;
             }
+
+            // Gmail shows the App Password in 4 groups with spaces; SMTP needs it without spaces.
+            var appPassword = _settings.AppPassword.Replace(" ", string.Empty);
 
             // Tracks which step was in progress when a failure happens, for the server log only.
             var stage = "building the message";
@@ -117,7 +101,7 @@ Patient Management System
                 await client.ConnectAsync(_settings.Host, _settings.Port, socketOptions);
 
                 stage = "authenticating";
-                await client.AuthenticateAsync(_settings.SenderAddress, _settings.AppPassword);
+                await client.AuthenticateAsync(_settings.SenderAddress, appPassword);
 
                 stage = "sending the message";
                 await client.SendAsync(message);
@@ -126,10 +110,16 @@ Patient Management System
                 await client.DisconnectAsync(true);
                 return true;
             }
+            catch (AuthenticationException ex)
+            {
+                _logger.LogError(ex, "Password reset email could not be sent: Gmail rejected Smtp:SenderAddress/Smtp:AppPassword. "
+                    + "Use a 16-character Gmail App Password (2-Step Verification must be on), not the normal Gmail password.");
+                return false;
+            }
             catch (Exception ex)
             {
                 // Full exception (type, message, stack trace) goes to the server log only, never to the browser.
-                _logger.LogError(ex, "Verification email could not be sent while {Stage}.", stage);
+                _logger.LogError(ex, "Password reset email could not be sent while {Stage}.", stage);
                 return false;
             }
         }
