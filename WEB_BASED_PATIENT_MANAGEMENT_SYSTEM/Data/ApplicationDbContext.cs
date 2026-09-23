@@ -136,6 +136,19 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
             modelBuilder.Entity<NotificationRead>()
                 .HasIndex(r => new { r.UserAccountId, r.AppointmentId })
                 .IsUnique();
+
+            // Mawala ang read-marker kung ma-delete ang account o ang appointment.
+            modelBuilder.Entity<NotificationRead>()
+                .HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(r => r.UserAccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<NotificationRead>()
+                .HasOne<Appointment>()
+                .WithMany()
+                .HasForeignKey(r => r.AppointmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
