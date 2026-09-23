@@ -23,7 +23,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     {
         public const string PasswordResetRateLimitPolicy = "password-reset";
 
-        private const string PasswordResetNoticeKey = "PasswordResetNotice";
         private const string PasswordResetErrorKey = "PasswordResetError";
         private const string PasswordResetAccountIdKey = "password-reset-account-id";
         private const string PasswordResetStageKey = "password-reset-stage";
@@ -183,7 +182,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (busy)
                 TempData[PasswordResetErrorKey] = "Please wait a moment before trying again.";
 
-            return View(new ForgotPasswordViewModel());
+            // Repopulates Username/Email when a code is already pending (e.g. after Resend Code).
+            return ForgotPasswordCard();
         }
 
         [AllowAnonymous]
@@ -195,9 +195,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var username = model.Username.Trim();
-            var email = NormalizeEmail(model.Email);
-            if (!IsValidEmail(email))
+            model.Username = model.Username.Trim();
+            model.Email = NormalizeEmail(model.Email);
+            if (!IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(model.Email), "Enter a valid email address.");
                 return View(model);
@@ -206,35 +206,33 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             ClearPasswordResetFlow();
 
             var account = _context.UserAccounts.FirstOrDefault(u =>
-                u.Username == username
-                && u.RecoveryEmail == email
+                u.Username == model.Username
+                && u.RecoveryEmail == model.Email
                 && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff));
 
             if (account == null)
             {
                 // Keep the request cost comparable without revealing whether an account matched.
-                _passwordHasher.VerifyHashedPassword(PasswordResetTimingAccount, PasswordResetTimingHash, username + email);
-                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
-                return RedirectToAction(nameof(ForgotPassword));
+                _passwordHasher.VerifyHashedPassword(PasswordResetTimingAccount, PasswordResetTimingHash, model.Username + model.Email);
+                ModelState.AddModelError(string.Empty, "Username or email is incorrect.");
+                return View(model);
             }
 
+            // A code was already sent moments ago: let the user keep using it instead of sending another.
             if (WasPasswordResetCodeSentRecently(account, DateTime.UtcNow))
             {
                 StartPasswordResetFlow(account.Id);
-                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
-                return RedirectToAction(nameof(ForgotPassword));
+                return View(model);
             }
 
             if (!await GenerateAndSendPasswordResetCodeAsync(account))
             {
-                // Keep the same public response as an unknown username/email pair.
-                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
-                return RedirectToAction(nameof(ForgotPassword));
+                ModelState.AddModelError(string.Empty, "Unable to send verification code. Please try again.");
+                return View(model);
             }
 
             StartPasswordResetFlow(account.Id);
-            TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
-            return RedirectToAction(nameof(ForgotPassword));
+            return View(model);
         }
 
         // Verify Code is submitted from the same Forgot Password card (no separate page).
@@ -269,13 +267,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 _context.SaveChanges();
                 ClearPasswordResetFlow();
                 ModelState.AddModelError(nameof(model.Code), "The verification code has expired. Please request a new code.");
-                return ForgotPasswordCard();
+                return ForgotPasswordCard(account);
             }
 
             if (_passwordHasher.VerifyHashedPassword(account, account.PasswordResetCodeHash, code) == PasswordVerificationResult.Failed)
             {
                 RegisterVerificationFailure(account);
-                return VerificationCodeFailed();
+                return VerificationCodeFailed(account);
             }
 
             // The code is single-use. A short, server-side verified stage is now required
@@ -312,11 +310,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!await GenerateAndSendPasswordResetCodeAsync(account))
             {
                 ClearPasswordResetFlow();
-                TempData[PasswordResetErrorKey] = "We could not send a verification code at this time. Please try again later.";
+                TempData[PasswordResetErrorKey] = "Unable to send verification code. Please try again.";
                 return RedirectToAction(nameof(ForgotPassword));
             }
 
-            TempData[PasswordResetNoticeKey] = "A new verification code has been sent to the registered email address.";
             return RedirectToAction(nameof(ForgotPassword));
         }
 
@@ -628,17 +625,24 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _context.SaveChanges();
         }
 
-        private IActionResult VerificationCodeFailed()
+        private IActionResult VerificationCodeFailed(UserAccount? account = null)
         {
             ModelState.Clear();
             ModelState.AddModelError(nameof(VerifyPasswordResetCodeViewModel.Code), "Invalid verification code.");
-            return ForgotPasswordCard();
+            return ForgotPasswordCard(account);
         }
 
-        // Verify Code lives on the Forgot Password card itself, not a separate page.
-        private IActionResult ForgotPasswordCard()
+        // Verify Code lives on the Forgot Password card itself, not a separate page. Username/Email
+        // are repopulated from the account already tied to the pending reset (session-tracked), never
+        // trusted from a posted hidden field, so the user never has to retype them.
+        private IActionResult ForgotPasswordCard(UserAccount? account = null)
         {
-            return View(nameof(ForgotPassword), new ForgotPasswordViewModel());
+            account ??= PasswordResetFlowAccount(PasswordResetCodeStage) ?? PasswordResetFlowAccount(PasswordResetVerifiedStage);
+            var model = account == null
+                ? new ForgotPasswordViewModel()
+                : new ForgotPasswordViewModel { Username = account.Username, Email = account.RecoveryEmail ?? string.Empty };
+
+            return View(nameof(ForgotPassword), model);
         }
 
         // Load the signed-in Admin or Staff account from the database.
