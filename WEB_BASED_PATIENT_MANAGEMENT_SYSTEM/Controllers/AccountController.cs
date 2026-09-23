@@ -214,7 +214,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             {
                 // Keep the request cost comparable without revealing whether an account matched.
                 _passwordHasher.VerifyHashedPassword(PasswordResetTimingAccount, PasswordResetTimingHash, model.Username + model.Email);
-                ModelState.AddModelError(string.Empty, "Username or email is incorrect.");
+                // Marks both fields red (asp-for picks up ModelState by key) since either could be the mistake.
+                ModelState.AddModelError(nameof(model.Username), "Username or email is incorrect.");
+                ModelState.AddModelError(nameof(model.Email), "Username or email is incorrect.");
                 return View(model);
             }
 
@@ -227,7 +229,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             if (!await GenerateAndSendPasswordResetCodeAsync(account))
             {
-                ModelState.AddModelError(string.Empty, "Unable to send verification code. Please try again.");
+                // Marks the Email field, since that is where the send actually failed.
+                ModelState.AddModelError(nameof(model.Email), "Unable to send verification code. Please try again.");
                 return View(model);
             }
 

@@ -3,11 +3,33 @@
 
 // Write your JavaScript code.
 
-function confirmDelete(event, formElement) {
-    const message = formElement.dataset.deleteMessage || 'Are you sure you want to delete this record?';
-    if (!window.confirm(message)) {
-        event.preventDefault();
+// Shared confirmation modal (Views/Shared/_Layout.cshtml #confirmActionModal), used instead of
+// window.confirm() for destructive actions across the app.
+function showConfirmModal(message, onConfirm) {
+    const modalElement = document.getElementById('confirmActionModal');
+    if (!modalElement || typeof bootstrap === 'undefined') {
+        // Falls back safely if the shared modal isn't on this page for some reason.
+        if (window.confirm(message)) onConfirm();
+        return;
     }
+
+    document.getElementById('confirmActionMessage').textContent = message;
+    const confirmButton = document.getElementById('confirmActionConfirmBtn');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+    const handleConfirm = () => {
+        confirmButton.removeEventListener('click', handleConfirm);
+        modal.hide();
+        onConfirm();
+    };
+    confirmButton.addEventListener('click', handleConfirm);
+    modal.show();
+}
+
+function confirmDelete(event, formElement) {
+    event.preventDefault();
+    const message = formElement.dataset.deleteMessage || 'Are you sure you want to delete this record?';
+    showConfirmModal(message, () => formElement.submit());
 }
 
 // ---- Validation sa mga form (gamiton sa matag module) ----

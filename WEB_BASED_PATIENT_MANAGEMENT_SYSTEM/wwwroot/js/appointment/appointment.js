@@ -539,8 +539,6 @@ document.getElementById('apptSearch').addEventListener('input', function () {
 // ---------------------------------------------------------------
 function confirmApptDelete(event, form, patientName) {
     event.preventDefault();
-    if (confirm('Delete appointment for "' + patientName + '"?')) {
-        form.submit();
-    }
+    showConfirmModal('Delete appointment for "' + patientName + '"?', () => form.submit());
     return false;
 }
