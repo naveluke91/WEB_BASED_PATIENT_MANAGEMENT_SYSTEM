@@ -16,8 +16,11 @@
         <h1>Users</h1>
     </div>
     <div class="page-actions">
+        <button type="button" class="btn-secondary" data-bs-toggle="modal" data-bs-target="#updateMyEmailModal">
+            <i class="bi bi-envelope" aria-hidden="true"></i> Update My Email
+        </button>
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#addUserModal">
-            <i class="bi bi-person-plus" aria-hidden="true"></i> @(Model.IsSuperAdmin ? "Add Account" : "Add User")
+            <i class="bi bi-person-plus" aria-hidden="true"></i> Add User
         </button>
     </div>
 </div>
@@ -63,7 +66,7 @@
                 }
                 @foreach (var account in Model.Users)
                 {
-                    var searchText = $"{account.FullName} {account.Username} {account.Role}".ToLowerInvariant();
+                    var searchText = $"{account.FullName} {account.Username} {account.RecoveryEmail} {account.Role}".ToLowerInvariant();
                     var roleLabel = account.Role == UserRoles.Admin ? "administrator" : "staff account";
                     var deleteMessage = $"Delete {roleLabel} \"{account.FullName}\"? This action cannot be undone. Patient and clinic records are not affected.";
 
@@ -81,11 +84,10 @@
                                         data-user-id="@account.Id"
                                         data-full-name="@account.FullName"
                                         data-username="@account.Username"
-                                        data-role="@account.Role">
+                                        data-email="@account.RecoveryEmail">
                                     <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
                                 </button>
-                                @* Admin: Staff ra. SupAdmin: Admin ug Staff. (Server ang mo-check gihapon.) *@
-                                @if (Model.IsSuperAdmin || account.Role == UserRoles.Staff)
+                                @if (account.Role == UserRoles.Staff)
                                 {
                                     <button type="button" class="action-btn" title="Reset Password"
                                             aria-label="Reset password of @account.FullName"
@@ -94,14 +96,14 @@
                                             data-full-name="@account.FullName">
                                         <i class="bi bi-key" aria-hidden="true"></i><span class="action-label">Reset Password</span>
                                     </button>
+                                    <form asp-action="Delete" asp-route-id="@account.Id" method="post"
+                                          onsubmit="confirmDelete(event, this);" data-delete-message="@deleteMessage">
+                                        <button type="submit" class="action-btn delete-btn" title="Delete"
+                                                aria-label="Delete @account.FullName">
+                                            <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
+                                        </button>
+                                    </form>
                                 }
-                                <form asp-action="Delete" asp-route-id="@account.Id" method="post"
-                                      onsubmit="confirmDelete(event, this);" data-delete-message="@deleteMessage">
-                                    <button type="submit" class="action-btn delete-btn" title="Delete"
-                                            aria-label="Delete @account.FullName">
-                                        <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
-                                    </button>
-                                </form>
                             </div>
                         </td>
                     </tr>
@@ -114,6 +116,7 @@
 <partial name="~/Views/UserManagement/Modals/_AddUserModal.cshtml" />
 <partial name="~/Views/UserManagement/Modals/_EditUserModal.cshtml" />
 <partial name="~/Views/UserManagement/Modals/_ResetPasswordModal.cshtml" />
+<partial name="~/Views/UserManagement/Modals/_UpdateMyEmailModal.cshtml" />
 
 @section Scripts {
     <script>

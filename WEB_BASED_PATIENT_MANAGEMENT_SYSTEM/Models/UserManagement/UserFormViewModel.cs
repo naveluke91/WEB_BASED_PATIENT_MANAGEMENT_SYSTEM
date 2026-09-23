@@ -20,6 +20,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [RegularExpression(@"^[A-Za-z0-9._-]+$", ErrorMessage = "Username can only use letters, numbers, dots, dashes and underscores.")]
         public string Username { get; set; } = string.Empty;
 
+        [MaxLength(256, ErrorMessage = "Email address must be 256 characters or less.")]
+        [DataType(DataType.EmailAddress)]
+        [Display(Name = "Email Address")]
+        public string? Email { get; set; }
+
+        // Only used when creating an account; Edit never changes the role.
+        public string? Role { get; set; }
+
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters.")]
         public string? Password { get; set; }
@@ -29,8 +37,22 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [Display(Name = "Confirm Password")]
         public string? ConfirmPassword { get; set; }
 
-        // SuperAdmin ra ang mogamit niini (Admin o Staff). Ang Admin ug ang Setup
-        // dili mogamit: Add User = Staff, Setup = Admin, ang server ang mo-set.
-        public string? Role { get; set; }
+    }
+
+    /// <summary>
+    /// An authenticated Admin can register the email address for their own
+    /// account. The target account is always taken from the server-side claim.
+    /// </summary>
+    public class UpdateOwnEmailViewModel
+    {
+        [MaxLength(256, ErrorMessage = "Email address must be 256 characters or less.")]
+        [DataType(DataType.EmailAddress)]
+        [Display(Name = "Email Address")]
+        public string? Email { get; set; }
+
+        [Required(ErrorMessage = "Current password is required.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Current Password")]
+        public string? CurrentPassword { get; set; }
     }
 }

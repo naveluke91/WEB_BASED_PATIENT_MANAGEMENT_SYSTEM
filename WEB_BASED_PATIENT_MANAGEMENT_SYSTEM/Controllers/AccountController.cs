@@ -1,13 +1,17 @@
 using System.Globalization;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models;
+using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services;
 
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 {
@@ -17,13 +21,32 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// </summary>
     public class AccountController : Controller
     {
+        public const string PasswordResetRateLimitPolicy = "password-reset";
+
+        private const string PasswordResetNoticeKey = "PasswordResetNotice";
+        private const string PasswordResetErrorKey = "PasswordResetError";
+        private const string PasswordResetAccountIdKey = "password-reset-account-id";
+        private const string PasswordResetStageKey = "password-reset-stage";
+        private const string PasswordResetCodeStage = "code";
+        private const string PasswordResetVerifiedStage = "verified";
+        private const int PasswordResetMaxAttempts = 5;
+
+        private static readonly TimeSpan PasswordResetCodeLifetime = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan PasswordResetResendCooldown = TimeSpan.FromMinutes(1);
+        private static readonly Regex VerificationCodePattern = new(@"^[0-9]{6}$");
+        private static readonly UserAccount PasswordResetTimingAccount = new();
+        private static readonly string PasswordResetTimingHash =
+            new PasswordHasher<UserAccount>().HashPassword(PasswordResetTimingAccount, Convert.ToHexString(RandomNumberGenerator.GetBytes(16)));
+
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<UserAccount> _passwordHasher;
+        private readonly EmailSender _emailSender;
 
-        public AccountController(ApplicationDbContext context, IPasswordHasher<UserAccount> passwordHasher)
+        public AccountController(ApplicationDbContext context, IPasswordHasher<UserAccount> passwordHasher, EmailSender emailSender)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _emailSender = emailSender;
         }
 
         // -----------------------------------------------------------------------
@@ -55,8 +78,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return View(model);
 
             var username = model.Username.Trim();
-            // Admin ug Staff ra; ang SuperAdmin naa sa lahi nga login.
-            var account = _context.UserAccounts.FirstOrDefault(u => u.Username == username && u.Role != UserRoles.SuperAdmin);
+            var account = _context.UserAccounts.FirstOrDefault(u =>
+                u.Username == username && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff));
             var result = account == null
                 ? PasswordVerificationResult.Failed
                 : _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.Password);
@@ -76,7 +99,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account));
 
-            // Temporary password: usbon una una makasulod.
+            // A temporary password must be changed before the account can be used.
             if (account.MustChangePassword)
                 return RedirectToAction(nameof(ChangePassword));
 
@@ -85,8 +108,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // GET /Account/ChangePassword
-        // Only after the SuperAdmin reset this account's password: the temporary
-        // password must be replaced before the system can be used.
+        // A temporary password must be replaced before the system can be used.
         // -----------------------------------------------------------------------
         [HttpGet]
         public IActionResult ChangePassword()
@@ -127,7 +149,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (!ModelState.IsValid)
                 return View(new ChangePasswordViewModel());
 
-            // I-hash ang bag-o nga password; bag-o nga stamp = logout sa ubang session.
+            // A new security stamp signs out any other active sessions.
             account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
             account.MustChangePassword = false;
             account.SecurityStamp = NewSecurityStamp();
@@ -144,11 +166,214 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            var wasSuperAdmin = User.IsInRole(UserRoles.SuperAdmin);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction(nameof(Login));
+        }
 
-            // Ang SuperAdmin balik sa iyang login; ang uban sa normal nga login.
-            return wasSuperAdmin ? Redirect(SuperAdminController.LoginPath) : RedirectToAction(nameof(Login));
+        // -----------------------------------------------------------------------
+        // Password recovery: username + registered email -> code -> new password
+        // -----------------------------------------------------------------------
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult ForgotPassword(bool busy = false)
+        {
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Index", "Patients");
+
+            if (busy)
+                TempData[PasswordResetErrorKey] = "Please wait a moment before trying again.";
+
+            ViewData["CodeSent"] = PasswordResetFlowAccount(PasswordResetCodeStage) != null;
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting(PasswordResetRateLimitPolicy)]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var username = model.Username.Trim();
+            var email = NormalizeEmail(model.Email);
+            if (!IsValidEmail(email))
+            {
+                ModelState.AddModelError(nameof(model.Email), "Enter a valid email address.");
+                return View(model);
+            }
+
+            ClearPasswordResetFlow();
+
+            var account = _context.UserAccounts.FirstOrDefault(u =>
+                u.Username == username
+                && u.RecoveryEmail == email
+                && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff));
+
+            if (account == null)
+            {
+                // Keep the request cost comparable without revealing whether an account matched.
+                _passwordHasher.VerifyHashedPassword(PasswordResetTimingAccount, PasswordResetTimingHash, username + email);
+                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            if (WasPasswordResetCodeSentRecently(account, DateTime.UtcNow))
+            {
+                StartPasswordResetFlow(account.Id);
+                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            if (!await GenerateAndSendPasswordResetCodeAsync(account))
+            {
+                // Keep the same public response as an unknown username/email pair.
+                TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            StartPasswordResetFlow(account.Id);
+            TempData[PasswordResetNoticeKey] = "If the username and email match an account, a verification code has been sent to the registered email address.";
+            return RedirectToAction(nameof(ForgotPassword));
+        }
+
+        // Verify Code is submitted from the same Forgot Password card (no separate page).
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting(PasswordResetRateLimitPolicy)]
+        public IActionResult VerifyCode(VerifyPasswordResetCodeViewModel model)
+        {
+            var code = model.Code?.Trim() ?? string.Empty;
+            if (code.Length == 0)
+            {
+                ModelState.Clear();
+                ModelState.AddModelError(nameof(model.Code), "Verification code is required.");
+                return ForgotPasswordCard();
+            }
+
+            if (!VerificationCodePattern.IsMatch(code))
+                return VerificationCodeFailed();
+
+            var account = PasswordResetFlowAccount(PasswordResetCodeStage);
+            if (account == null || account.PasswordResetCodeHash == null)
+            {
+                _passwordHasher.VerifyHashedPassword(PasswordResetTimingAccount, PasswordResetTimingHash, code);
+                return VerificationCodeFailed();
+            }
+
+            var now = DateTime.UtcNow;
+            if (account.PasswordResetCodeExpiresUtc is null || account.PasswordResetCodeExpiresUtc <= now)
+            {
+                ClearPasswordResetState(account);
+                _context.SaveChanges();
+                ClearPasswordResetFlow();
+                ModelState.AddModelError(nameof(model.Code), "The verification code has expired. Please request a new code.");
+                return ForgotPasswordCard();
+            }
+
+            if (_passwordHasher.VerifyHashedPassword(account, account.PasswordResetCodeHash, code) == PasswordVerificationResult.Failed)
+            {
+                RegisterVerificationFailure(account);
+                return VerificationCodeFailed();
+            }
+
+            // The code is single-use. A short, server-side verified stage is now required
+            // before the password form can be reached or submitted.
+            account.PasswordResetCodeHash = null;
+            account.PasswordResetCodeExpiresUtc = now.Add(PasswordResetCodeLifetime);
+            account.PasswordResetFailedAttempts = 0;
+            _context.SaveChanges();
+            HttpContext.Session.SetString(PasswordResetStageKey, PasswordResetVerifiedStage);
+
+            return RedirectToAction(nameof(ResetPassword));
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting(PasswordResetRateLimitPolicy)]
+        public async Task<IActionResult> ResendCode()
+        {
+            var account = PasswordResetFlowAccount(PasswordResetCodeStage);
+            if (account == null)
+            {
+                TempData[PasswordResetErrorKey] = "Please request a new verification code.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            var now = DateTime.UtcNow;
+            if (WasPasswordResetCodeSentRecently(account, now))
+            {
+                TempData[PasswordResetErrorKey] = "Please wait a moment before requesting another code.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            if (!await GenerateAndSendPasswordResetCodeAsync(account))
+            {
+                ClearPasswordResetFlow();
+                TempData[PasswordResetErrorKey] = "We could not send a verification code at this time. Please try again later.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            TempData[PasswordResetNoticeKey] = "A new verification code has been sent to the registered email address.";
+            return RedirectToAction(nameof(ForgotPassword));
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult ResetPassword()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Index", "Patients");
+
+            if (VerifiedPasswordResetAccount() == null)
+            {
+                ClearPasswordResetFlow();
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            return View(new ResetPasswordViewModel());
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting(PasswordResetRateLimitPolicy)]
+        public IActionResult ResetPassword(ResetPasswordViewModel model)
+        {
+            var account = VerifiedPasswordResetAccount();
+            if (account == null)
+            {
+                ClearPasswordResetFlow();
+                TempData[PasswordResetErrorKey] = "The password reset session has expired. Please request a new verification code.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            var passwordError = BasicPasswordError(model.NewPassword);
+            if (passwordError != null)
+                ModelState.AddModelError(nameof(model.NewPassword), passwordError);
+            else if (_passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.NewPassword!) != PasswordVerificationResult.Failed)
+                ModelState.AddModelError(nameof(model.NewPassword), AuthMessages.NewPasswordNotCurrent);
+
+            if (string.IsNullOrEmpty(model.ConfirmPassword))
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.Required);
+            else if (model.ConfirmPassword != model.NewPassword)
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.PasswordMismatch);
+
+            if (!ModelState.IsValid)
+                return View(new ResetPasswordViewModel());
+
+            account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
+            account.MustChangePassword = false;
+            account.SecurityStamp = NewSecurityStamp();
+            ClearPasswordResetState(account);
+            _context.SaveChanges();
+            ClearPasswordResetFlow();
+
+            TempData["PasswordResetSuccess"] = "Password reset successfully. You can now log in using your new password.";
+            return RedirectToAction(nameof(Login));
         }
 
         // -----------------------------------------------------------------------
@@ -176,7 +401,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpGet]
         public IActionResult Setup()
         {
-            // Naa nay account: dili na pwede mag-himo og laing Admin.
+            // Once an account exists, a second first-admin setup is not allowed.
             if (_context.UserAccounts.Any())
                 return SetupClosed();
 
@@ -190,7 +415,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Setup([Bind(nameof(UserFormViewModel.FullName), nameof(UserFormViewModel.Username),
-            nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
+            nameof(UserFormViewModel.Email), nameof(UserFormViewModel.Password), nameof(UserFormViewModel.ConfirmPassword))] UserFormViewModel model)
         {
             if (_context.UserAccounts.Any())
                 return SetupClosed();
@@ -198,18 +423,24 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (string.IsNullOrWhiteSpace(model.Password))
                 ModelState.AddModelError(nameof(UserFormViewModel.Password), "Password is required.");
 
-            // Valid nga ngalan lang (parehas sa Users).
+            if (string.IsNullOrWhiteSpace(model.Email))
+                ModelState.AddModelError(nameof(UserFormViewModel.Email), "Email address is required.");
+            else if (!IsValidEmail(NormalizeEmail(model.Email)))
+                ModelState.AddModelError(nameof(UserFormViewModel.Email), "Enter a valid email address.");
+
+            // Apply the same name validation as User Management.
             if (!string.IsNullOrWhiteSpace(model.FullName) && !Patient.IsValidPersonName(model.FullName))
                 ModelState.AddModelError(nameof(UserFormViewModel.FullName), AuthMessages.InvalidName);
 
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Ang una nga account kanunay Admin; dili gikan sa form.
+            // The first account is always an Admin; the role never comes from the form.
             var account = new UserAccount
             {
                 FullName = model.FullName.Trim(),
                 Username = model.Username.Trim(),
+                RecoveryEmail = NormalizeEmail(model.Email),
                 Role = UserRoles.Admin
             };
             account.PasswordHash = _passwordHasher.HashPassword(account, model.Password!);
@@ -223,7 +454,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // The signed-in identity: account id, username, full name and role.
         // Also used by Program.cs to refresh the cookie when an account changes.
         [NonAction]
-        public static ClaimsPrincipal CreatePrincipal(UserAccount account, DateTime? signedInUtc = null)
+        public static ClaimsPrincipal CreatePrincipal(UserAccount account)
         {
             var claims = new List<Claim>
             {
@@ -231,37 +462,16 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 new(ClaimTypes.Name, account.Username),
                 new(ClaimTypes.GivenName, account.FullName),
                 new(ClaimTypes.Role, account.Role),
-                // Security stamp: mausab kung mausab ang password.
+                // The security stamp changes whenever the password changes.
                 new(SecurityStampClaim, account.SecurityStamp ?? string.Empty)
             };
-
-            // Oras sa login: gamiton sa SuperAdmin session limit.
-            if (signedInUtc.HasValue)
-                claims.Add(new Claim(SignedInClaim, signedInUtc.Value.Ticks.ToString(CultureInfo.InvariantCulture)));
 
             return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
         }
 
         public const string SecurityStampClaim = "security_stamp";
-        public const string SignedInClaim = "signed_in_utc";
 
-        // SuperAdmin session: 30 minutos nga walay lihok, 4 ka oras labing dugay.
-        public static readonly TimeSpan SuperAdminIdleTimeout = TimeSpan.FromMinutes(30);
-        public static readonly TimeSpan SuperAdminMaxSession = TimeSpan.FromHours(4);
-
-        [NonAction]
-        public static DateTime? SignedInAt(ClaimsPrincipal? principal) =>
-            long.TryParse(principal?.FindFirst(SignedInClaim)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
-                && ticks > 0 && ticks <= DateTime.MaxValue.Ticks
-                ? new DateTime(ticks, DateTimeKind.Utc)
-                : null;
-
-        // Cookie sa SuperAdmin: mubo ang idle timeout kaysa sa clinic.
-        [NonAction]
-        public static AuthenticationProperties SuperAdminProperties() =>
-            new() { IsPersistent = false, AllowRefresh = true, ExpiresUtc = DateTimeOffset.UtcNow.Add(SuperAdminIdleTimeout) };
-
-        // Parehas pa ba ang stamp sa cookie ug sa database?
+        // Confirm that the security stamp in the cookie still matches the account.
         [NonAction]
         public static bool StampMatches(ClaimsPrincipal principal, UserAccount account) =>
             (principal.FindFirst(SecurityStampClaim)?.Value ?? string.Empty) == (account.SecurityStamp ?? string.Empty);
@@ -269,7 +479,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [NonAction]
         public static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
 
-        // Password sa Admin ug Staff: 8-100 ka karakter, dili puro space.
+        // The shared Admin/Staff password policy: 8-100 characters and not all whitespace.
         [NonAction]
         public static string? BasicPasswordError(string? password)
         {
@@ -279,9 +489,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return null;
         }
 
-        // Sample nga Staff ug Admin para sa local testing (Development ra; tawagon sa Program.cs).
-        // Idempotent: kung naa na ang username, dili himuon ug dili usbon ang password.
-        // Ang password i-hash; walay plain text sa database.
+        [NonAction]
+        public static string NormalizeEmail(string? email) => email?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        [NonAction]
+        public static bool IsValidEmail(string email) =>
+            email.Length is > 0 and <= 256 && new EmailAddressAttribute().IsValid(email);
+
+        // Development sample Staff and Admin accounts. The method is idempotent and
+        // only stores password hashes.
         [NonAction]
         public static void EnsureSampleAccounts(IServiceProvider services, ILogger logger)
         {
@@ -308,7 +524,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                         FullName = sample.FullName,
                         Username = sample.Username,
                         Role = sample.Role,
-                        // Test account: pwede mag-login dayon; walay Gmail.
+                        // Test accounts have no registered email by default.
                         MustChangePassword = false,
                         RecoveryEmail = null,
                         SecurityStamp = NewSecurityStamp()
@@ -330,13 +546,110 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
         }
 
-        // Ang naka-login nga account gikan sa database.
+        private async Task<bool> GenerateAndSendPasswordResetCodeAsync(UserAccount account)
+        {
+            var previousCodeHash = account.PasswordResetCodeHash;
+            string code;
+            do
+            {
+                code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
+            }
+            while (previousCodeHash != null
+                && _passwordHasher.VerifyHashedPassword(account, previousCodeHash, code) != PasswordVerificationResult.Failed);
+
+            account.PasswordResetCodeHash = _passwordHasher.HashPassword(account, code);
+            account.PasswordResetCodeExpiresUtc = DateTime.UtcNow.Add(PasswordResetCodeLifetime);
+            account.PasswordResetFailedAttempts = 0;
+            _context.SaveChanges();
+
+            var sent = await _emailSender.SendPasswordResetCodeAsync(
+                account.RecoveryEmail!, account.Username, code, PasswordResetCodeLifetime);
+            if (sent)
+                return true;
+
+            // Do not leave an active code when mail delivery could not be started.
+            ClearPasswordResetState(account);
+            _context.SaveChanges();
+            return false;
+        }
+
+        private static bool WasPasswordResetCodeSentRecently(UserAccount account, DateTime now) =>
+            account.PasswordResetCodeHash != null
+            && account.PasswordResetCodeExpiresUtc > now.Add(PasswordResetCodeLifetime - PasswordResetResendCooldown);
+
+        private UserAccount? PasswordResetFlowAccount(string expectedStage)
+        {
+            var accountId = HttpContext.Session.GetInt32(PasswordResetAccountIdKey);
+            if (accountId == null || HttpContext.Session.GetString(PasswordResetStageKey) != expectedStage)
+                return null;
+
+            return _context.UserAccounts.FirstOrDefault(u => u.Id == accountId
+                && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff));
+        }
+
+        private UserAccount? VerifiedPasswordResetAccount()
+        {
+            var account = PasswordResetFlowAccount(PasswordResetVerifiedStage);
+            return account != null
+                && account.PasswordResetCodeHash == null
+                && account.PasswordResetCodeExpiresUtc > DateTime.UtcNow
+                ? account
+                : null;
+        }
+
+        private void StartPasswordResetFlow(int accountId)
+        {
+            ClearPasswordResetFlow();
+            HttpContext.Session.SetInt32(PasswordResetAccountIdKey, accountId);
+            HttpContext.Session.SetString(PasswordResetStageKey, PasswordResetCodeStage);
+        }
+
+        private void ClearPasswordResetFlow()
+        {
+            HttpContext.Session.Remove(PasswordResetAccountIdKey);
+            HttpContext.Session.Remove(PasswordResetStageKey);
+        }
+
+        private static void ClearPasswordResetState(UserAccount account)
+        {
+            account.PasswordResetCodeHash = null;
+            account.PasswordResetCodeExpiresUtc = null;
+            account.PasswordResetFailedAttempts = 0;
+        }
+
+        private void RegisterVerificationFailure(UserAccount account)
+        {
+            account.PasswordResetFailedAttempts++;
+            if (account.PasswordResetFailedAttempts >= PasswordResetMaxAttempts)
+            {
+                ClearPasswordResetState(account);
+                ClearPasswordResetFlow();
+            }
+
+            _context.SaveChanges();
+        }
+
+        private IActionResult VerificationCodeFailed()
+        {
+            ModelState.Clear();
+            ModelState.AddModelError(nameof(VerifyPasswordResetCodeViewModel.Code), "Invalid verification code.");
+            return ForgotPasswordCard();
+        }
+
+        // Verify Code lives on the Forgot Password card itself, not a separate page.
+        private IActionResult ForgotPasswordCard()
+        {
+            ViewData["CodeSent"] = PasswordResetFlowAccount(PasswordResetCodeStage) != null;
+            return View(nameof(ForgotPassword), new ForgotPasswordViewModel());
+        }
+
+        // Load the signed-in Admin or Staff account from the database.
         private UserAccount? CurrentAccount() =>
             int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
-                ? _context.UserAccounts.FirstOrDefault(u => u.Id == id && u.Role != UserRoles.SuperAdmin)
+                ? _context.UserAccounts.FirstOrDefault(u => u.Id == id && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff))
                 : null;
 
-        // Sirado na ang Setup: Patients kung naka-login, Login kung wala.
+        // Setup is closed after the first account exists.
         private IActionResult SetupClosed() =>
             User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Patients") : RedirectToAction(nameof(Login));
 

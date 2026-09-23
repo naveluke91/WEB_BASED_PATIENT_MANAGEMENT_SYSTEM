@@ -19,7 +19,7 @@ window.FormValidation = (() => {
     const MSG = {
         required: 'Kinahanglan kini nga field.',
         name: 'Dili valid ang ngalan.',
-        contact: 'Dili valid ang contact number.',
+        contact: 'Contact number must contain 11 digits.',
         futureDate: 'Dili pwede future date.',
         date: 'Dili valid ang petsa.',
         option: 'Pilia ang valid nga opsyon.'
@@ -284,6 +284,13 @@ window.FormValidation = (() => {
 
     return { MSG, rules, isBlank, parseDate, today, patientChecks, setError, clearError, clearAll, create };
 })();
+
+// Contact number: digits only while typing, maximum 11 (PH mobile format).
+document.querySelectorAll('input[name$="ContactNo"]').forEach(el => {
+    el.addEventListener('input', () => {
+        el.value = el.value.replace(/\D/g, '').slice(0, 11);
+    });
+});
 
 // Phone bottom bar: when the tabs scroll sideways, keep the current page's tab in view.
 (() => {

@@ -253,8 +253,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
             if (CheckRequired(patient.Occupation, nameof(Occupation), 100) && !TextPattern.IsMatch(patient.Occupation!))
                 Fail(nameof(Occupation), "Dili valid ang trabaho.");
 
-            if (string.IsNullOrWhiteSpace(patient.ContactNo)) Fail(nameof(ContactNo), RequiredMessage);
-            else if (!IsValidContactNo(patient.ContactNo)) Fail(nameof(ContactNo), "Dili valid ang contact number.");
+            if (string.IsNullOrWhiteSpace(patient.ContactNo)) Fail(nameof(ContactNo), "Contact number is required.");
+            else if (!IsValidContactNo(patient.ContactNo)) Fail(nameof(ContactNo), "Contact number must contain 11 digits.");
 
             var lmp = patient.LMP?.Date;
             if (!lmp.HasValue) Fail(nameof(LMP), RequiredMessage);

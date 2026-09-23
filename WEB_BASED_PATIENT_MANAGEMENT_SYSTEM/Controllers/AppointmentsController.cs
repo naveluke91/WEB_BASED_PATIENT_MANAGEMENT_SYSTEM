@@ -719,9 +719,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             if (appointment.ContactNo.Length == 0)
-                errors[nameof(Appointment.ContactNo)] = "Kinahanglan kini nga field.";
+                errors[nameof(Appointment.ContactNo)] = "Contact number is required.";
             else if (!Patient.IsValidContactNo(appointment.ContactNo))
-                errors[nameof(Appointment.ContactNo)] = "Dili valid ang contact number.";
+                errors[nameof(Appointment.ContactNo)] = "Contact number must contain 11 digits.";
 
             if (checkSchedule)
             {

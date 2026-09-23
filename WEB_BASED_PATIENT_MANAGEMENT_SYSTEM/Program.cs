@@ -22,16 +22,27 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Sign-in: an encrypted cookie holds the account's id, username, name and role
-// (SuperAdmin, Admin or Staff; one cookie for all three).
+// Sign-in: an encrypted cookie holds the account's id, username, name and role.
 // Passwords are stored as salted hashes by ASP.NET Core's built-in PasswordHasher.
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 
-// Gmail SMTP para sa SuperAdmin recovery code (ang password gikan sa user-secrets o environment variable).
+// SMTP settings and sender credentials are supplied through configuration, user-secrets, or environment variables.
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
 builder.Services.AddSingleton<EmailSender>();
 
-// Kung wala naka-login, i-redirect sa /Account/Login.
+// Password-reset state is server-side and expires quickly.
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(15);
+    options.Cookie.Name = ".EBH.PasswordReset";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
+
+// Redirect unauthenticated users to /Account/Login.
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -64,10 +75,7 @@ builder.Services
                 return;
             }
 
-            // SuperAdmin: dili molapas sa 4 ka oras ang session.
-            var signedInAt = AccountController.SignedInAt(principal);
-            if (account.Role == UserRoles.SuperAdmin
-                && (signedInAt == null || DateTime.UtcNow - signedInAt.Value > AccountController.SuperAdminMaxSession))
+            if (account.Role != UserRoles.Admin && account.Role != UserRoles.Staff)
             {
                 context.RejectPrincipal();
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -78,7 +86,7 @@ builder.Services
                 || principal.FindFirst(ClaimTypes.Name)?.Value != account.Username
                 || principal.FindFirst(ClaimTypes.GivenName)?.Value != account.FullName)
             {
-                context.ReplacePrincipal(AccountController.CreatePrincipal(account, signedInAt));
+                context.ReplacePrincipal(AccountController.CreatePrincipal(account));
                 context.ShouldRenew = true;
             }
         };
@@ -92,32 +100,27 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// Limitahi ang SuperAdmin login ug recovery: 10 ka request kada minuto kada IP.
-var superAdminPermitLimit = builder.Configuration.GetValue("SuperAdminRateLimit:PermitLimit", 10);
+var passwordResetPermitLimit = builder.Configuration.GetValue("PasswordResetRateLimit:PermitLimit", 10);
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddPolicy(SuperAdminController.RateLimitPolicy, httpContext =>
+    options.AddPolicy(AccountController.PasswordResetRateLimitPolicy, httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = superAdminPermitLimit,
+                PermitLimit = passwordResetPermitLimit,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
 
-    // Balik sa kilala nga page nga naay "paghulat" nga mensahe.
     options.OnRejected = (context, _) =>
     {
-        context.HttpContext.Response.Redirect(SuperAdminController.BusyPage(context.HttpContext.Request.Path));
+        context.HttpContext.Response.Redirect("/Account/ForgotPassword?busy=1");
         return ValueTask.CompletedTask;
     };
 });
 
 var app = builder.Build();
-
-// Usa ra ka SuperAdmin: himuon kung wala pa (temporary password, usbon sa una nga login).
-SuperAdminController.EnsureSuperAdmin(app.Services, app.Configuration, app.Logger);
 
 // Sample Staff1 ug Admin para sa local testing: Development ra, dili sa Production.
 if (app.Environment.IsDevelopment())
@@ -132,6 +135,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 app.UseRateLimiter();
 app.UseAuthentication();
 
@@ -166,9 +170,7 @@ app.Use(async (context, next) =>
         var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
         if (await db.UserAccounts.AnyAsync(u => u.Id == accountId && u.MustChangePassword))
         {
-            context.Response.Redirect(context.User.IsInRole(UserRoles.SuperAdmin)
-                ? "/SuperAdmin/ChangePassword"
-                : "/Account/ChangePassword");
+            context.Response.Redirect("/Account/ChangePassword");
             return;
         }
     }

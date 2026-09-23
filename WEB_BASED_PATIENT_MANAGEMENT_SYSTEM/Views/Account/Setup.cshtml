@@ -37,6 +37,12 @@
     </div>
 
     <div class="auth-field">
+        <label for="setupEmail" class="form-label">Email Address</label>
+        <input type="email" name="Email" id="setupEmail" class="form-control"
+               value="@Model.Email" maxlength="256" autocomplete="email" placeholder="name@example.com" required />
+    </div>
+
+    <div class="auth-field">
         <label for="setupPassword" class="form-label">Password</label>
         <input type="password" name="Password" id="setupPassword" class="form-control"
                minlength="8" maxlength="100" autocomplete="new-password" placeholder="At least 8 characters" required />

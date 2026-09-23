@@ -26,24 +26,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [MaxLength(256)]
         public string PasswordHash { get; set; } = string.Empty;
 
-        // UserRoles.SuperAdmin, UserRoles.Admin or UserRoles.Staff
+        // UserRoles.Admin or UserRoles.Staff
         [Required]
         [MaxLength(20)]
         public string Role { get; set; } = UserRoles.Staff;
 
-        // Recovery Gmail sa SuperAdmin ra; NULL sa Admin ug Staff.
+        // Registered account email used for password recovery. The existing
+        // column name is retained so deployed databases do not need a rename.
         [MaxLength(256)]
         public string? RecoveryEmail { get; set; }
 
-        // Kinahanglan usbon ang password sa sunod nga login.
+        // Indicates whether the account must change its password before using the system.
         public bool MustChangePassword { get; set; }
 
-        // Lockout sa SuperAdmin login.
-        public int FailedLoginAttempts { get; set; }
-
-        public DateTime? LockoutEndUtc { get; set; }
-
-        // Hash ra sa recovery code, dili ang code mismo.
+        // Stores only a hash of the verification code, never the code itself.
         [MaxLength(256)]
         public string? PasswordResetCodeHash { get; set; }
 
@@ -51,7 +47,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
         public int PasswordResetFailedAttempts { get; set; }
 
-        // Mausab kung mausab ang password, aron ma-logout ang daan nga session.
+        // Changes when the password changes to invalidate existing sessions.
         [Required]
         [MaxLength(64)]
         public string SecurityStamp { get; set; } = string.Empty;
@@ -59,16 +55,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
     /// <summary>
     /// The application roles. Staff covers midwives and other healthcare staff.
-    /// There is only one SuperAdmin; it manages the Admin and Staff accounts.
     /// </summary>
     public static class UserRoles
     {
-        public const string SuperAdmin = "SuperAdmin";
         public const string Admin = "Admin";
         public const string Staff = "Staff";
 
-        // Mga role nga ma-pili sa SuperAdmin (dili SuperAdmin).
-        public static readonly string[] Assignable = { Admin, Staff };
+        public static readonly string[] All = { Admin, Staff };
     }
 
     /// <summary>
@@ -84,21 +77,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public const string UsernameLength = "Username must be 3 to 50 characters.";
         public const string UsernameChars = "Username can only use letters, numbers, dots, dashes and underscores.";
         public const string SameUsername = "This is already your username.";
+        public const string EmailRequired = "Email address is required.";
+        public const string InvalidEmail = "Enter a valid email address.";
+        public const string CurrentPasswordRequired = "Current password is required.";
         public const string PasswordMin8 = "Use at least 8 characters.";
-        public const string PasswordMin12 = "Use at least 12 characters.";
         public const string PasswordMax = "Use 100 characters or fewer.";
-        public const string PasswordComplexity = "Use uppercase and lowercase letters, a number, and a symbol.";
         public const string NewPasswordNotCurrent = "Choose a new password, not your current one.";
         public const string NewPasswordNotTemporary = "Choose a new password, not the temporary one.";
         public const string CurrentPasswordIncorrect = "Current password is incorrect.";
-        public const string SelectRole = "Select Admin or Staff.";
         public const string AccountNotFound = "That user account no longer exists.";
         public const string ResetStaffOnly = "You can only reset passwords for Staff accounts.";
-        public const string ResetAdminStaffOnly = "You can only reset passwords for Admin and Staff accounts.";
-        public const string InvalidGmail = "Enter a valid Gmail address.";
-        public const string CodeFormat = "The recovery code must be 8 digits.";
-
-        // Usa ra ka mensahe (expired o sayop) aron dili mahibaw-an kung naa ba ang Gmail.
-        public const string CodeInvalid = "Invalid or expired recovery code.";
     }
 }

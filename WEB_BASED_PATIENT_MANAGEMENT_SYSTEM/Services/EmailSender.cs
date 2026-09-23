@@ -1,7 +1,7 @@
-using System.Net;
-using System.Net.Mail;
-using System.Text;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
+using MimeKit;
 
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
 {
@@ -25,8 +25,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
     }
 
     /// <summary>
-    /// Sends the SuperAdmin recovery code through SMTP. The code, the message
-    /// body and the SMTP password are never written to the logs.
+    /// Sends password-reset verification codes through SMTP. The code, message
+    /// body, recipient address, and SMTP password are never written to logs.
     /// </summary>
     public class EmailSender
     {
@@ -39,60 +39,64 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
             _logger = logger;
         }
 
-        // I-send ang recovery code; ang code dili i-log.
-        public Task SendRecoveryCodeAsync(string recipient, string code, TimeSpan lifetime)
+        public Task<bool> SendPasswordResetCodeAsync(string recipient, string username, string code, TimeSpan lifetime)
         {
-            var body = new StringBuilder()
-                .AppendLine("Española Birthing Home")
-                .AppendLine("SuperAdmin Password Recovery")
-                .AppendLine()
-                .AppendLine("Recovery Code:")
-                .AppendLine(code)
-                .AppendLine()
-                .AppendLine($"Expires in {lifetime.TotalMinutes:0} minutes.")
-                .AppendLine()
-                .AppendLine("If you did not request this, ignore this message.")
-                .ToString();
+            var body = $"""
+Hello {username},
 
-            return SendAsync(recipient, "SuperAdmin Password Recovery", body);
+We received a request to reset the password for your account.
+
+Your verification code is:
+
+{code}
+
+This code will expire in {lifetime.TotalMinutes:0} minutes.
+
+If you did not request a password reset, you may ignore this email.
+
+Española Birthing Home
+Patient Management System
+""";
+
+            return SendAsync(recipient, "Password Reset Verification Code", body);
         }
 
-        private async Task SendAsync(string recipient, string subject, string body)
+        private async Task<bool> SendAsync(string recipient, string subject, string body)
         {
-            // Walay SMTP settings: dili ma-send (walay detalye sa log).
             if (string.IsNullOrWhiteSpace(_settings.Host) || string.IsNullOrWhiteSpace(_settings.SenderAddress)
                 || string.IsNullOrWhiteSpace(_settings.AppPassword))
             {
-                _logger.LogWarning("Recovery email not sent: SMTP settings (Smtp:SenderAddress, Smtp:AppPassword) are not configured.");
-                return;
+                _logger.LogWarning("Password reset email was not sent because SMTP settings are incomplete.");
+                return false;
             }
 
             try
             {
-                using var message = new MailMessage(new MailAddress(_settings.SenderAddress, _settings.SenderName), new MailAddress(recipient))
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderAddress));
+                message.To.Add(MailboxAddress.Parse(recipient));
+                message.Subject = subject;
+                message.Body = new TextPart("plain")
                 {
-                    Subject = subject,
-                    Body = body,
-                    IsBodyHtml = false,
-                    SubjectEncoding = Encoding.UTF8,
-                    BodyEncoding = Encoding.UTF8
+                    Text = body
                 };
 
-                using var client = new SmtpClient(_settings.Host, _settings.Port)
-                {
-                    EnableSsl = _settings.EnableSsl,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(_settings.SenderAddress, _settings.AppPassword),
-                    Timeout = 20000
-                };
+                using var client = new SmtpClient();
+                client.Timeout = 20_000;
+                var socketOptions = _settings.EnableSsl
+                    ? _settings.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls
+                    : SecureSocketOptions.None;
 
-                await client.SendMailAsync(message);
+                await client.ConnectAsync(_settings.Host, _settings.Port, socketOptions);
+                await client.AuthenticateAsync(_settings.SenderAddress, _settings.AppPassword);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+                return true;
             }
             catch (Exception ex)
             {
-                // Ang klase ra sa error ang i-log, dili ang mensahe o credentials.
-                _logger.LogError("Recovery email could not be sent ({ErrorType}).", ex.GetType().Name);
+                _logger.LogError("Password reset email could not be sent ({ErrorType}).", ex.GetType().Name);
+                return false;
             }
         }
     }

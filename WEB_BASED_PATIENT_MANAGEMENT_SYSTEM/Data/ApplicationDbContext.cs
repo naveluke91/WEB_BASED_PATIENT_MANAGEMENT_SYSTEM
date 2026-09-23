@@ -123,12 +123,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .HasIndex(u => u.Username)
                 .IsUnique();
 
-            // Usa ra ka SuperAdmin (gibantayan sa database).
+            // Only the two supported account roles can be stored.
             modelBuilder.Entity<UserAccount>()
-                .HasIndex(u => u.Role)
-                .IsUnique()
-                .HasFilter("[Role] = N'SuperAdmin'")
-                .HasDatabaseName("IX_UserAccounts_SingleSuperAdmin");
+                .ToTable(table => table.HasCheckConstraint(
+                    "CK_UserAccounts_ValidRole",
+                    "[Role] IN (N'Admin', N'Staff')"));
         }
     }
 }

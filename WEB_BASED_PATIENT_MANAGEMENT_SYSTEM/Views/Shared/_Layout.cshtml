@@ -1,4 +1,5 @@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+@inject WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data.ApplicationDbContext NotificationDbContext
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
 
@@ -8,14 +9,23 @@
     var hasLogo = !string.IsNullOrEmpty(HostEnvironment.WebRootPath)
                   && System.IO.File.Exists(System.IO.Path.Combine(HostEnvironment.WebRootPath, "images", logoFileName));
 
-    // Ang naka-login nga account (gikan sa claims). SuperAdmin: username ang ipakita.
-    var isSuperAdmin = User.IsInRole(UserRoles.SuperAdmin);
-    var displayName = isSuperAdmin
-        ? User.Identity?.Name
-        : User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
+    // Ang naka-login nga account (gikan sa claims).
+    var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
     var displayRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-    // Users: SuperAdmin ug Admin. Settings: SuperAdmin ra.
-    var canManageUsers = isSuperAdmin || User.IsInRole(UserRoles.Admin);
+    // Users: Admin ra.
+    var canManageUsers = User.IsInRole(UserRoles.Admin);
+
+    // Notification bell: upcoming (not cancelled, not already past) appointments only.
+    var now = DateTime.Now;
+    var upcomingAppointments = User.Identity?.IsAuthenticated == true
+        ? NotificationDbContext.Appointments
+            .Where(a => a.Status != "Cancelled" && a.AppointmentDate >= now.Date)
+            .OrderBy(a => a.AppointmentDate).ThenBy(a => a.AppointmentTime)
+            .ToList()
+            .Where(a => a.AppointmentDate.Date > now.Date || a.AppointmentDate.Date.Add(a.AppointmentTime) >= now)
+            .Take(10)
+            .ToList()
+        : new List<Appointment>();
 }
 <!DOCTYPE html>
 
@@ -27,7 +37,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta name="theme-color" content="@(isSuperAdmin ? "#0F172A" : "#0A3D09")" />
+    <meta name="theme-color" content="#0A3D09" />
 
     <title>@ViewData["Title"] · Española Birthing Home</title>
 
@@ -43,15 +53,9 @@
 
     @await RenderSectionAsync("Styles", required: false)
 
-    @* I-apply ang SupAdmin theme (SuperAdmin ra); kinahanglan human sa mga module CSS. *@
-    @if (isSuperAdmin)
-    {
-        <link rel="stylesheet" href="~/css/superadmin/superadmin-theme.css" asp-append-version="true" />
-    }
-
 </head>
 
-<body class="@(isSuperAdmin ? "superadmin-theme" : null)">
+<body>
 
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
@@ -119,7 +123,7 @@
                     <span>Reports</span>
                 </a>
 
-                @* Ipakita ra sa SuperAdmin ug Admin. *@
+                @* Ipakita ra sa Admin. *@
                 @if (canManageUsers)
                 {
                     <a asp-controller="UserManagement" asp-action="Index" title="Users"
@@ -130,16 +134,6 @@
                     </a>
                 }
 
-                @* Ipakita ra sa SuperAdmin. *@
-                @if (isSuperAdmin)
-                {
-                    <a asp-controller="SuperAdmin" asp-action="Settings" title="Settings"
-                       class="nav-item @(controller == "SuperAdmin" ? "active" : "")"
-                       aria-current="@(controller == "SuperAdmin" ? "page" : null)">
-                        <i class="bi bi-gear" aria-hidden="true"></i>
-                        <span>Settings</span>
-                    </a>
-                }
             </nav>
 
             <div class="sidebar-footer">
@@ -163,6 +157,35 @@
                     <strong>@ViewData["Title"]</strong>
                 </div>
                 <div class="topbar-user">
+                    <div class="dropdown notification-bell">
+                        <button type="button" class="notification-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                            <i class="bi bi-bell" aria-hidden="true"></i>
+                            @if (upcomingAppointments.Count > 0)
+                            {
+                                <span class="notification-badge">@upcomingAppointments.Count</span>
+                            }
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+                            <div class="notification-dropdown-header">Notifications</div>
+                            @if (upcomingAppointments.Count == 0)
+                            {
+                                <div class="notification-empty">No upcoming appointments or follow-up visits.</div>
+                            }
+                            else
+                            {
+                                <div class="notification-list">
+                                    @foreach (var appt in upcomingAppointments)
+                                    {
+                                        <div class="notification-item">
+                                            <div class="notification-item-name">@appt.PatientName</div>
+                                            <div class="notification-item-type">Appointment</div>
+                                            <div class="notification-item-date">@appt.AppointmentDate.ToString("MMMM d, yyyy") &middot; @appt.FormattedTime</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
                     <span class="topbar-avatar" aria-hidden="true"><i class="bi bi-person"></i></span>
                     <span class="user-name">@displayName</span>
                     @if (!string.IsNullOrEmpty(displayRole))
