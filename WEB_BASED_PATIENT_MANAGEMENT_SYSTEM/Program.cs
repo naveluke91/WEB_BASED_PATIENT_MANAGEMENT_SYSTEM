@@ -26,8 +26,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Passwords are stored as salted hashes by ASP.NET Core's built-in PasswordHasher.
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 
-// SMTP settings and sender credentials are supplied through configuration, user-secrets, or environment variables.
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+// Gmail SMTP settings: appsettings.json "EmailSettings"; ang Password (App Password) gikan ra sa User Secrets.
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<EmailSender>();
 
 // Password-reset state is server-side and expires quickly.

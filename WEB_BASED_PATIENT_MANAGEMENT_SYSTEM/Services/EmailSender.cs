@@ -6,8 +6,9 @@ using MimeKit;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
 {
     /// <summary>
-    /// Gmail SMTP settings (section "Smtp"). SenderAddress and AppPassword come
-    /// from dotnet user-secrets or environment variables, never from committed files.
+    /// Gmail SMTP settings (section "EmailSettings"). SenderAddress is also the SMTP
+    /// username. Password is the sender's Gmail App Password and comes only from
+    /// User Secrets ("EmailSettings:Password"), never from committed files.
     /// </summary>
     public class SmtpSettings
     {
@@ -21,7 +22,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services
 
         public string SenderAddress { get; set; } = string.Empty;
 
-        public string AppPassword { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -63,18 +64,18 @@ Patient Management System
         {
             // Key names only, never the values.
             var missing = new List<string>();
-            if (string.IsNullOrWhiteSpace(_settings.Host)) missing.Add("Smtp:Host");
-            if (string.IsNullOrWhiteSpace(_settings.SenderAddress)) missing.Add("Smtp:SenderAddress");
-            if (string.IsNullOrWhiteSpace(_settings.AppPassword)) missing.Add("Smtp:AppPassword");
+            if (string.IsNullOrWhiteSpace(_settings.Host)) missing.Add("EmailSettings:Host");
+            if (string.IsNullOrWhiteSpace(_settings.SenderAddress)) missing.Add("EmailSettings:SenderAddress");
+            if (string.IsNullOrWhiteSpace(_settings.Password)) missing.Add("EmailSettings:Password");
             if (missing.Count > 0)
             {
-                _logger.LogWarning("Password reset email was not sent: missing configuration {MissingKeys}. Set them with dotnet user-secrets.",
+                _logger.LogWarning("Password reset email was not sent: missing configuration {MissingKeys}. Set the Gmail App Password in User Secrets.",
                     string.Join(", ", missing));
                 return false;
             }
 
             // Gmail shows the App Password in 4 groups with spaces; SMTP needs it without spaces.
-            var appPassword = _settings.AppPassword.Replace(" ", string.Empty);
+            var appPassword = _settings.Password.Replace(" ", string.Empty);
 
             // Tracks which step was in progress when a failure happens, for the server log only.
             var stage = "building the message";
@@ -118,7 +119,7 @@ Patient Management System
             }
             catch (AuthenticationException ex)
             {
-                _logger.LogError(ex, "Password reset email could not be sent: Gmail rejected Smtp:SenderAddress/Smtp:AppPassword. "
+                _logger.LogError(ex, "Password reset email could not be sent: Gmail rejected EmailSettings:SenderAddress/EmailSettings:Password. "
                     + "Use a 16-character Gmail App Password (2-Step Verification must be on), not the normal Gmail password.");
                 return false;
             }
