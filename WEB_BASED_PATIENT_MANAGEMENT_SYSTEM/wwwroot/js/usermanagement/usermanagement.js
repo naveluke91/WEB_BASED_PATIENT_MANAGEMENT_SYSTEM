@@ -2,7 +2,7 @@
 // usermanagement.js — User Management module (Views/UserManagement/Index.cshtml)
 // Add / Edit / Reset Password modals and table search. Server-rendered values are
 // provided by the view as window.userManagementPageData before this file loads.
-// Admin manages Staff accounts and can update the email used for password recovery.
+// Admin manages Admin and Staff accounts, including the recovery email on file.
 // ============================================================
 
 // ---- Validation messages (English, same rules as UserManagementController) ----
@@ -249,48 +249,6 @@ function showServerError(modal, errorBox, reopen, fields) {
         id.value = reopen.id || '';
         accountName.textContent = reopen.fullName || '';
         showServerError(modal, error, reopen, { NewPassword: password, ConfirmPassword: confirmPassword });
-        bootstrap.Modal.getOrCreateInstance(modal).show();
-    }
-})();
-
-// ---- Update My Email modal ----
-
-(() => {
-    const data = window.userManagementPageData;
-    const modal = document.getElementById('updateMyEmailModal');
-    const form = document.getElementById('updateMyEmailForm');
-    const email = document.getElementById('updateMyEmail');
-    const currentPassword = document.getElementById('updateMyEmailCurrentPassword');
-    const submitButton = document.getElementById('updateMyEmailSubmit');
-    const error = document.getElementById('updateMyEmailError');
-
-    if (!modal || !form || !email || !currentPassword || !submitButton || !error) return;
-
-    const validator = FormValidation.create(form, () => [
-        { field: email, test: el => checkEmail(el.value) },
-        { field: currentPassword, test: el => String(el.value ?? '').trim() ? '' : UM_MSG.required }
-    ]);
-
-    form.addEventListener('submit', event => {
-        if (!validator.validate()) {
-            event.preventDefault();
-            return;
-        }
-        submitButton.disabled = true;
-    });
-
-    modal.addEventListener('hidden.bs.modal', () => {
-        form.reset();
-        validator.reset();
-        error.textContent = '';
-        error.classList.add('d-none');
-        submitButton.disabled = false;
-    });
-
-    const reopen = data?.reopenForm;
-    if (reopen && reopen.mode === 'email') {
-        email.value = reopen.email || '';
-        showServerError(modal, error, reopen, { Email: email, CurrentPassword: currentPassword });
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 })();

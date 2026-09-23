@@ -1,5 +1,4 @@
 using System.Net.Mail;
-using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
@@ -136,49 +135,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return ReopenForm("edit", model);
 
             TempData["SuccessMessage"] = $"User \"{account.FullName}\" was updated.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        // -----------------------------------------------------------------------
-        // POST /UserManagement/UpdateOwnEmail
-        // The target is always the signed-in Admin; no account id is accepted
-        // from the browser.
-        // -----------------------------------------------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult UpdateOwnEmail(UpdateOwnEmailViewModel model)
-        {
-            var account = CurrentAdmin();
-            if (account == null)
-                return Forbid();
-
-            var passwordResult = PasswordVerificationResult.Failed;
-            if (string.IsNullOrEmpty(model.CurrentPassword))
-                ModelState.AddModelError(nameof(model.CurrentPassword), AuthMessages.CurrentPasswordRequired);
-            else
-            {
-                passwordResult = _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.CurrentPassword);
-                if (passwordResult == PasswordVerificationResult.Failed)
-                    ModelState.AddModelError(nameof(model.CurrentPassword), AuthMessages.CurrentPasswordIncorrect);
-            }
-
-            var email = NormalizeEmail(model.Email);
-            if (email.Length == 0)
-                ModelState.AddModelError(nameof(model.Email), AuthMessages.EmailRequired);
-            else if (!IsValidEmail(email))
-                ModelState.AddModelError(nameof(model.Email), AuthMessages.InvalidEmail);
-
-            if (!ModelState.IsValid)
-                return ReopenEmailForm(model);
-
-            if (passwordResult == PasswordVerificationResult.SuccessRehashNeeded)
-                account.PasswordHash = _passwordHasher.HashPassword(account, model.CurrentPassword!);
-
-            account.RecoveryEmail = email;
-            ClearPasswordResetState(account);
-            _context.SaveChanges();
-            // "SuccessMessage" is cleared by _ViewStart before clinic pages render (see ReopenForm's siblings).
-            TempData["UserNotice"] = "Your email address was updated.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -332,31 +288,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // Same reopen pattern as ReopenForm, for the Update My Email modal.
-        private IActionResult ReopenEmailForm(UpdateOwnEmailViewModel model)
-        {
-            var error = ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage)
-                .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message))
-                ?? "Please check the email details.";
-
-            TempData["UserForm"] = JsonSerializer.Serialize(new
-            {
-                mode = "email",
-                email = model.Email,
-                error,
-                field = ModelState.FirstOrDefault(entry => entry.Value?.Errors.Count > 0).Key
-            });
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private UserAccount? CurrentAdmin() =>
-            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
-                ? _context.UserAccounts.FirstOrDefault(u => u.Id == id && u.Role == UserRoles.Admin)
-                : null;
 
         private static string NormalizeEmail(string? email) => email?.Trim().ToLowerInvariant() ?? string.Empty;
 

@@ -156,7 +156,7 @@
                     <i class="bi bi-chevron-right" aria-hidden="true"></i>
                     <strong>@ViewData["Title"]</strong>
                 </div>
-                <div class="topbar-user">
+                <div class="topbar-right">
                     <div class="dropdown notification-bell">
                         <button type="button" class="notification-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                             <i class="bi bi-bell" aria-hidden="true"></i>
@@ -186,12 +186,13 @@
                             }
                         </div>
                     </div>
-                    <span class="topbar-avatar" aria-hidden="true"><i class="bi bi-person"></i></span>
-                    <span class="user-name">@displayName</span>
-                    @if (!string.IsNullOrEmpty(displayRole))
-                    {
-                        <span class="user-role">@displayRole</span>
-                    }
+                    <div class="topbar-user">
+                        <span class="user-name">@displayName</span>
+                        @if (!string.IsNullOrEmpty(displayRole))
+                        {
+                            <span class="user-role">@displayRole</span>
+                        }
+                    </div>
                 </div>
             </header>
 

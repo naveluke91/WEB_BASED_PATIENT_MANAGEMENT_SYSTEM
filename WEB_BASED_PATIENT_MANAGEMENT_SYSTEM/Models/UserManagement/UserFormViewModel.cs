@@ -38,21 +38,4 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public string? ConfirmPassword { get; set; }
 
     }
-
-    /// <summary>
-    /// An authenticated Admin can register the email address for their own
-    /// account. The target account is always taken from the server-side claim.
-    /// </summary>
-    public class UpdateOwnEmailViewModel
-    {
-        [MaxLength(256, ErrorMessage = "Email address must be 256 characters or less.")]
-        [DataType(DataType.EmailAddress)]
-        [Display(Name = "Email Address")]
-        public string? Email { get; set; }
-
-        [Required(ErrorMessage = "Current password is required.")]
-        [DataType(DataType.Password)]
-        [Display(Name = "Current Password")]
-        public string? CurrentPassword { get; set; }
-    }
 }

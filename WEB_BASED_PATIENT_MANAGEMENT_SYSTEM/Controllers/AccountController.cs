@@ -183,7 +183,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (busy)
                 TempData[PasswordResetErrorKey] = "Please wait a moment before trying again.";
 
-            ViewData["CodeSent"] = PasswordResetFlowAccount(PasswordResetCodeStage) != null;
             return View(new ForgotPasswordViewModel());
         }
 
@@ -639,7 +638,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // Verify Code lives on the Forgot Password card itself, not a separate page.
         private IActionResult ForgotPasswordCard()
         {
-            ViewData["CodeSent"] = PasswordResetFlowAccount(PasswordResetCodeStage) != null;
             return View(nameof(ForgotPassword), new ForgotPasswordViewModel());
         }
 

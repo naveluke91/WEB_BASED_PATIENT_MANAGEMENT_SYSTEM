@@ -1055,26 +1055,21 @@ button.nav-item {
     text-align: center;
 }
 
+/* Wraps the notification bell and the account pill as two separate controls. */
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
 .topbar-user {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: 4px 12px 4px 4px;
+    padding: 4px 14px;
     border: 1px solid var(--border);
     border-radius: var(--radius-pill);
     background: var(--surface);
-}
-
-.topbar-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--brand-surface);
-    color: var(--brand-text);
-    font-size: 1rem;
 }
 
 .user-name {

@@ -79,12 +79,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public const string SameUsername = "This is already your username.";
         public const string EmailRequired = "Email address is required.";
         public const string InvalidEmail = "Enter a valid email address.";
-        public const string CurrentPasswordRequired = "Current password is required.";
         public const string PasswordMin8 = "Use at least 8 characters.";
         public const string PasswordMax = "Use 100 characters or fewer.";
         public const string NewPasswordNotCurrent = "Choose a new password, not your current one.";
         public const string NewPasswordNotTemporary = "Choose a new password, not the temporary one.";
-        public const string CurrentPasswordIncorrect = "Current password is incorrect.";
         public const string AccountNotFound = "That user account no longer exists.";
         public const string ResetStaffOnly = "You can only reset passwords for Staff accounts.";
     }
