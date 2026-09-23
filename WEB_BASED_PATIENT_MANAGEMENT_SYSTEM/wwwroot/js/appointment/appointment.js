@@ -72,17 +72,17 @@ const FV = window.FormValidation;
 
 // Petsa sugod ugma lang.
 function checkApptDate(el) {
-    if (FV.isBlank(el.value)) return 'Pilia ang petsa.';
+    if (FV.isBlank(el.value)) return 'Please select a date.';
     const date = FV.parseDate(el.value);
     if (!date) return FV.MSG.date;
-    return date > FV.today() ? '' : 'Pilia ang petsa sugod ugma.';
+    return date > FV.today() ? '' : 'Please select a date from tomorrow onward.';
 }
 
 // Valid ra nga oras nga dili pa booked.
 function checkApptTime(el) {
-    if (!el.value) return 'Pilia ang oras.';
-    if (!ALL_SLOTS.some(slot => slot.value === el.value)) return 'Pilia ang valid nga oras.';
-    return el.selectedOptions[0]?.disabled ? 'Nagamit na kini nga schedule.' : '';
+    if (!el.value) return 'Please select a time.';
+    if (!ALL_SLOTS.some(slot => slot.value === el.value)) return 'Please select a valid time.';
+    return el.selectedOptions[0]?.disabled ? 'This schedule is already taken.' : '';
 }
 
 // Mga field sa form base sa name (para sa sayop gikan sa server).
@@ -106,7 +106,7 @@ const existApptValidator = FV.create(existApptForm, () => [
         field: document.getElementById('existSearch'), test: el => {
             const pickedName = document.getElementById('existPatientName').value;
             const pickedId = document.getElementById('existPatientId').value;
-            return pickedId && pickedName && el.value.trim() === pickedName ? '' : 'Pilia ang pasyente gikan sa listahan.';
+            return pickedId && pickedName && el.value.trim() === pickedName ? '' : 'Please select a patient from the list.';
         }
     },
     { field: document.getElementById('existContactNo'), test: el => FV.rules.contact(el.value) },
@@ -129,17 +129,17 @@ const editApptValidator = FV.create(editApptForm, () => {
         && document.getElementById('editTimeSelect').value === (editApptForm.dataset.origTime || '');
 
     return [
-        { field: document.getElementById('editStatus'), test: el => ['Pending', 'Confirmed', 'Cancelled', 'Rescheduled'].includes(el.value) ? '' : 'Pilia ang valid nga status.' },
+        { field: document.getElementById('editStatus'), test: el => ['Pending', 'Confirmed', 'Cancelled', 'Rescheduled'].includes(el.value) ? '' : 'Please select a valid status.' },
         {
             field: document.getElementById('editChoiceCards'),
             highlight: [document.getElementById('editExistingBtn'), document.getElementById('editNewBtn')],
             test: () => status === 'Confirmed' && choiceVisible && !document.getElementById('editPatientMode').value
-                ? 'Pilia ang Existing o New Patient.' : ''
+                ? 'Please select Existing or New Patient.' : ''
         },
         { field: document.getElementById('editPatientName'), test: el => FV.rules.personName(el.value) },
         { field: document.getElementById('editContactNo'), test: el => FV.rules.contact(el.value) },
-        { field: document.getElementById('editDate'), test: el => isCancelled ? '' : (checkApptDate(el) || (unchangedReschedule() ? 'Usba ang petsa o oras.' : '')) },
-        { field: document.getElementById('editTimeSelect'), test: el => isCancelled ? '' : (checkApptTime(el) || (unchangedReschedule() ? 'Usba ang petsa o oras.' : '')) }
+        { field: document.getElementById('editDate'), test: el => isCancelled ? '' : (checkApptDate(el) || (unchangedReschedule() ? 'Please change the date or time.' : '')) },
+        { field: document.getElementById('editTimeSelect'), test: el => isCancelled ? '' : (checkApptTime(el) || (unchangedReschedule() ? 'Please change the date or time.' : '')) }
     ];
 });
 

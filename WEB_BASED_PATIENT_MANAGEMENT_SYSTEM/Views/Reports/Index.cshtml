@@ -110,10 +110,6 @@
                 <div class="report-summary">
                     <span class="report-stat"><strong>@Model.Patients.Count</strong> @CountLabel(Model.Patients.Count, "patient")</span>
                 </div>
-                @if (hasDateRange)
-                {
-                    <p class="report-note">Patient records have no registration date, so the date range does not filter this report.</p>
-                }
                 <div class="table-responsive">
                     <table class="data-table report-table">
                         <thead>

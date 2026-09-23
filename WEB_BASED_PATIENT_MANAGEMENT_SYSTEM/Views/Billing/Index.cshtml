@@ -127,7 +127,6 @@
                 consultationDate = ConsultationDate(c),
                 serviceType = c.ServiceType,
                 visitType = VisitType(c),
-                appointment = AppointmentInfo(c.Appointment),
                 serviceFee = Model.ServiceFees.ContainsKey(c.Id) ? Model.ServiceFees[c.Id] : (decimal?)null
             }))),
             openConsultationId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenConsultationId)),

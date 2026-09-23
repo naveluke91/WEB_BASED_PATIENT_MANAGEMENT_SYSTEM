@@ -164,8 +164,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         }
 
         // Completed clinical forms belong to Consultation, not the Service
-        // selection list. This action shows the exact record linked to the
-        // completed consultation in read-only mode.
+        // selection list. This action returns the exact record linked to the
+        // completed consultation, read-only, for the View modal on Index.
         [HttpGet]
         public IActionResult ViewRecord(int id)
         {
@@ -185,7 +185,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             };
 
             LoadRegisteredServiceForm(model);
-            return View(model);
+            return PartialView(model);
         }
 
         private void LoadRegisteredServiceForm(ConsultationPageViewModel model)
@@ -428,7 +428,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var clinicalErrors = ValidateClinicalRecord(record, recordPrefix);
             if (clinicalErrors.Count > 0)
             {
-                TempData["ErrorMessage"] = "Wala ma-save ang record. " + clinicalErrors.Values.First();
+                TempData["ErrorMessage"] = "Unable to save the record. " + clinicalErrors.Values.First();
                 TempData["ClinicalErrors"] = System.Text.Json.JsonSerializer.Serialize(clinicalErrors);
                 return RedirectToAction(nameof(Index), new { openConsultationId = consultation.Id });
             }
@@ -603,20 +603,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             // Prenatal
             foreach (var field in new[] { "Gravida", "G", "T", "P", "A", "L" }) Whole("PrenatalRecord." + field, 0, 99);
-            Whole("PrenatalRecord.Menarche", 5, 30, "Dili valid ang edad sa menarche.");
+            Whole("PrenatalRecord.Menarche", 5, 30, "Enter a valid age at menarche.");
             Number("PrenatalRecord.Weight", 1, 300);
             Number("PrenatalRecord.Temperature", 30, 45);
-            Pattern("PrenatalRecord.TFAL", TfalRulePattern, "Pormat: 2-1-0-1.");
-            Pattern("PrenatalRecord.AOG", AogRulePattern, "Dili valid ang AOG (pananglitan: 14 weeks).");
-            Pattern("PrenatalRecord.BloodPressure", BloodPressurePattern, "Pormat: 120/80.");
-            Pattern("PrenatalRecord.C3_PreEclampsia_BP", BloodPressurePattern, "Pormat: 120/80.");
+            Pattern("PrenatalRecord.TFAL", TfalRulePattern, "Use the format 2-1-0-1.");
+            Pattern("PrenatalRecord.AOG", AogRulePattern, "Enter a valid AOG (example: 14 weeks).");
+            Pattern("PrenatalRecord.BloodPressure", BloodPressurePattern, "Use the format 120/80.");
+            Pattern("PrenatalRecord.C3_PreEclampsia_BP", BloodPressurePattern, "Use the format 120/80.");
             Date("PrenatalRecord.RecordDate");
             Date("PrenatalRecord.AntenatalDate");
             Date("PrenatalRecord.DateOfBirth", notFuture: true);
             Date("PrenatalRecord.LMP", notFuture: true);
             Date("PrenatalRecord.C2_LMP", notFuture: true);
-            Date("PrenatalRecord.EDC", after: "LMP", message: "Kinahanglan human sa LMP.");
-            Date("PrenatalRecord.C2_EDC", after: "C2_LMP", message: "Kinahanglan human sa LMP.");
+            Date("PrenatalRecord.EDC", after: "LMP", message: "Date must be after the LMP.");
+            Date("PrenatalRecord.C2_EDC", after: "C2_LMP", message: "Date must be after the LMP.");
             Choice("PrenatalRecord.VisitType", "initial", "followup");
             Choice("PrenatalRecord.PrioritySigns_YesNo", yesNo);
             Choice("PrenatalRecord.PatientProblems_YesNo", yesNo);
@@ -705,7 +705,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0
                 && e.Key.StartsWith(prefix + ".", StringComparison.OrdinalIgnoreCase)))
             {
-                errors.TryAdd(prefix + entry.Key[prefix.Length..], "Dili valid ang gi-input.");
+                errors.TryAdd(prefix + entry.Key[prefix.Length..], "Enter a valid value.");
             }
 
             foreach (var rule in ClinicalRules.Where(r => r.Field.StartsWith(prefix + ".")))
@@ -727,7 +727,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 _ => Enumerable.Empty<DateTime?>()
             };
             if (rowDates.Any(d => d.HasValue && (d.Value.Year < 1900 || d.Value.Year > 2100)))
-                errors.TryAdd(prefix + ".Rows", "Dili valid ang petsa sa table.");
+                errors.TryAdd(prefix + ".Rows", "Enter a valid date in the table.");
 
             return errors;
         }
@@ -739,7 +739,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return null;
 
             var text = (value as string)?.Trim() ?? string.Empty;
-            var range = $"Gikan {rule.Min?.ToString("0.##", CultureInfo.InvariantCulture)} hangtod {rule.Max?.ToString("0.##", CultureInfo.InvariantCulture)} lang.";
+            var range = $"Enter a value from {rule.Min?.ToString("0.##", CultureInfo.InvariantCulture)} to {rule.Max?.ToString("0.##", CultureInfo.InvariantCulture)}.";
 
             switch (rule.Type)
             {
@@ -749,27 +749,27 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     if (value is int whole)
                         number = whole;
                     else if (!Regex.IsMatch(text, @"^\d{1,4}$") || !decimal.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out number))
-                        return rule.Message ?? "Numero lang, walay decimal o negatibo.";
+                        return rule.Message ?? "Enter a whole number (no decimals or negative numbers).";
                     return number < rule.Min || number > rule.Max ? rule.Message ?? range : null;
                 }
                 case "decimal":
                 {
                     if (!Regex.IsMatch(text, @"^\d{1,4}(\.\d{1,2})?$")
                         || !decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
-                        return "Numero lang (pananglitan: 36.5).";
+                        return "Enter a number (example: 36.5).";
                     return number < rule.Min || number > rule.Max ? range : null;
                 }
                 case "pattern":
                     return Regex.IsMatch(text, rule.Pattern!, RegexOptions.IgnoreCase) ? null : rule.Message;
                 case "choice":
-                    return rule.Allowed!.Contains(text) ? null : "Pilia ang valid nga opsyon.";
+                    return rule.Allowed!.Contains(text) ? null : "Please select a valid option.";
                 case "date":
                 {
                     var date = (DateTime)value;
                     if (date.Year < 1900 || date.Year > 2100)
-                        return "Dili valid ang petsa.";
+                        return "Enter a valid date.";
                     if (rule.NotFuture && date.Date > DateTime.Today)
-                        return "Dili pwede future date.";
+                        return "Date cannot be in the future.";
                     if (rule.After != null && record.GetType().GetProperty(rule.After)?.GetValue(record) is DateTime other
                         && date.Date <= other.Date)
                         return rule.Message;

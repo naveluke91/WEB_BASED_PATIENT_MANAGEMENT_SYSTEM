@@ -39,12 +39,12 @@ window.FormValidation = (() => {
 
     // Mga mensahe (parehas sa server).
     const MSG = {
-        required: 'Kinahanglan kini nga field.',
-        name: 'Dili valid ang ngalan.',
+        required: 'This field is required.',
+        name: 'Enter a valid name.',
         contact: 'Contact number must contain 11 digits.',
-        futureDate: 'Dili pwede future date.',
-        date: 'Dili valid ang petsa.',
-        option: 'Pilia ang valid nga opsyon.'
+        futureDate: 'Date cannot be in the future.',
+        date: 'Enter a valid date.',
+        option: 'Please select a valid option.'
     };
 
     const NAME = /^[\p{L}\p{M} .'’\-]+$/u;
@@ -86,7 +86,7 @@ window.FormValidation = (() => {
         personName(value, max = 150) {
             const text = String(value ?? '').trim();
             if (!text) return MSG.required;
-            if (text.length > max) return `Hangtod ${max} ka karakter lang.`;
+            if (text.length > max) return `Use ${max} characters or fewer.`;
             return NAME.test(text) && (text.match(/\p{L}/gu) || []).length >= 2 ? '' : MSG.name;
         },
         contact(value) {
@@ -97,14 +97,14 @@ window.FormValidation = (() => {
         text(value, max, message) {
             const text = String(value ?? '').trim();
             if (!text) return MSG.required;
-            if (text.length > max) return `Hangtod ${max} ka karakter lang.`;
+            if (text.length > max) return `Use ${max} characters or fewer.`;
             return TEXT.test(text) ? '' : message;
         },
         address(value) {
             const text = String(value ?? '').trim();
             if (!text) return MSG.required;
-            if (text.length > 250) return 'Hangtod 250 ka karakter lang.';
-            return /[\p{L}\p{N}]/u.test(text) ? '' : 'Dili valid ang address.';
+            if (text.length > 250) return 'Use 250 characters or fewer.';
+            return /[\p{L}\p{N}]/u.test(text) ? '' : 'Enter a valid address.';
         },
         // Valid nga tuig lang (1900-2100); blangko = OK.
         dateYear(value) {
@@ -136,12 +136,12 @@ window.FormValidation = (() => {
                     const date = parseDate(el.value);
                     if (!date) return MSG.date;
                     if (date > today()) return MSG.futureDate;
-                    return ageOn(date) > 130 ? 'Dili pwede lapas 130 ang edad.' : '';
+                    return ageOn(date) > 130 ? 'Age cannot be more than 130 years.' : '';
                 }
             },
             { field: field('MaritalStatus'), test: el => isBlank(el.value) ? MSG.required : (MARITAL_STATUSES.includes(el.value) ? '' : MSG.option) },
-            { field: field('Religion'), test: el => rules.text(el.value, 100, 'Dili valid ang relihiyon.') },
-            { field: field('Occupation'), test: el => rules.text(el.value, 100, 'Dili valid ang trabaho.') },
+            { field: field('Religion'), test: el => rules.text(el.value, 100, 'Enter a valid religion.') },
+            { field: field('Occupation'), test: el => rules.text(el.value, 100, 'Enter a valid occupation.') },
             { field: field('ContactNo'), test: el => rules.contact(el.value) },
             {
                 field: field('LMP'), test: el => {
@@ -150,7 +150,7 @@ window.FormValidation = (() => {
                     if (!date) return MSG.date;
                     if (date > today()) return MSG.futureDate;
                     const dob = dobValue();
-                    return dob && date < dob ? 'Dili pwede una sa petsa sa pagkatawo.' : '';
+                    return dob && date < dob ? 'Date cannot be before the date of birth.' : '';
                 }
             },
             {
@@ -158,7 +158,7 @@ window.FormValidation = (() => {
                     const text = el.value.trim();
                     if (!text) return MSG.required;
                     const match = AOG.exec(text);
-                    return text.length <= 50 && match && Number(match[1]) <= 45 ? '' : 'Dili valid ang AOG (pananglitan: 14 weeks).';
+                    return text.length <= 50 && match && Number(match[1]) <= 45 ? '' : 'Enter a valid AOG (example: 14 weeks).';
                 }
             },
             {
@@ -167,32 +167,32 @@ window.FormValidation = (() => {
                     const date = parseDate(el.value);
                     if (!date) return MSG.date;
                     const lmp = lmpValue();
-                    if (lmp && date <= lmp) return 'Kinahanglan human sa LMP.';
+                    if (lmp && date <= lmp) return 'Date must be after the LMP.';
                     const latest = lmp ? new Date(lmp.getFullYear(), lmp.getMonth(), lmp.getDate() + 315) : null;
-                    return latest && date > latest ? 'Layo ra kaayo sa LMP.' : '';
+                    return latest && date > latest ? 'Date is too far after the LMP.' : '';
                 }
             },
             {
                 field: field('Menarche'), test: el => {
                     const text = el.value.trim();
                     if (!text) return MSG.required;
-                    if (!WHOLE.test(text) || Number(text) < 5 || Number(text) > 30) return 'Dili valid ang edad sa menarche.';
+                    if (!WHOLE.test(text) || Number(text) < 5 || Number(text) > 30) return 'Enter a valid age at menarche.';
                     const dob = dobValue();
-                    return dob && Number(text) > ageOn(dob) ? 'Dili pwede lapas sa edad sa pasyente.' : '';
+                    return dob && Number(text) > ageOn(dob) ? 'Cannot be more than the patient\'s age.' : '';
                 }
             },
             {
                 field: field('Gravida'), test: el => {
                     const text = el.value.trim();
                     if (!text) return MSG.required;
-                    return WHOLE.test(text) ? '' : 'Numero lang (0-99), walay decimal.';
+                    return WHOLE.test(text) ? '' : 'Enter a whole number from 0 to 99.';
                 }
             },
             {
                 field: field('TFAL'), test: el => {
                     const text = el.value.trim();
                     if (!text) return MSG.required;
-                    return TFAL.test(text) ? '' : 'Pormat: 2-1-0-1.';
+                    return TFAL.test(text) ? '' : 'Use the format 2-1-0-1.';
                 }
             }
         ];

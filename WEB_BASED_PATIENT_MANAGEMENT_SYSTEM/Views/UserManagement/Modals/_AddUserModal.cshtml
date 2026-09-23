@@ -45,14 +45,26 @@
                         </div>
                         <div class="col-sm-6">
                             <label for="addUserPassword" class="form-label">Password</label>
-                            <input type="password" name="Password" id="addUserPassword" class="form-control"
-                                   minlength="8" maxlength="100" autocomplete="new-password"
-                                   placeholder="At least 8 characters" required />
+                            <div class="password-field">
+                                <input type="password" name="Password" id="addUserPassword" class="form-control"
+                                       minlength="8" maxlength="100" autocomplete="new-password"
+                                       placeholder="At least 8 characters" required />
+                                <button type="button" class="password-toggle" data-password-toggle="addUserPassword"
+                                        aria-label="Show password" aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-sm-6">
                             <label for="addUserConfirmPassword" class="form-label">Confirm Password</label>
-                            <input type="password" name="ConfirmPassword" id="addUserConfirmPassword" class="form-control"
-                                   maxlength="100" autocomplete="new-password" placeholder="Re-enter password" required />
+                            <div class="password-field">
+                                <input type="password" name="ConfirmPassword" id="addUserConfirmPassword" class="form-control"
+                                       maxlength="100" autocomplete="new-password" placeholder="Re-enter password" required />
+                                <button type="button" class="password-toggle" data-password-toggle="addUserConfirmPassword"
+                                        aria-label="Show password" aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -67,7 +67,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 _context.Patients.Add(patient);
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = $"Ang pasyente nga \"{patient.FullName}\" nalista na sa sistema.";
+                TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was added.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -206,7 +206,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // I-save ang mga pagbag-o sa database
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = $"Ang rekord ni \"{patient.FullName}\" na-update na.";
+                TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was updated.";
                 return RedirectToAction(nameof(Index));
             }
 

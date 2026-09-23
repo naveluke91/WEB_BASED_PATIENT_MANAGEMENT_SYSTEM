@@ -1,31 +1,8 @@
 @model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.ConsultationPageViewModel
+@* Read-only completed record; shown inside the Consultation list's View modal. *@
 @{
-    ViewData["Title"] = "Consultation Record";
     var consultation = Model.OpenConsultation;
 }
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/consultation/consultation.css" asp-append-version="true" />
-}
-
-<div class="form-page-header">
-    <div class="page-heading">
-        <a asp-action="Index" class="back-link">
-            <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Consultation
-        </a>
-        <h1>Consultation Record</h1>
-        @if (consultation?.Patient != null)
-        {
-            <p class="subtitle">@consultation.Patient.FullName &middot; @consultation.ServiceType</p>
-        }
-    </div>
-    @if (consultation != null)
-    {
-        <div class="page-actions">
-            <span class="status-pill status-pill-completed">@consultation.Status</span>
-        </div>
-    }
-</div>
 
 @if (consultation != null)
 {
@@ -41,7 +18,3 @@
         </div>
     </fieldset>
 }
-
-<div class="form-actions form-actions-bare">
-    <a asp-action="Index" class="btn-cancel">Back to Consultation List</a>
-</div>

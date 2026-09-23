@@ -450,17 +450,17 @@ function removeNbRow(btn, tbodyId, rowClass) {
     }
 
     function checkRule(rule, el, panel) {
-        if (el.validity?.badInput) return 'Dili valid ang gi-input.';
+        if (el.validity?.badInput) return 'Enter a valid value.';
         const text = el.value.trim();
         if (!text) return '';
-        const range = `Gikan ${rule.Min} hangtod ${rule.Max} lang.`;
+        const range = `Enter a value from ${rule.Min} to ${rule.Max}.`;
 
         switch (rule.Type) {
             case 'whole':
-                if (!/^\d{1,4}$/.test(text)) return rule.Message || 'Numero lang, walay decimal o negatibo.';
+                if (!/^\d{1,4}$/.test(text)) return rule.Message || 'Enter a whole number (no decimals or negative numbers).';
                 return Number(text) < rule.Min || Number(text) > rule.Max ? (rule.Message || range) : '';
             case 'decimal':
-                if (!/^\d{1,4}(\.\d{1,2})?$/.test(text)) return 'Numero lang (pananglitan: 36.5).';
+                if (!/^\d{1,4}(\.\d{1,2})?$/.test(text)) return 'Enter a number (example: 36.5).';
                 return Number(text) < rule.Min || Number(text) > rule.Max ? range : '';
             case 'pattern':
                 return new RegExp(rule.Pattern, 'i').test(text) ? '' : rule.Message;
@@ -557,3 +557,42 @@ document.addEventListener('DOMContentLoaded', function () {
         new bootstrap.Modal(serviceModalElement).show();
     }
 });
+
+// ---- Completed consultation: View Record modal (read-only) ----
+(() => {
+    const modal = document.getElementById('consultationRecordModal');
+    const body = document.getElementById('consultationRecordBody');
+    const subtitle = document.getElementById('consultationRecordSubtitle');
+    if (!modal || !body || !subtitle) return;
+
+    let latestRequest = 0;
+
+    function showMessage(text, className) {
+        const message = document.createElement('p');
+        message.className = className;
+        message.textContent = text;
+        body.replaceChildren(message);
+    }
+
+    modal.addEventListener('show.bs.modal', async event => {
+        const button = event.relatedTarget;
+        if (!button) return;
+
+        // Ang katapusang gi-klik ra ang ipakita.
+        const request = ++latestRequest;
+        subtitle.textContent = button.dataset.recordTitle || '';
+        showMessage('Loading record...', 'text-muted');
+
+        try {
+            const response = await fetch(button.dataset.url);
+            if (!response.ok || response.redirected) throw new Error(`Record request failed (${response.status}).`);
+            const html = await response.text();
+            if (request === latestRequest) body.innerHTML = html;
+        } catch (error) {
+            console.error(error);
+            if (request === latestRequest) showMessage('Unable to load the record. Please try again.', 'text-danger');
+        }
+    });
+
+    modal.addEventListener('hidden.bs.modal', () => body.replaceChildren());
+})();

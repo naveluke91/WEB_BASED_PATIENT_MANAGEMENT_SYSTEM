@@ -221,7 +221,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // Dili na usbon kung nagsugod na ang konsultasyon niini.
             if (HasConsultation(service))
             {
-                TempData["ErrorMessage"] = "Nagsugod na ang konsultasyon niini nga serbisyo, dili na ma-edit.";
+                TempData["ErrorMessage"] = "This service can no longer be edited because its consultation has started.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -240,7 +240,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // Ang serbisyo sa appointment dili ibalhin sa laing pasyente.
             if (service.AppointmentId.HasValue && patientId != service.PatientId)
             {
-                TempData["ErrorMessage"] = "Dili pwede ibalhin sa laing pasyente ang serbisyo nga naay appointment.";
+                TempData["ErrorMessage"] = "A service linked to an appointment cannot be moved to another patient.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -288,7 +288,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // Dili i-delete kung nagsugod na ang konsultasyon niini.
                 if (HasConsultation(service))
                 {
-                    TempData["ErrorMessage"] = "Nagsugod na ang konsultasyon niini nga serbisyo, dili na ma-delete.";
+                    TempData["ErrorMessage"] = "This service can no longer be deleted because its consultation has started.";
                     return RedirectToAction(nameof(Index));
                 }
 

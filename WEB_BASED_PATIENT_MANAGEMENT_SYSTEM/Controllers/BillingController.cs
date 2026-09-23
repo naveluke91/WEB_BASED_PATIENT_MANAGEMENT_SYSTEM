@@ -77,7 +77,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 BillableConsultations = _context.Consultations
                     .AsNoTracking()
                     .Include(c => c.Patient)
-                    .Include(c => c.Appointment)
                     .Where(c => c.Status == "Completed" && !_context.Payments.Any(p => p.ConsultationId == c.Id))
                     .OrderByDescending(c => c.CompletedAt)
                     .ToList(),
@@ -96,8 +95,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // POST /Billing/Create
         // Saves one payment for one completed consultation. Only the consultation
         // ID, amount and payment method are bound; patient details are never taken
-        // from the form. Reference number and notes are no longer collected, so
-        // they are not bound and stay empty.
+        // from the form.
         // -----------------------------------------------------------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -140,7 +138,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // Hangtod 2 ka decimal lang ang kantidad.
             if (payment.Amount.HasValue && decimal.Round(payment.Amount.Value, 2) != payment.Amount.Value)
             {
-                ModelState.AddModelError(nameof(Payment.Amount), "Hangtod 2 ka decimal lang ang kantidad.");
+                ModelState.AddModelError(nameof(Payment.Amount), "Amount can only have up to 2 decimal places.");
             }
 
             if (!ModelState.IsValid)

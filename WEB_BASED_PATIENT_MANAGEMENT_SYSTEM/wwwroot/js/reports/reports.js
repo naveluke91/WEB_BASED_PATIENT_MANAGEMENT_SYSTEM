@@ -18,7 +18,7 @@ document.getElementById('printReport')?.addEventListener('click', function () {
     if (!form || !reportType || !dateFrom || !dateTo || !FV) return;
 
     const validator = FV.create(form, () => [
-        { field: reportType, test: el => el.value ? '' : 'Pilia ang klase sa report.' },
+        { field: reportType, test: el => el.value ? '' : 'Please select a report type.' },
         { field: dateFrom, test: el => el.validity?.badInput ? FV.MSG.date : FV.rules.dateYear(el.value) },
         {
             field: dateTo, test: el => {
@@ -26,7 +26,7 @@ document.getElementById('printReport')?.addEventListener('click', function () {
                 if (yearError) return yearError;
                 const from = FV.parseDate(dateFrom.value);
                 const to = FV.parseDate(el.value);
-                return from && to && to < from ? 'Dili pwede una sa Date From.' : '';
+                return from && to && to < from ? 'Date To cannot be before Date From.' : '';
             }
         }
     ]);

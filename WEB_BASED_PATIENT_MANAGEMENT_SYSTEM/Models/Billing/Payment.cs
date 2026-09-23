@@ -33,18 +33,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [Display(Name = "Payment Method")]
         public string PaymentMethod { get; set; } = string.Empty;
 
-        // No longer collected or shown by Payment/Billing. Kept only because the
-        // nullable column already exists; dropping it would need a new migration.
-        [MaxLength(50, ErrorMessage = "Reference number must be 50 characters or less.")]
-        [Display(Name = "Reference No.")]
-        public string? ReferenceNumber { get; set; }
-
         [Display(Name = "Payment Date")]
         public DateTime PaymentDate { get; set; } = DateTime.Now;
-
-        // No longer collected or shown by Payment/Billing. Kept only because the
-        // nullable column already exists; dropping it would need a new migration.
-        [MaxLength(500, ErrorMessage = "Notes must be 500 characters or less.")]
-        public string? Notes { get; set; }
     }
 }

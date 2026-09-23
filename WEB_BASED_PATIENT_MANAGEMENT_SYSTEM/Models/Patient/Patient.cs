@@ -182,7 +182,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         // Mga pilianan sa marital status.
         public static readonly string[] MaritalStatuses = { "Single", "Married", "Widowed", "Separated" };
 
-        private const string RequiredMessage = "Kinahanglan kini nga field.";
+        private const string RequiredMessage = "This field is required.";
 
         private static readonly Regex NamePattern = new(@"^[\p{L}\p{M} .'’\-]+$");
         private static readonly Regex ContactPattern = new(@"^(09\d{9}|\+639\d{9})$");
@@ -228,66 +228,66 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
             bool CheckRequired(string? value, string field, int maxLength)
             {
                 if (string.IsNullOrWhiteSpace(value)) { Fail(field, RequiredMessage); return false; }
-                if (value.Length > maxLength) { Fail(field, $"Hangtod {maxLength} ka karakter lang."); return false; }
+                if (value.Length > maxLength) { Fail(field, $"Use {maxLength} characters or fewer."); return false; }
                 return true;
             }
 
             if (CheckRequired(patient.FullName, nameof(FullName), 150) && !IsValidPersonName(patient.FullName))
-                Fail(nameof(FullName), "Dili valid ang ngalan.");
+                Fail(nameof(FullName), "Enter a valid name.");
 
             if (CheckRequired(patient.Address, nameof(Address), 250) && !patient.Address.Any(char.IsLetterOrDigit))
-                Fail(nameof(Address), "Dili valid ang address.");
+                Fail(nameof(Address), "Enter a valid address.");
 
             var dateOfBirth = patient.DateOfBirth?.Date;
             if (!dateOfBirth.HasValue) Fail(nameof(DateOfBirth), RequiredMessage);
-            else if (dateOfBirth > today) Fail(nameof(DateOfBirth), "Dili pwede future date.");
-            else if (CalculateAge(dateOfBirth.Value) > 130) Fail(nameof(DateOfBirth), "Dili pwede lapas 130 ang edad.");
+            else if (dateOfBirth > today) Fail(nameof(DateOfBirth), "Date cannot be in the future.");
+            else if (CalculateAge(dateOfBirth.Value) > 130) Fail(nameof(DateOfBirth), "Age cannot be more than 130 years.");
             bool dateOfBirthIsValid = dateOfBirth.HasValue && !errors.ContainsKey(nameof(DateOfBirth));
 
             if (string.IsNullOrWhiteSpace(patient.MaritalStatus)) Fail(nameof(MaritalStatus), RequiredMessage);
-            else if (!MaritalStatuses.Contains(patient.MaritalStatus)) Fail(nameof(MaritalStatus), "Pilia ang valid nga opsyon.");
+            else if (!MaritalStatuses.Contains(patient.MaritalStatus)) Fail(nameof(MaritalStatus), "Please select a valid option.");
 
             if (CheckRequired(patient.Religion, nameof(Religion), 100) && !TextPattern.IsMatch(patient.Religion!))
-                Fail(nameof(Religion), "Dili valid ang relihiyon.");
+                Fail(nameof(Religion), "Enter a valid religion.");
 
             if (CheckRequired(patient.Occupation, nameof(Occupation), 100) && !TextPattern.IsMatch(patient.Occupation!))
-                Fail(nameof(Occupation), "Dili valid ang trabaho.");
+                Fail(nameof(Occupation), "Enter a valid occupation.");
 
             if (string.IsNullOrWhiteSpace(patient.ContactNo)) Fail(nameof(ContactNo), "Contact number is required.");
             else if (!IsValidContactNo(patient.ContactNo)) Fail(nameof(ContactNo), "Contact number must contain 11 digits.");
 
             var lmp = patient.LMP?.Date;
             if (!lmp.HasValue) Fail(nameof(LMP), RequiredMessage);
-            else if (lmp > today) Fail(nameof(LMP), "Dili pwede future date.");
-            else if (dateOfBirthIsValid && lmp < dateOfBirth) Fail(nameof(LMP), "Dili pwede una sa petsa sa pagkatawo.");
+            else if (lmp > today) Fail(nameof(LMP), "Date cannot be in the future.");
+            else if (dateOfBirthIsValid && lmp < dateOfBirth) Fail(nameof(LMP), "Date cannot be before the date of birth.");
             bool lmpIsValid = lmp.HasValue && !errors.ContainsKey(nameof(LMP));
 
             if (CheckRequired(patient.AOG, nameof(AOG), 50))
             {
                 var aog = AogPattern.Match(patient.AOG!.Trim());
                 if (!aog.Success || int.Parse(aog.Groups[1].Value) > 45)
-                    Fail(nameof(AOG), "Dili valid ang AOG (pananglitan: 14 weeks).");
+                    Fail(nameof(AOG), "Enter a valid AOG (example: 14 weeks).");
             }
 
             var edc = patient.EDC?.Date;
             if (!edc.HasValue) Fail(nameof(EDC), RequiredMessage);
-            else if (lmpIsValid && edc <= lmp) Fail(nameof(EDC), "Kinahanglan human sa LMP.");
-            else if (lmpIsValid && edc > lmp!.Value.AddDays(315)) Fail(nameof(EDC), "Layo ra kaayo sa LMP.");
+            else if (lmpIsValid && edc <= lmp) Fail(nameof(EDC), "Date must be after the LMP.");
+            else if (lmpIsValid && edc > lmp!.Value.AddDays(315)) Fail(nameof(EDC), "Date is too far after the LMP.");
 
             if (CheckRequired(patient.Menarche, nameof(Menarche), 50))
             {
                 var menarche = patient.Menarche!.Trim();
                 if (!WholeNumberPattern.IsMatch(menarche) || int.Parse(menarche) < 5 || int.Parse(menarche) > 30)
-                    Fail(nameof(Menarche), "Dili valid ang edad sa menarche.");
+                    Fail(nameof(Menarche), "Enter a valid age at menarche.");
                 else if (dateOfBirthIsValid && int.Parse(menarche) > CalculateAge(dateOfBirth!.Value))
-                    Fail(nameof(Menarche), "Dili pwede lapas sa edad sa pasyente.");
+                    Fail(nameof(Menarche), "Cannot be more than the patient's age.");
             }
 
             if (CheckRequired(patient.Gravida, nameof(Gravida), 50) && !WholeNumberPattern.IsMatch(patient.Gravida!.Trim()))
-                Fail(nameof(Gravida), "Numero lang (0-99), walay decimal.");
+                Fail(nameof(Gravida), "Enter a whole number from 0 to 99.");
 
             if (CheckRequired(patient.TFAL, nameof(TFAL), 50) && !TfalPattern.IsMatch(patient.TFAL!.Trim()))
-                Fail(nameof(TFAL), "Pormat: 2-1-0-1.");
+                Fail(nameof(TFAL), "Use the format 2-1-0-1.");
 
             return errors;
         }

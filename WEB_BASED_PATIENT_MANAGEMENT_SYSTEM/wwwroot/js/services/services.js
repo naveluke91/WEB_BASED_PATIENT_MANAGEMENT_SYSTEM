@@ -27,13 +27,13 @@
     // Validation: pasyente gikan sa listahan, usa ka serbisyo, valid nga appointment.
     const registerTiles = Array.from(document.querySelectorAll('#addServiceModal .svc-tile'));
     const validator = FormValidation.create(form, () => [
-        { field: search, test: () => selectedPatient && patientId.value ? '' : 'Pilia ang pasyente gikan sa listahan.' },
+        { field: search, test: () => selectedPatient && patientId.value ? '' : 'Please select a patient from the list.' },
         {
             field: document.querySelector('#addServiceModal .svc-grid-family'),
             highlight: registerTiles, inline: true,
-            test: () => serviceName.value ? '' : 'Pilia ang usa ka serbisyo.'
+            test: () => serviceName.value ? '' : 'Please select a service.'
         },
-        { field: appointmentId, test: el => !el.value || availableAppointments.some(a => String(a.id) === el.value) ? '' : 'Pilia ang valid nga appointment.' }
+        { field: appointmentId, test: el => !el.value || availableAppointments.some(a => String(a.id) === el.value) ? '' : 'Please select a valid appointment.' }
     ]);
 
     function hideDropdown() {
@@ -203,11 +203,11 @@
 
     // Validation: rehistradong pasyente ug usa ka serbisyo.
     const editValidator = FormValidation.create(editForm, () => [
-        { field: editPatientId, test: el => el.value && Array.from(el.options).some(option => option.value === el.value) ? '' : 'Pilia ang rehistradong pasyente.' },
+        { field: editPatientId, test: el => el.value && Array.from(el.options).some(option => option.value === el.value) ? '' : 'Please select a registered patient.' },
         {
             field: editModalElement.querySelector('.svc-grid-family'),
             highlight: editTiles, inline: true,
-            test: () => editServiceName.value ? '' : 'Pilia ang usa ka serbisyo.'
+            test: () => editServiceName.value ? '' : 'Please select a service.'
         }
     ]);
 

@@ -127,9 +127,12 @@
                                     }
                                     else if (displayStatus == "Completed" && item.ConsultationId.HasValue && item.RecordId.HasValue && !string.IsNullOrWhiteSpace(item.RecordType))
                                     {
-                                        <a asp-action="ViewRecord" asp-route-id="@item.ConsultationId" class="action-btn">
+                                        <button type="button" class="action-btn"
+                                                data-bs-toggle="modal" data-bs-target="#consultationRecordModal"
+                                                data-url="@Url.Action("ViewRecord", new { id = item.ConsultationId })"
+                                                data-record-title="@item.PatientName · @item.ServiceType">
                                             <i class="bi bi-journal-medical" aria-hidden="true"></i> View Record
-                                        </a>
+                                        </button>
                                         @if (item.PaymentId.HasValue)
                                         {
                                             <a asp-controller="Billing" asp-action="Index" asp-route-paymentId="@item.PaymentId" class="action-btn" title="View payment transaction">
@@ -257,10 +260,31 @@
 
                         <div class="clinical-form-actions">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Save Later</button>
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Complete &amp; Save Record</button>
+                            <button type="submit" class="btn btn-primary">Save Record</button>
                         </div>
                     </form>
                 }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Completed consultation: read-only record, loaded from ViewRecord by consultation.js. -->
+<div class="modal fade" id="consultationRecordModal" tabindex="-1" aria-labelledby="consultationRecordTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-clinical">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div>
+                        <h5 class="modal-title" id="consultationRecordTitle">Consultation Record</h5>
+                        <p class="modal-subtitle" id="consultationRecordSubtitle"></p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body clinical-form-body" id="consultationRecordBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

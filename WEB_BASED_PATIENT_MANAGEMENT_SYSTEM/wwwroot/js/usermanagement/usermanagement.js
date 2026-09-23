@@ -70,12 +70,26 @@ function checkConfirm(value, password) {
         submitButton.disabled = true;
     });
 
+    // Show/hide password: usa ka listener matag button (gi-bind kausa ra), mo-toggle matag click.
+    const passwordToggles = form.querySelectorAll('[data-password-toggle]');
+
+    function setPasswordVisible(button, visible) {
+        document.getElementById(button.dataset.passwordToggle).type = visible ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(visible));
+        button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+        button.querySelector('i').className = visible ? 'bi bi-eye-slash' : 'bi bi-eye';
+    }
+
+    passwordToggles.forEach(button => button.addEventListener('click', () =>
+        setPasswordVisible(button, button.getAttribute('aria-pressed') !== 'true')));
+
     modal.addEventListener('hidden.bs.modal', () => {
         form.reset();
         validator.reset();
         error.textContent = '';
         error.classList.add('d-none');
         submitButton.disabled = false;
+        passwordToggles.forEach(button => setPasswordVisible(button, false));
     });
 
     // Reopened after the server rejected the form (passwords are never sent back).

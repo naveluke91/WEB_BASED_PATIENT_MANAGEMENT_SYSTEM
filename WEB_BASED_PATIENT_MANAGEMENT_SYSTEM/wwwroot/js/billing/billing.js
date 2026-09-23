@@ -29,8 +29,7 @@
         payContactNo: 'contactNo',
         payConsultationDate: 'consultationDate',
         payServiceType: 'serviceType',
-        payVisitType: 'visitType',
-        payAppointment: 'appointment'
+        payVisitType: 'visitType'
     };
 
     function showError(message) {
@@ -67,19 +66,19 @@
     // Kantidad: numero, dili negatibo, hangtod 2 ka decimal.
     function checkAmount(el) {
         const text = el.value.trim();
-        if (el.validity?.badInput) return 'Dili valid ang kantidad.';
-        if (!text) return 'Kinahanglan kini nga field.';
-        if (text.startsWith('-')) return 'Dili pwede negatibo.';
-        if (/\.\d{3,}$/.test(text)) return 'Hangtod 2 ka decimal lang.';
-        if (!/^\d{1,8}(\.\d{1,2})?$/.test(text)) return 'Dili valid ang kantidad.';
-        return Number(text) <= 99999999.99 ? '' : 'Sobra ra kadako ang kantidad.';
+        if (el.validity?.badInput) return 'Enter a valid amount.';
+        if (!text) return 'This field is required.';
+        if (text.startsWith('-')) return 'Amount cannot be negative.';
+        if (/\.\d{3,}$/.test(text)) return 'Amount can only have up to 2 decimal places.';
+        if (!/^\d{1,8}(\.\d{1,2})?$/.test(text)) return 'Enter a valid amount.';
+        return Number(text) <= 99999999.99 ? '' : 'Amount is too large.';
     }
 
     const paymentMethod = document.getElementById('paymentMethod');
     const validator = FormValidation.create(form, () => [
-        { field: consultationSelect, test: el => consultations.has(el.value) ? '' : 'Pilia ang completed nga konsultasyon.' },
+        { field: consultationSelect, test: el => consultations.has(el.value) ? '' : 'Please select a consultation.' },
         { field: amount, test: checkAmount },
-        { field: paymentMethod, test: el => ['Cash', 'GCash'].includes(el.value) ? '' : 'Pilia ang Cash o GCash.' }
+        { field: paymentMethod, test: el => ['Cash', 'GCash'].includes(el.value) ? '' : 'Please select Cash or GCash.' }
     ]);
 
     // A second click would only reach the server's duplicate check, so block it.
