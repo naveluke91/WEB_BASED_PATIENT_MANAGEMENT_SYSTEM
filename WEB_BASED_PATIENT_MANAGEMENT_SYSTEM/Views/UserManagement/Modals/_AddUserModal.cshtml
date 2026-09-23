@@ -1,5 +1,7 @@
 @model WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.UserManagementPageViewModel
-<!-- Add User: the password is hashed by the server; it is never stored or shown as text. -->
+<!-- Add User: the password is hashed by the server; it is never stored or shown as text.
+     The Recovery Email must be verified with a MailKit-sent code before the account counts
+     as set up (it already exists in the list, just unverified, until that code is entered). -->
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -60,7 +62,46 @@
                 <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn-primary-dark" id="addUserSubmit">
-                        <i class="bi bi-check-lg" aria-hidden="true"></i> Save User
+                        <i class="bi bi-envelope" aria-hidden="true"></i> Send Verification Code
+                    </button>
+                </div>
+            </form>
+
+            <!-- Shown only after a code has been sent for this new account. -->
+            <form asp-controller="UserManagement" asp-action="VerifyNewAccountEmail" method="post" id="addUserVerifyForm" class="d-none">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <div>
+                            <h5 class="modal-title">Verify Email</h5>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="addUserVerifyError" class="alert alert-danger d-none mb-3" role="alert"></div>
+                    <p class="text-muted small mb-3">
+                        Enter the 6-digit code sent to <strong id="addUserVerifyEmail"></strong>.
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="addUserVerifyCode" class="form-label">Verification Code</label>
+                            <input type="text" name="code" id="addUserVerifyCode" class="form-control text-center"
+                                   inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"
+                                   placeholder="000000" required />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-link" id="addUserResendCode"
+                            formaction="@Url.Action("ResendNewAccountVerificationCode", "UserManagement")">
+                        Resend Code
+                    </button>
+                    <button type="submit" class="btn-primary-dark" id="addUserVerifySubmit">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Verify &amp; Save
                     </button>
                 </div>
             </form>

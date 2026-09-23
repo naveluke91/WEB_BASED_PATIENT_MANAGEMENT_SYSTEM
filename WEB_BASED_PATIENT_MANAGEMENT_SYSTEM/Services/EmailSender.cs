@@ -61,15 +61,41 @@ Patient Management System
             return SendAsync(recipient, "Password Reset Verification Code", body);
         }
 
+        // Proves the account holder can access a Recovery Email, at account creation or when it is
+        // changed. Uses the same SMTP path as the password-reset code, just different wording.
+        public Task<bool> SendEmailVerificationCodeAsync(string recipient, string username, string code, TimeSpan lifetime)
+        {
+            var body = $"""
+Hello {username},
+
+Please verify this email address for your account.
+
+Your verification code is:
+
+{code}
+
+This code will expire in {lifetime.TotalMinutes:0} minutes.
+
+If you did not request this, you may ignore this email.
+
+Española Birthing Home
+Patient Management System
+""";
+
+            return SendAsync(recipient, "Email Verification Code", body);
+        }
+
         private async Task<bool> SendAsync(string recipient, string subject, string body)
         {
             if (string.IsNullOrWhiteSpace(_settings.Host) || string.IsNullOrWhiteSpace(_settings.SenderAddress)
                 || string.IsNullOrWhiteSpace(_settings.AppPassword))
             {
-                _logger.LogWarning("Password reset email was not sent because SMTP settings are incomplete.");
+                _logger.LogWarning("Verification email was not sent because SMTP settings are incomplete.");
                 return false;
             }
 
+            // Tracks which step was in progress when a failure happens, for the server log only.
+            var stage = "building the message";
             try
             {
                 var message = new MimeMessage();
@@ -87,15 +113,23 @@ Patient Management System
                     ? _settings.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls
                     : SecureSocketOptions.None;
 
+                stage = $"connecting to {_settings.Host}:{_settings.Port}";
                 await client.ConnectAsync(_settings.Host, _settings.Port, socketOptions);
+
+                stage = "authenticating";
                 await client.AuthenticateAsync(_settings.SenderAddress, _settings.AppPassword);
+
+                stage = "sending the message";
                 await client.SendAsync(message);
+
+                stage = "disconnecting";
                 await client.DisconnectAsync(true);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError("Password reset email could not be sent ({ErrorType}).", ex.GetType().Name);
+                // Full exception (type, message, stack trace) goes to the server log only, never to the browser.
+                _logger.LogError(ex, "Verification email could not be sent while {Stage}.", stage);
                 return false;
             }
         }

@@ -1025,6 +1025,14 @@ button.nav-item {
 .notification-item {
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.notification-item:hover,
+.notification-item:focus-visible {
+    background: var(--brand-surface-soft);
+    outline: none;
 }
 
 .notification-item:last-child {

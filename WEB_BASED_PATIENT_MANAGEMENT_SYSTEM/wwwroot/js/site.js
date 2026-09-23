@@ -322,3 +322,41 @@ document.querySelectorAll('input[name$="ContactNo"]').forEach(el => {
 
     activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 })();
+
+// Notification bell: clicking an item marks it read on the server and removes it from
+// the dropdown (does not touch the Appointment itself).
+document.querySelectorAll('.notification-item[data-appointment-id]').forEach(item => {
+    const markRead = () => {
+        const token = document.querySelector('#notificationReadTokenForm input[name="__RequestVerificationToken"]')?.value;
+        if (!token) return;
+
+        fetch('/Appointments/MarkNotificationRead/' + item.dataset.appointmentId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: '__RequestVerificationToken=' + encodeURIComponent(token)
+        }).then(response => {
+            if (!response.ok) return;
+
+            const list = item.closest('.notification-list');
+            item.remove();
+
+            const remaining = list ? list.querySelectorAll('.notification-item').length : 0;
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                if (remaining > 0) badge.textContent = remaining;
+                else badge.remove();
+            }
+            if (remaining === 0 && list) {
+                list.outerHTML = '<div class="notification-empty">No upcoming appointments or follow-up visits.</div>';
+            }
+        });
+    };
+
+    item.addEventListener('click', markRead);
+    item.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            markRead();
+        }
+    });
+});

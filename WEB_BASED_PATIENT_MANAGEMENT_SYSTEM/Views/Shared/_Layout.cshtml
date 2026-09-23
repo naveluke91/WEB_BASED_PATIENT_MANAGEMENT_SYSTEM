@@ -15,14 +15,23 @@
     // Users: Admin ra.
     var canManageUsers = User.IsInRole(UserRoles.Admin);
 
-    // Notification bell: upcoming (not cancelled, not already past) appointments only.
+    // Notification bell: upcoming (not cancelled, not already past, not already read
+    // by this account) appointments only. Marking one read never touches the Appointment.
     var now = DateTime.Now;
+    var currentUserAccountId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : (int?)null;
+    var readAppointmentIds = currentUserAccountId.HasValue
+        ? NotificationDbContext.NotificationReads
+            .Where(r => r.UserAccountId == currentUserAccountId.Value)
+            .Select(r => r.AppointmentId)
+            .ToHashSet()
+        : new HashSet<int>();
     var upcomingAppointments = User.Identity?.IsAuthenticated == true
         ? NotificationDbContext.Appointments
             .Where(a => a.Status != "Cancelled" && a.AppointmentDate >= now.Date)
             .OrderBy(a => a.AppointmentDate).ThenBy(a => a.AppointmentTime)
             .ToList()
             .Where(a => a.AppointmentDate.Date > now.Date || a.AppointmentDate.Date.Add(a.AppointmentTime) >= now)
+            .Where(a => !readAppointmentIds.Contains(a.Id))
             .Take(10)
             .ToList()
         : new List<Appointment>();
@@ -176,7 +185,7 @@
                                 <div class="notification-list">
                                     @foreach (var appt in upcomingAppointments)
                                     {
-                                        <div class="notification-item">
+                                        <div class="notification-item" data-appointment-id="@appt.Id" role="button" tabindex="0">
                                             <div class="notification-item-name">@appt.PatientName</div>
                                             <div class="notification-item-type">Appointment</div>
                                             <div class="notification-item-date">@appt.AppointmentDate.ToString("MMMM d, yyyy") &middot; @appt.FormattedTime</div>
@@ -186,6 +195,8 @@
                             }
                         </div>
                     </div>
+                    @* Antiforgery token for the notification-read AJAX call in site.js (no visible form). *@
+                    <form id="notificationReadTokenForm" class="d-none">@Html.AntiForgeryToken()</form>
                     <div class="topbar-user">
                         <span class="user-name">@displayName</span>
                         @if (!string.IsNullOrEmpty(displayRole))

@@ -36,6 +36,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [MaxLength(256)]
         public string? RecoveryEmail { get; set; }
 
+        // True only after the account holder proved access to RecoveryEmail by
+        // entering a MailKit-sent verification code. Forgot Password only ever
+        // uses a verified RecoveryEmail.
+        public bool IsRecoveryEmailVerified { get; set; }
+
         // Indicates whether the account must change its password before using the system.
         public bool MustChangePassword { get; set; }
 
@@ -85,5 +90,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public const string NewPasswordNotTemporary = "Choose a new password, not the temporary one.";
         public const string AccountNotFound = "That user account no longer exists.";
         public const string ResetStaffOnly = "You can only reset passwords for Staff accounts.";
+        public const string NoVerifiedRecoveryEmail = "No verified recovery email is registered for this account.";
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
 
@@ -11,9 +12,11 @@ using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
 namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923162228_AddNotificationReads")]
+    partial class AddNotificationReads
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -968,9 +971,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<bool>("IsRecoveryEmailVerified")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("bit");

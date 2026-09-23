@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data;
@@ -687,6 +688,34 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // -----------------------------------------------------------------------
+        // POST /Appointments/MarkNotificationRead/5
+        // Marks the reminder notification for this appointment as read for the
+        // signed-in account only. The appointment itself is never changed.
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkNotificationRead(int id)
+        {
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userAccountId))
+                return Forbid();
+
+            var alreadyRead = _context.NotificationReads
+                .Any(r => r.UserAccountId == userAccountId && r.AppointmentId == id);
+            if (!alreadyRead)
+            {
+                _context.NotificationReads.Add(new NotificationRead
+                {
+                    UserAccountId = userAccountId,
+                    AppointmentId = id,
+                    ReadAtUtc = DateTime.UtcNow
+                });
+                _context.SaveChanges();
+            }
+
+            return Ok();
         }
 
         // Appointment times are chosen in whole minutes ("HH:mm"), so the

@@ -40,6 +40,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
         // Accounts that can sign in (Admin or Staff)
         public DbSet<UserAccount> UserAccounts { get; set; }
 
+        // Which appointment-reminder notifications a signed-in account has already seen
+        public DbSet<NotificationRead> NotificationReads { get; set; }
+
         /// <summary>
         /// I-configure ang relasyon tali sa Patient ug PrenatalRecord.
         /// Kung ma-delete ang Patient, ma-delete pud ang iyang PrenatalRecords (cascade).
@@ -128,6 +131,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .ToTable(table => table.HasCheckConstraint(
                     "CK_UserAccounts_ValidRole",
                     "[Role] IN (N'Admin', N'Staff')"));
+
+            // One read-marker per account per appointment notification.
+            modelBuilder.Entity<NotificationRead>()
+                .HasIndex(r => new { r.UserAccountId, r.AppointmentId })
+                .IsUnique();
         }
     }
 }
