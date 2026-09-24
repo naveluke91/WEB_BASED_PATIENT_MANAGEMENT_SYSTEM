@@ -1,3 +1,4 @@
+@using WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 @{
     var patients = ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>
                    ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>();
@@ -95,12 +96,12 @@
 
                         <div class="svc-section-label mt-3">Family Planning</div>
                         <div class="svc-grid svc-grid-family">
-                            <button type="button" class="svc-tile" data-service="Implant" aria-pressed="false"><span class="svc-name">Implant</span><span class="svc-price svc-free">Free</span></button>
-                            <button type="button" class="svc-tile" data-service="Implant Removal" aria-pressed="false"><span class="svc-name">Implant Removal</span><span class="svc-price">PHP 700.00</span></button>
+                            <button type="button" class="svc-tile" data-service="Implant" aria-pressed="false"><span class="svc-name">Implant</span><span class="svc-price">PHP @(ServicesController.ImplantPrice.ToString("N2"))</span></button>
+                            <button type="button" class="svc-tile" data-service="Implant Removal" aria-pressed="false"><span class="svc-name">Implant Removal</span><span class="svc-price">PHP @(ServicesController.ImplantPrice.ToString("N2"))</span></button>
                             <button type="button" class="svc-tile" data-service="DEPO" aria-pressed="false"><span class="svc-name">DEPO</span><span class="svc-price">PHP 200.00</span></button>
                             <button type="button" class="svc-tile" data-service="NORIFAM" aria-pressed="false"><span class="svc-name">NORIFAM</span><span class="svc-price">PHP 410.00</span></button>
-                            <button type="button" class="svc-tile" data-service="IUD Insertion" aria-pressed="false"><span class="svc-name">IUD Insertion</span><span class="svc-price svc-free">Free</span></button>
-                            <button type="button" class="svc-tile" data-service="IUD Removal" aria-pressed="false"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP 600.00</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Insertion" aria-pressed="false"><span class="svc-name">IUD Insertion</span><span class="svc-price">PHP @(ServicesController.IudPrice.ToString("N2"))</span></button>
+                            <button type="button" class="svc-tile" data-service="IUD Removal" aria-pressed="false"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP @(ServicesController.IudPrice.ToString("N2"))</span></button>
                             <button type="button" class="svc-tile" data-service="Anti-Tetanus Injection" aria-pressed="false"><span class="svc-name">Anti-Tetanus Injection</span><span class="svc-price">PHP 200.00</span></button>
                         </div>
                     </div>

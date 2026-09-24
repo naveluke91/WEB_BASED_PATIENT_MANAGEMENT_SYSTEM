@@ -11,17 +11,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
     /// </summary>
     public class ServicesController : Controller
     {
+        public const decimal ImplantPrice = 700m;
+        public const decimal IudPrice = 600m;
+
         private static readonly IReadOnlyDictionary<string, decimal> ServicePrices =
             new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Normal Delivery Fee & Newborn Care Package"] = 15000m,
                 ["Prenatal"] = 100m,
-                ["Implant"] = 0m,
-                ["Implant Removal"] = 700m,
+                ["Implant"] = ImplantPrice,
+                ["Implant Removal"] = ImplantPrice,
                 ["DEPO"] = 200m,
                 ["NORIFAM"] = 410m,
-                ["IUD Insertion"] = 0m,
-                ["IUD Removal"] = 600m,
+                ["IUD Insertion"] = IudPrice,
+                ["IUD Removal"] = IudPrice,
                 ["Anti-Tetanus Injection"] = 200m
             };
 
@@ -78,6 +81,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // validation applies. Save the service against the patient only.
             if (!appointmentId.HasValue)
             {
+                if (AvailableAppointments(patientId).Any())
+                {
+                    TempData["ErrorMessage"] = "This patient has a confirmed appointment. Please register the service for that appointment.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 _context.Services.Add(new Service
                 {
                     PatientId = patientId,
@@ -140,14 +149,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpGet]
         public IActionResult GetAvailableAppointments(int patientId)
         {
-            var appointments = _context.Appointments
+            var appointments = AvailableAppointments(patientId)
                 .AsNoTracking()
-                .Where(appointment =>
-                    appointment.PatientId == patientId &&
-                    appointment.Status == "Confirmed" &&
-                    !appointment.InProcess &&
-                    string.IsNullOrWhiteSpace(appointment.ServiceType) &&
-                    !_context.Consultations.Any(consultation => consultation.AppointmentId == appointment.Id))
                 .OrderBy(appointment => appointment.AppointmentDate)
                 .ThenBy(appointment => appointment.AppointmentTime)
                 .Select(appointment => new
@@ -312,6 +315,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private bool HasConsultation(Service service) =>
             _context.Consultations.Any(c => c.ServiceId == service.Id
                 || (service.AppointmentId.HasValue && c.AppointmentId == service.AppointmentId));
+
+        private IQueryable<Appointment> AvailableAppointments(int patientId) =>
+            _context.Appointments.Where(appointment =>
+                appointment.PatientId == patientId &&
+                appointment.Status == "Confirmed" &&
+                !appointment.InProcess &&
+                string.IsNullOrWhiteSpace(appointment.ServiceType) &&
+                !_context.Consultations.Any(consultation => consultation.AppointmentId == appointment.Id));
 
         private static bool TryGetService(string? requestedServiceName, out string serviceName, out decimal price)
         {

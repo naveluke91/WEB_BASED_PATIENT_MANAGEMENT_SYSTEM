@@ -13,13 +13,6 @@
     private static string VisitType(Consultation consultation) =>
         consultation.AppointmentId.HasValue ? "Appointment" : "Walk-In";
 
-    private static string StatusPillClass(string status) => status switch
-    {
-        "Completed" => "status-pill-completed",
-        "In Progress" => "status-pill-inprogress",
-        _ => "status-pill-waiting"
-    };
-
     // "1 patient", "2 patients"
     private static string CountLabel(int count, string noun) => count == 1 ? noun : noun + "s";
 }
@@ -179,7 +172,7 @@
                                     <td class="col-fit">@appointment.FormattedTime</td>
                                     <td>@(string.IsNullOrWhiteSpace(appointment.ServiceType) ? "—" : appointment.ServiceType)</td>
                                     <td class="col-status">
-                                        <span class="status-badge status-@appointment.Status.ToLowerInvariant()">@appointment.Status</span>
+                                        @appointment.Status
                                     </td>
                                 </tr>
                             }
@@ -222,7 +215,7 @@
                                     <td>@VisitType(consultation)</td>
                                     <td>@consultation.ServiceType</td>
                                     <td class="col-status">
-                                        <span class="status-pill @StatusPillClass(consultation.Status)">@consultation.Status</span>
+                                        @consultation.Status
                                     </td>
                                 </tr>
                             }

@@ -25,7 +25,6 @@
     // Modal element id → consultation property
     const detailFields = {
         payPatientName: 'patientName',
-        payPatientId: 'patientId',
         payContactNo: 'contactNo',
         payConsultationDate: 'consultationDate',
         payServiceType: 'serviceType',
@@ -129,11 +128,9 @@
     // Modal element id → View button data attribute
     const fields = {
         viewPaymentPatientName: 'patientName',
-        viewPaymentPatientId: 'patientId',
         viewPaymentConsultationDate: 'consultationDate',
         viewPaymentServiceType: 'serviceType',
         viewPaymentVisitType: 'visitType',
-        viewPaymentAppointment: 'appointment',
         viewPaymentMethod: 'paymentMethod',
         viewPaymentDate: 'paymentDate'
     };

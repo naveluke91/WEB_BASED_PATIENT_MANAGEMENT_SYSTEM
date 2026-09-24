@@ -93,6 +93,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     VisitType = "Appointment",
                     ServiceType = string.IsNullOrWhiteSpace(appointment.ServiceType) ? "—" : appointment.ServiceType,
                     Status = "Waiting",
+                    AppointmentDate = appointment.AppointmentDate,
                     SortDate = appointment.AppointmentDate.Date.Add(appointment.AppointmentTime)
                 };
 
@@ -251,6 +252,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                if (appointment.AppointmentDate.Date > DateTime.Today)
+                {
+                    TempData["ErrorMessage"] = $"This appointment is on {appointment.AppointmentDate:MMMM dd, yyyy}. It can only be started on that day.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var existingConsultation = _context.Consultations.FirstOrDefault(c => c.AppointmentId == appointmentId.Value);
                 if (existingConsultation != null)
                 {
@@ -382,7 +389,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult SaveService(int consultationId, PrenatalRecord prenatalRecord,
-            NewbornRecord newbornRecord, FamilyPlanningRecord familyPlanningRecord)
+            NewbornRecord newbornRecord, FamilyPlanningRecord familyPlanningRecord, bool saveLater = false)
         {
             var consultation = _context.Consultations
                 .Include(c => c.Appointment)
@@ -409,7 +416,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             ApplyMultiValueFields(record, recordPrefix);
             familyPlanningRecord.Ack_MethodAccepted = consultation.ServiceType;
 
-            var clinicalErrors = ValidateClinicalRecord(record, recordPrefix);
+            var clinicalErrors = ValidateClinicalRecord(record, recordPrefix, draft: saveLater);
             if (clinicalErrors.Count > 0)
             {
                 TempData["ErrorMessage"] = "Unable to save the record. " + clinicalErrors.Values.First();
@@ -489,15 +496,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                consultation.Status = "Completed";
-                consultation.CompletedAt = DateTime.Now;
-                if (consultation.Appointment != null)
-                    consultation.Appointment.InProcess = false;
+                if (!saveLater)
+                {
+                    consultation.Status = "Completed";
+                    consultation.CompletedAt = DateTime.Now;
+                    if (consultation.Appointment != null)
+                        consultation.Appointment.InProcess = false;
+                }
 
                 _context.SaveChanges();
                 transaction.Commit();
 
-                TempData["SuccessMessage"] = "Consultation and service record saved successfully.";
+                TempData["SuccessMessage"] = saveLater
+                    ? "Consultation saved. You can continue it later."
+                    : "Consultation and service record saved successfully.";
             }
             catch
             {
@@ -549,7 +561,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         }
 
         public sealed record ClinicalFieldRule(string Field, string Type, decimal? Min = null, decimal? Max = null,
-            bool NotFuture = false, string? After = null, string[]? Allowed = null, string? Pattern = null, string? Message = null);
+            bool NotFuture = false, string? After = null, string[]? Allowed = null, string? Pattern = null, string? Message = null,
+            bool Required = false);
 
         private const string TfalRulePattern = @"^\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}\s*-\s*\d{1,2}$";
         private const string AogRulePattern = @"^(\d{1,2})(\.\d{1,2})?\s*(weeks?|wks?|w)?(\s*(and\s+)?[0-6]\s*(days?|d))?$";
@@ -586,6 +599,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             Pattern("PrenatalRecord.AOG", AogRulePattern, "Enter a valid AOG (example: 14 weeks).");
             Pattern("PrenatalRecord.BloodPressure", BloodPressurePattern, "Use the format 120/80.");
             Pattern("PrenatalRecord.C3_PreEclampsia_BP", BloodPressurePattern, "Use the format 120/80.");
+            Pattern("PrenatalRecord.PrenatalVisits[].AOG", AogRulePattern, "Enter a valid AOG (example: 14 weeks).");
+            Number("PrenatalRecord.PrenatalVisits[].Weight", 1, 300);
+            Pattern("PrenatalRecord.PrenatalVisits[].BloodPressure", BloodPressurePattern, "Use the format 120/80.");
+            Number("PrenatalRecord.PrenatalVisits[].Temperature", 30, 45);
             Date("PrenatalRecord.RecordDate");
             Date("PrenatalRecord.AntenatalDate");
             Date("PrenatalRecord.DateOfBirth", notFuture: true);
@@ -604,6 +621,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             Date("NewbornRecord.ConsentClientDate");
             Date("NewbornRecord.ConsentMidwifeDate");
             Choice("NewbornRecord.PlacentaOut", "complete", "incomplete");
+            Whole("NewbornRecord.Vitals[].HeartRate", 40, 250);
+            Whole("NewbornRecord.Vitals[].RespiratoryRate", 10, 120);
+            Number("NewbornRecord.Vitals[].Temperature", 30, 45);
 
             Whole("FamilyPlanningRecord.ClientAge", 0, 130);
             Whole("FamilyPlanningRecord.SpouseAge", 0, 130);
@@ -643,6 +663,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             })
                 Choice("FamilyPlanningRecord." + field, "yes");
 
+            foreach (var field in new[]
+            {
+                "PrenatalRecord.Weight", "PrenatalRecord.Temperature", "PrenatalRecord.BloodPressure",
+                "NewbornRecord.Weight", "NewbornRecord.Gender", "NewbornRecord.DateTimeDelivered",
+                "FamilyPlanningRecord.PE_Weight", "FamilyPlanningRecord.PE_BloodPressure_Systolic", "FamilyPlanningRecord.PE_BloodPressure_Diastolic"
+            })
+            {
+                var index = rules.FindIndex(rule => rule.Field == field);
+                if (index >= 0)
+                    rules[index] = rules[index] with { Required = true };
+                else
+                    rules.Add(new(field, "text", Required: true));
+            }
+
             return rules;
         }
 
@@ -669,7 +703,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
         }
 
-        private Dictionary<string, string> ValidateClinicalRecord(object record, string prefix)
+        private Dictionary<string, string> ValidateClinicalRecord(object record, string prefix, bool draft = false)
         {
             var errors = new Dictionary<string, string>();
 
@@ -679,10 +713,27 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 errors.TryAdd(prefix + entry.Key[prefix.Length..], "Enter a valid value.");
             }
 
-            foreach (var rule in ClinicalRules.Where(r => r.Field.StartsWith(prefix + ".")))
+            foreach (var clinicalRule in ClinicalRules.Where(r => r.Field.StartsWith(prefix + ".")))
             {
+                var rule = draft ? clinicalRule with { Required = false } : clinicalRule;
                 if (errors.ContainsKey(rule.Field))
                     continue;
+
+                var rowField = rule.Field[(prefix.Length + 1)..].Split("[].");
+                if (rowField.Length == 2)
+                {
+                    var rows = record.GetType().GetProperty(rowField[0])?.GetValue(record) as System.Collections.IEnumerable;
+                    foreach (var row in rows ?? Array.Empty<object>())
+                    {
+                        var rowMessage = CheckClinicalRule(rule, row.GetType().GetProperty(rowField[1])?.GetValue(row), row);
+                        if (rowMessage != null)
+                        {
+                            errors.TryAdd(prefix + ".Rows", rowMessage);
+                            break;
+                        }
+                    }
+                    continue;
+                }
 
                 var property = record.GetType().GetProperty(rule.Field[(prefix.Length + 1)..]);
                 var message = property == null ? null : CheckClinicalRule(rule, property.GetValue(record), record);
@@ -705,7 +756,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private static string? CheckClinicalRule(ClinicalFieldRule rule, object? value, object record)
         {
             if (value == null || (value is string blank && string.IsNullOrWhiteSpace(blank)))
-                return null;
+                return rule.Required ? "This field is required." : null;
 
             var text = (value as string)?.Trim() ?? string.Empty;
             var range = $"Enter a value from {rule.Min?.ToString("0.##", CultureInfo.InvariantCulture)} to {rule.Max?.ToString("0.##", CultureInfo.InvariantCulture)}.";

@@ -180,6 +180,13 @@
     border-bottom-color: var(--brand-action);
 }
 
+.pn-input.input-validation-error,
+.pn-inline-input.input-validation-error,
+.nb-blank.input-validation-error {
+    background: #FFFBFA;
+    border-bottom-color: var(--danger);
+}
+
 .pn-radio-lbl {
     display: inline-flex;
     align-items: center;
@@ -251,6 +258,11 @@ hr.pn-divider {
 .pn-table-input:focus {
     background: var(--brand-surface-soft);
     box-shadow: inset 0 0 0 1.5px var(--brand-action);
+}
+
+.pn-table-input.input-validation-error {
+    background: #FFFBFA;
+    box-shadow: inset 0 0 0 1.5px var(--danger);
 }
 
 .visit-remove-btn {
@@ -603,6 +615,11 @@ hr.pn-divider {
 }
 
 .record-view textarea:disabled { resize: none; }
+
+.record-view .pn-add-visit-row,
+.record-view .td-remove {
+    display: none;
+}
 
 .record-view input[type="checkbox"]:disabled,
 .record-view input[type="radio"]:disabled {

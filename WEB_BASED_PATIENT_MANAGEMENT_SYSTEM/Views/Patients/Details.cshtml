@@ -75,14 +75,7 @@
             <div class="detail-item">
                 <label>AOG (Age of Gestation)</label>
                 <div class="detail-value">
-                    @if (!string.IsNullOrEmpty(Model.AOG))
-                    {
-                        <span class="aog-highlight">@Model.AOG</span>
-                    }
-                    else
-                    {
-                        <span>—</span>
-                    }
+                    @(string.IsNullOrEmpty(Model.AOG) ? "—" : Model.AOG)
                 </div>
             </div>
 

@@ -234,6 +234,7 @@ async function openPatientEditModal(id, state = null) {
         setEditFieldValue('editLMP', patient.lmpRaw);
         setEditFieldValue('editAOG', patient.aogRaw);
         setEditFieldValue('editEDC', patient.edcRaw);
+        window.fillAogFromLmp?.(document.getElementById('editLMP'), false);
         setEditFieldValue('editMenarche', patient.menarcheRaw);
         setEditFieldValue('editContactNo', patient.contactNoRaw);
         setEditFieldValue('editGravida', patient.gravidaRaw);
@@ -267,15 +268,7 @@ async function openPatientDetailsModal(id) {
         document.getElementById('viewDetailMaritalStatus').textContent = p.maritalStatus;
         document.getElementById('viewDetailReligion').textContent      = p.religion;
         document.getElementById('viewDetailLMP').textContent           = p.lmp;
-        // Ipakita isip text (dili HTML) para luwas.
-        const aogCell = document.getElementById('viewDetailAOG');
-        aogCell.textContent = '—';
-        if (p.aog !== '—') {
-            const aogBadge = document.createElement('span');
-            aogBadge.className = 'aog-highlight';
-            aogBadge.textContent = p.aog;
-            aogCell.replaceChildren(aogBadge);
-        }
+        document.getElementById('viewDetailAOG').textContent           = p.aog;
         document.getElementById('viewDetailEDC').textContent           = p.edc;
         document.getElementById('viewDetailMenarche').textContent      = p.menarche;
         document.getElementById('viewDetailContactNo').textContent     = p.contactNo;

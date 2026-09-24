@@ -139,6 +139,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [MaxLength(100, ErrorMessage = "Occupation must be 100 characters or less.")]
         public string? Occupation { get; set; }
 
+        public DateTime? DateRegistered { get; set; } = DateTime.Now;
+
         /// <summary>
         /// Navigation property — lista sa tanan nga prenatal records niining pasyente.
         /// Gigamit sa EF Core para sa one-to-many relationship.

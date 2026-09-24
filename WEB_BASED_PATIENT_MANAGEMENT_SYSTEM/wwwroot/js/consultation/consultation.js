@@ -279,6 +279,8 @@ function applyPatientAutofill(p) {
     setInputValueByName('PrenatalRecord.LMP', p.lmpRaw || '');
     setInputValueByName('PrenatalRecord.AOG', p.aogRaw || '');
     setInputValueByName('PrenatalRecord.EDC', p.edcRaw || '');
+    var preLmp = document.querySelector('#consultationServiceForm [name="PrenatalRecord.LMP"]');
+    if (preLmp && window.fillAogFromLmp) window.fillAogFromLmp(preLmp, false);
     setInputValueByName('PrenatalRecord.Menarche', p.menarcheRaw || '');
     setInputValueByName('PrenatalRecord.ContactNo', p.contactNoRaw || '');
     setInputValueByName('PrenatalRecord.Gravida', p.gravidaRaw || '');
@@ -411,6 +413,7 @@ function removeNbRow(btn, tbodyId, rowClass) {
     const FV = window.FormValidation;
     if (!form || !FV) return;
     const rules = window.consultationPageData.fieldRules || [];
+    let draft = false;
 
     function visiblePanel() {
         return ['prenatalRecordPanel', 'newbornPanel', 'familyPlanningPanel']
@@ -421,7 +424,7 @@ function removeNbRow(btn, tbodyId, rowClass) {
     function checkRule(rule, el, panel) {
         if (el.validity?.badInput) return 'Enter a valid value.';
         const text = el.value.trim();
-        if (!text) return '';
+        if (!text) return rule.Required && !draft ? FV.MSG.required : '';
         const range = `Enter a value from ${rule.Min} to ${rule.Max}.`;
 
         switch (rule.Type) {
@@ -457,14 +460,16 @@ function removeNbRow(btn, tbodyId, rowClass) {
         const ruled = new Set();
 
         rules.filter(rule => rule.Type !== 'choice').forEach(rule => {
-            panel.querySelectorAll(`[name="${rule.Field}"]`).forEach(field => {
+            const [head, tail] = rule.Field.split('[]');
+            const selector = tail === undefined ? `[name="${rule.Field}"]` : `[name^="${head}[" i][name$="]${tail}" i]`;
+            panel.querySelectorAll(selector).forEach(field => {
                 ruled.add(field);
-                list.push({ field, test: el => checkRule(rule, el, panel) });
+                list.push({ field, quiet: true, test: el => checkRule(rule, el, panel) });
             });
         });
 
         panel.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(field => {
-            if (!ruled.has(field)) list.push({ field, test: el => el.validity?.badInput ? FV.MSG.date : FV.rules.dateYear(el.value) });
+            if (!ruled.has(field)) list.push({ field, quiet: true, test: el => el.validity?.badInput ? FV.MSG.date : FV.rules.dateYear(el.value) });
         });
 
         return list;
@@ -479,9 +484,18 @@ function removeNbRow(btn, tbodyId, rowClass) {
 
     form.addEventListener('submit', event => {
         event.preventDefault();
+        draft = false;
         if (!validator.validate()) return;
         confirming = true;
         bootstrap.Modal.getOrCreateInstance(modal).hide();
+    });
+
+    document.getElementById('saveLaterBtn')?.addEventListener('click', event => {
+        draft = true;
+        if (!validator.validate()) return;
+        document.getElementById('saveLaterInput').value = 'true';
+        event.currentTarget.disabled = true;
+        form.submit();
     });
 
     modal.addEventListener('hidden.bs.modal', () => {
@@ -503,7 +517,7 @@ function removeNbRow(btn, tbodyId, rowClass) {
     const serverErrors = window.consultationPageData.clinicalErrors;
     if (serverErrors) {
         modal.addEventListener('shown.bs.modal', () => {
-            validator.showErrors(serverErrors, name => form.querySelector(`[name="${name}"]`));
+            validator.showErrors(serverErrors, name => form.querySelector(`[name="${name}"]`), { quiet: true });
         }, { once: true });
     }
 })();

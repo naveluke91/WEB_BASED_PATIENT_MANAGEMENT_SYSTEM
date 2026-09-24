@@ -52,9 +52,16 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             if (reportType == ReportsPageViewModel.PatientReport)
             {
-                // Patient records have no registration date, so no date range applies.
-                model.Patients = _context.Patients
+                var patients = _context.Patients
                     .AsNoTracking()
+                    .AsQueryable();
+
+                if (from.HasValue)
+                    patients = patients.Where(p => p.DateRegistered >= from.Value);
+                if (toExclusive.HasValue)
+                    patients = patients.Where(p => p.DateRegistered < toExclusive.Value);
+
+                model.Patients = patients
                     .OrderBy(p => p.FullName)
                     .ToList();
             }

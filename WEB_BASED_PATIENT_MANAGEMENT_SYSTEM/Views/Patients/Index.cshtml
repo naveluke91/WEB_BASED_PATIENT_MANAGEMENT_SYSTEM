@@ -63,12 +63,7 @@
                         <td class="cell-name">@patient.FullName</td>
                         <td class="col-fit">@patient.Age</td>
                         <td class="cell-nowrap cell-center">@patient.ContactNo</td>
-                        <td class="cell-center">
-                            @if (!string.IsNullOrEmpty(patient.AOG))
-                            {
-                                <span class="aog-highlight">@patient.AOG</span>
-                            }
-                        </td>
+                        <td class="cell-center">@patient.AOG</td>
                         <td class="cell-nowrap cell-center">@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
                         <td class="col-actions">
                             <div class="action-btns">

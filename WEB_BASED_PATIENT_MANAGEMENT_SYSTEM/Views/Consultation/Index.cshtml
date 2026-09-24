@@ -77,7 +77,19 @@
                             <td class="col-status"><span class="status-pill @statusPillClass">@displayStatus</span></td>
                             <td class="col-actions">
                                 <div class="action-btns">
-                                    @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
+                                    @if (displayStatus == "Waiting" && item.AppointmentId.HasValue && !hasSelectedService)
+                                    {
+                                        <a asp-controller="Services" asp-action="Index" asp-route-patientId="@item.PatientId" class="action-btn action-btn-primary" title="Register a service for this appointment">
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Service
+                                        </a>
+                                    }
+                                    else if (displayStatus == "Waiting" && item.AppointmentId.HasValue && item.AppointmentDate?.Date > DateTime.Today)
+                                    {
+                                        <button type="button" class="action-btn" disabled title="Scheduled for @item.AppointmentDate.Value.ToString("MMMM dd, yyyy")">
+                                            <i class="bi bi-calendar-event" aria-hidden="true"></i> Starts @item.AppointmentDate.Value.ToString("MMM dd")
+                                        </button>
+                                    }
+                                    else if (displayStatus == "Waiting" && item.AppointmentId.HasValue && hasSelectedService)
                                     {
                                         <button type="button" class="action-btn action-btn-primary start-appointment-btn"
                                                 data-appointment-id="@item.AppointmentId"
@@ -228,7 +240,8 @@
                         </div>
 
                         <div class="clinical-form-actions">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Save Later</button>
+                            <input type="hidden" name="saveLater" id="saveLaterInput" value="false" />
+                            <button type="button" class="btn btn-light" id="saveLaterBtn">Save Later</button>
                             <button type="submit" class="btn btn-primary">Save Record</button>
                         </div>
                     </form>

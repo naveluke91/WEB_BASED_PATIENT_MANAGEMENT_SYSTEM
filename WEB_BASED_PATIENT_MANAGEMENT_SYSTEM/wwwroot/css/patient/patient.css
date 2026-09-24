@@ -3,20 +3,6 @@
    Views/Patients (patient list, details page and patient modals).
    ============================================================ */
 
-/* Age of Gestation value (list, details page, details modal) */
-.aog-highlight {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 10px;
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    color: var(--brand-text);
-    background: var(--brand-surface-soft);
-    border: 1px solid #D4EDB0;
-    border-radius: var(--radius-sm);
-    white-space: nowrap;
-}
-
 /* ---- Patients table column widths ----
    Patient Name · Age · Contact · AOG · EDC · Action.
    Shares of the table width; a column is never squeezed below its content. */

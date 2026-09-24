@@ -208,6 +208,12 @@ window.FormValidation = (() => {
         field.setAttribute('aria-invalid', 'true');
         field.setAttribute('data-fv-invalid', '');
 
+        if (options.quiet) {
+            field.title = message;
+            field._fvQuiet = true;
+            return;
+        }
+
         let messageElement = field._fvMessage;
         if (!messageElement) {
             messageElement = document.createElement('div');
@@ -232,6 +238,10 @@ window.FormValidation = (() => {
         (field._fvHighlight || [field]).forEach(el => el.classList.remove(ERROR_CLASS));
         field.removeAttribute('aria-invalid');
         field.removeAttribute('data-fv-invalid');
+        if (field._fvQuiet) {
+            field.removeAttribute('title');
+            field._fvQuiet = false;
+        }
         if (field._fvMessage) {
             field.removeAttribute('aria-describedby');
             field._fvMessage.remove();
@@ -290,12 +300,12 @@ window.FormValidation = (() => {
             recheck,
             reset: () => clearAll(form),
             // Sayop gikan sa server: { ngalan: mensahe }.
-            showErrors(errors, findField) {
+            showErrors(errors, findField, options) {
                 let first = null;
                 Object.entries(errors || {}).forEach(([key, message]) => {
                     const field = findField(key);
                     if (!field) return;
-                    setError(field, message);
+                    setError(field, message, options);
                     first = firstInPage(first, field);
                 });
                 if (first) focusField(first);
@@ -313,6 +323,53 @@ document.querySelectorAll('input[name$="ContactNo"]').forEach(el => {
         el.value = el.value.replace(/\D/g, '').slice(0, 11);
     });
 });
+
+// AOG and EDC from the LMP (Naegele's rule: EDC = LMP + 280 days).
+(() => {
+    const { parseDate, today } = window.FormValidation;
+    const plural = (count, unit) => `${count} ${unit}${count === 1 ? '' : 's'}`;
+    const iso = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+    function aogText(lmp, onDate) {
+        const days = Math.round((onDate - lmp) / 86400000);
+        if (days < 0) return '';
+        return plural(Math.floor(days / 7), 'week') + (days % 7 ? ' ' + plural(days % 7, 'day') : '');
+    }
+
+    function setValue(field, value) {
+        if (!field || !value || field.value === value) return;
+        field.value = value;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function fillFromLmp(lmpField, withEdc = true) {
+        const scope = lmpField.form || document;
+        const prefix = lmpField.name.slice(0, -3);
+        const lmp = parseDate(lmpField.value);
+        if (!lmp || lmp > today()) return;
+        const onDate = parseDate(scope.querySelector(`[name="${prefix}RecordDate"]`)?.value) || today();
+        setValue(scope.querySelector(`[name="${prefix}AOG"]`), aogText(lmp, onDate));
+        if (withEdc) setValue(scope.querySelector(`[name="${prefix}EDC"]`), iso(new Date(lmp.getFullYear(), lmp.getMonth(), lmp.getDate() + 280)));
+    }
+
+    document.addEventListener('change', event => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement) || field.type !== 'date') return;
+
+        if (field.name.endsWith('LMP')) {
+            fillFromLmp(field);
+        } else if (/\.PrenatalVisits\[[^\]]+\]\.RecordDate$/.test(field.name)) {
+            const lmp = parseDate(field.form?.querySelector('[name="PrenatalRecord.LMP"]')?.value);
+            const visitDate = parseDate(field.value);
+            if (lmp && visitDate) setValue(field.form.querySelector(`[name="${field.name.replace(/RecordDate$/, 'AOG')}"]`), aogText(lmp, visitDate));
+        } else if (field.name.endsWith('RecordDate')) {
+            const lmpField = field.form?.querySelector(`[name="${field.name.slice(0, -10)}LMP"]`);
+            if (lmpField) fillFromLmp(lmpField, false);
+        }
+    });
+
+    window.fillAogFromLmp = fillFromLmp;
+})();
 
 // Phone bottom bar: when the tabs scroll sideways, keep the current page's tab in view.
 (() => {

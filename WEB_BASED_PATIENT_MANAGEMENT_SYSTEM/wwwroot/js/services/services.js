@@ -40,18 +40,16 @@
         dropdown.style.display = 'none';
     }
 
-    // Two patients can share a name, so the list always shows the Patient ID too.
-    const patientLabel = patient => `${patient.name} — Patient ID ${patient.id}`;
+    const patientNumbers = new Map([...patients].sort((a, b) => a.id - b.id).map((patient, index) => [patient.id, index + 1]));
+    const patientLabel = patient => `${patient.name} — ${patientNumbers.get(patient.id)}`;
 
-    // Select Appointment is always visible. It is enabled only when the
-    // selected patient has confirmed appointments that are still available
-    // (Services/GetAvailableAppointments). Otherwise it stays disabled and
-    // the service is registered as Walk-In, exactly as before.
+    // A patient with an available confirmed appointment always registers the
+    // service for it (locked when there is only one). Otherwise it is a Walk-In.
+    const lockedAppointmentId = document.getElementById('lockedAppointmentIdInput');
     const appointmentPlaceholders = {
         noPatient: '-- Select a patient first --',
         loading: 'Loading appointments...',
         walkIn: 'Walk-In - No appointment required',
-        choose: '-- Select a confirmed appointment --',
         unavailable: 'Appointments could not be loaded'
     };
 
@@ -60,6 +58,7 @@
         appointmentId.replaceChildren(new Option(placeholder, ''));
         appointmentId.value = '';
         appointmentId.disabled = true;
+        lockedAppointmentId.disabled = true;
     }
 
     function resetAppointments() {
@@ -73,17 +72,11 @@
         }
 
         availableAppointments = appointments;
-        appointmentId.replaceChildren(new Option(appointmentPlaceholders.choose, ''));
-
-        appointments.forEach(appointment => {
-            appointmentId.add(new Option(appointment.label, appointment.id));
-        });
-
-        appointmentId.disabled = false;
-
-        if (appointments.length === 1) {
-            appointmentId.value = String(appointments[0].id);
-        }
+        appointmentId.replaceChildren(...appointments.map(appointment => new Option(appointment.label, appointment.id)));
+        appointmentId.value = String(appointments[0].id);
+        appointmentId.disabled = appointments.length === 1;
+        lockedAppointmentId.value = appointmentId.value;
+        lockedAppointmentId.disabled = !appointmentId.disabled;
     }
 
     async function loadAvailableAppointments(patient) {
@@ -183,6 +176,13 @@
         hideDropdown();
         validator.reset();
     });
+
+    const requestedPatient = patients.find(patient => String(patient.id) === new URLSearchParams(location.search).get('patientId'));
+    if (requestedPatient && modal) {
+        history.replaceState(null, '', location.pathname);
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+        choosePatient(requestedPatient);
+    }
 })();
 
 // ---- View / Edit Service modals ----

@@ -17,6 +17,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
     {
         public int? ConsultationId { get; set; }
         public int? AppointmentId { get; set; }
+        public DateTime? AppointmentDate { get; set; }
         public int? ServiceId { get; set; }
         public int PatientId { get; set; }
         public string PatientName { get; set; } = string.Empty;
