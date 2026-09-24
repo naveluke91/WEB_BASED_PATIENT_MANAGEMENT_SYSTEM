@@ -1,14 +1,3 @@
-// ============================================================
-// consultation.js — Consultation module
-// Views/Consultation/Index.cshtml and the clinical service forms in
-// Views/Consultation/Forms (Prenatal, Newborn, Family Planning).
-// Server-rendered values are provided by the view as
-// window.consultationPageData before this file loads.
-// ============================================================
-
-// ---- Clinical service forms ----
-
-/* ── Patient Search & Select ── */
 (function() {
     var searchInput = document.getElementById('patientSearchInput');
     var dropdown    = document.getElementById('patientDropdown');
@@ -16,7 +5,6 @@
 
     if (!searchInput || !dropdown) return;
 
-    // Patient data from server
     var patients = window.consultationPageData.patients;
 
     var selectedId = null;
@@ -52,7 +40,7 @@
         selectedId = id;
         patientIdEl.value = id;
         searchInput.value = name;
-        searchInput.style.borderColor = '#16a34a'; // green border like pic 3
+        searchInput.style.borderColor = '#16a34a';
         dropdown.style.display = 'none';
 
         try {
@@ -76,7 +64,6 @@
         resetPatientAutofill();
     };
 
-    // Show all on focus if empty
     searchInput.addEventListener('focus', function() {
         var q = this.value.trim().toLowerCase();
         if (!q) {
@@ -84,7 +71,6 @@
         }
     });
 
-    // Filter on type
     searchInput.addEventListener('input', function() {
         selectedId = null;
         patientIdEl.value = '';
@@ -96,11 +82,9 @@
         }));
     });
 
-    // Hide on outside click
     document.addEventListener('click', function(e) {
         if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.style.display = 'none';
-            // If user typed something but didn't pick, clear it
             if (!selectedId) {
                 searchInput.value = '';
                 patientIdEl.value = '';
@@ -126,7 +110,6 @@
     }
 })();
 
-/* ── DOB → Age ── */
 function calculateAge(dob) {
     if (!dob) return '';
     var parts = dob.split('-');
@@ -156,7 +139,6 @@ if (dobInput && ageField) {
     dobInput.addEventListener('input', updateAge);
 }
 
-/* ── Family Planning DOB → Age ── */
 function attachFpAgeListener(dobId, ageId) {
     var fpDob = document.getElementById(dobId);
     var fpAge = document.getElementById(ageId);
@@ -171,7 +153,6 @@ function attachFpAgeListener(dobId, ageId) {
 attachFpAgeListener('fpDobInput', 'fpAgeInput');
 attachFpAgeListener('fpSpouseDobInput', 'fpSpouseAgeInput');
 
-/* ── Auto-Sync Antenatal Record (Section 2) from Prenatal Record (Section 1) ── */
 function syncAntenatalFields() {
     var preName = document.getElementById('prenatalNameInput');
     var preAddress = document.getElementById('prenatalAddressInput');
@@ -186,7 +167,6 @@ function syncAntenatalFields() {
     if (preAge && antAge) antAge.value = preAge.value;
 }
 
-// Initial sync on load
 document.addEventListener('DOMContentLoaded', function() {
     syncAntenatalFields();
 
@@ -208,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-/* ── Visit Row Template ── */
 function buildVisitRow() {
     var ticks = new Date().getTime();
     return `<tr class="visit-row">
@@ -239,7 +218,6 @@ function removeVisitRow(btn) {
     }
 }
 
-/* ── Service Tile Selection ── */
 var fpServices = ['Implant','Implant Removal','DEPO','NORIFAM','IUD Insertion','IUD Removal','Anti-Tetanus Injection'];
 
 document.querySelectorAll('.svc-tile').forEach(function (tile) {
@@ -285,11 +263,9 @@ document.querySelectorAll('.svc-tile').forEach(function (tile) {
     });
 });
 
-/* ── Patient Autofill Functions ── */
 function applyPatientAutofill(p) {
     if (!p) return;
 
-    // 1. Prenatal Form
     var preName = document.getElementById('prenatalNameInput');
     if (preName) preName.value = p.fullName || '';
     var preAddress = document.getElementById('prenatalAddressInput');
@@ -317,7 +293,6 @@ function applyPatientAutofill(p) {
     if (antAge) antAge.value = p.age || '';
     setInputValueByName('PrenatalRecord.G', p.gravidaRaw || '');
 
-    // 2. Family Planning Form
     var nameParts = (p.fullName || '').trim().split(/\s+/);
     var lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : (nameParts[0] || '');
     var givenName = nameParts.length > 1 ? nameParts.slice(0, nameParts.length - 1).join(' ') : (nameParts[0] || '');
@@ -334,7 +309,6 @@ function applyPatientAutofill(p) {
     setInputValueByName('FamilyPlanningRecord.CivilStatus', p.maritalStatus === '—' ? '' : p.maritalStatus);
     setInputValueByName('FamilyPlanningRecord.Religion', p.religion === '—' ? '' : p.religion);
 
-    // 3. Newborn Form
     setInputValueByName('NewbornRecord.MotherName', p.fullName || '');
     setInputValueByName('NewbornRecord.MotherAddress', p.address || '');
 }
@@ -390,7 +364,6 @@ function setInputValueByName(name, value) {
     }
 }
 
-/* ── Newborn Vitals Row ── */
 function buildNbVitalsRow() {
     var ticks = new Date().getTime();
     return `<tr class="nb-vitals-row">
@@ -410,7 +383,6 @@ if (addNbVitalsBtn) {
     });
 }
 
-/* ── Newborn Meds Row ── */
 function buildNbMedsRow() {
     var ticks = new Date().getTime();
     return `<tr class="nb-meds-row">
@@ -434,15 +406,12 @@ function removeNbRow(btn, tbodyId, rowClass) {
     }
 }
 
-// ---- Validation sa clinical form ----
-// Ang mga rule gikan sa server (ConsultationController.ClinicalRules).
 (() => {
     const form = document.getElementById('consultationServiceForm');
     const FV = window.FormValidation;
     if (!form || !FV) return;
     const rules = window.consultationPageData.fieldRules || [];
 
-    // Ang makita nga panel lang ang i-validate.
     function visiblePanel() {
         return ['prenatalRecordPanel', 'newbornPanel', 'familyPlanningPanel']
             .map(id => document.getElementById(id))
@@ -494,7 +463,6 @@ function removeNbRow(btn, tbodyId, rowClass) {
             });
         });
 
-        // Ubang petsa (mga row sa table): valid nga tuig lang.
         panel.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(field => {
             if (!ruled.has(field)) list.push({ field, test: el => el.validity?.badInput ? FV.MSG.date : FV.rules.dateYear(el.value) });
         });
@@ -503,21 +471,42 @@ function removeNbRow(btn, tbodyId, rowClass) {
     }
 
     const validator = FV.create(form, checks);
+    const modal = document.getElementById('consultationServiceModal');
+    const confirmModal = document.getElementById('saveRecordConfirmModal');
+    const confirmButton = document.getElementById('saveRecordConfirmBtn');
+    let confirming = false;
+    let saving = false;
+
     form.addEventListener('submit', event => {
-        if (!validator.validate()) event.preventDefault();
+        event.preventDefault();
+        if (!validator.validate()) return;
+        confirming = true;
+        bootstrap.Modal.getOrCreateInstance(modal).hide();
     });
 
-    // Sayop gikan sa server: i-marka human ma-abli ang modal.
+    modal.addEventListener('hidden.bs.modal', () => {
+        if (!confirming) return;
+        confirming = false;
+        bootstrap.Modal.getOrCreateInstance(confirmModal).show();
+    });
+
+    confirmButton.addEventListener('click', () => {
+        saving = true;
+        confirmButton.disabled = true;
+        form.submit();
+    });
+
+    confirmModal.addEventListener('hidden.bs.modal', () => {
+        if (!saving) bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+
     const serverErrors = window.consultationPageData.clinicalErrors;
-    const modal = document.getElementById('consultationServiceModal');
-    if (serverErrors && modal) {
+    if (serverErrors) {
         modal.addEventListener('shown.bs.modal', () => {
             validator.showErrors(serverErrors, name => form.querySelector(`[name="${name}"]`));
         }, { once: true });
     }
 })();
-
-// ---- Consultation queue page ----
 
 document.getElementById('consultationSearch')?.addEventListener('input', function () {
     const query = this.value.toLowerCase().trim();
@@ -558,7 +547,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// ---- Completed consultation: View Record modal (read-only) ----
 (() => {
     const modal = document.getElementById('consultationRecordModal');
     const body = document.getElementById('consultationRecordBody');

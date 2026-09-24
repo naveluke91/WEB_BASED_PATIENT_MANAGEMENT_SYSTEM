@@ -29,8 +29,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             _context = context;
         }
 
-        // Confirmed appointments without a started consultation appear as Waiting.
-        // Started consultations, including walk-ins, are read from Consultations.
         public IActionResult Index(int? openConsultationId)
         {
             var consultations = _context.Consultations
@@ -60,8 +58,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 })
                 .ToList();
 
-            // Completed consultations link to Billing. One that already has a
-            // payment opens that transaction instead of adding another one.
             var paymentIdsByConsultation = _context.Payments
                 .AsNoTracking()
                 .Select(p => new { p.ConsultationId, p.Id })
@@ -103,9 +99,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 queue.Add(queueItem);
             }
 
-            // Walk-In services awaiting consultation: a saved Service that was not
-            // created for an Appointment (AppointmentId is null) and hasn't already
-            // started a consultation.
             var startedServiceIds = consultations
                 .Where(c => c.ServiceId.HasValue)
                 .Select(c => c.ServiceId!.Value)
@@ -151,8 +144,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     LoadRegisteredServiceForm(model);
             }
 
-            // The reused service-form script reads these values to auto-fill the
-            // patient information and activate the selected service form.
             ViewBag.Patients = model.Patients;
             ViewBag.Patient = model.OpenConsultation?.Patient;
             ViewBag.InitialPatientId = model.OpenConsultation?.PatientId;
@@ -163,9 +154,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return View(model);
         }
 
-        // Completed clinical forms belong to Consultation, not the Service
-        // selection list. This action returns the exact record linked to the
-        // completed consultation, read-only, for the View modal on Index.
         [HttpGet]
         public IActionResult ViewRecord(int id)
         {
@@ -240,9 +228,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
         }
 
-        // Starts the confirmed appointment after a Yes/No confirmation.
-        // The service comes from the patient's Service registration.  This is
-        // the point at which the matching clinical record is created.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Begin(int patientId, int? appointmentId, int? serviceId)
@@ -273,7 +258,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // of the same patient. A new appointment must never inherit a prior
                 // service selected for that patient.
                 var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
-                // Kinahanglan naay rehistradong serbisyo ang appointment.
                 if (!AvailableServices.Contains(serviceType)
                     || !_context.Services.Any(s => s.AppointmentId == appointment.Id && s.PatientId == patientId))
                 {
@@ -287,15 +271,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return StartConsultation(patientId, "Appointment", serviceType, appointmentId, null);
             }
 
-            // Walk-In: identified by a specific saved Service record instead of
-            // an Appointment. No AppointmentDate/AppointmentTime involved.
             if (!serviceId.HasValue)
             {
                 TempData["ErrorMessage"] = "Please select a registered service.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Walk-In ra: ang serbisyo sa appointment dili pwede diri.
             var service = _context.Services.FirstOrDefault(s => s.Id == serviceId.Value && s.PatientId == patientId && s.AppointmentId == null);
             if (service == null)
             {
@@ -393,7 +374,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             throw new InvalidOperationException("The selected service is not supported.");
         }
 
-        // Saves the clinical form created when the consultation began.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult SaveService(int consultationId, PrenatalRecord prenatalRecord,
@@ -415,7 +395,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // I-validate ang clinical form sa server (numero, petsa, pilianan).
             var (recordPrefix, record) = consultation.ServiceType switch
             {
                 "Prenatal" => ("PrenatalRecord", (object)prenatalRecord),
@@ -514,8 +493,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 transaction.Commit();
 
                 TempData["SuccessMessage"] = "Consultation and service record saved successfully.";
-                // Consultation Index shows "Proceed to Billing" for this consultation.
-                TempData["BillingConsultationId"] = consultation.Id;
             }
             catch
             {
@@ -526,8 +503,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Removes an unfinished consultation and its clinical record. Completed
-        // records remain protected from deletion in the consultation queue.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
@@ -568,9 +543,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ---- Validation sa clinical form ----
-
-        // Rule sa usa ka field (gamiton sa server ug sa consultation.js).
         public sealed record ClinicalFieldRule(string Field, string Type, decimal? Min = null, decimal? Max = null,
             bool NotFuture = false, string? After = null, string[]? Allowed = null, string? Pattern = null, string? Message = null);
 
@@ -601,7 +573,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             void Pattern(string field, string pattern, string message) => rules.Add(new(field, "pattern", Pattern: pattern, Message: message));
             string[] yesNo = { "yes", "no" };
 
-            // Prenatal
             foreach (var field in new[] { "Gravida", "G", "T", "P", "A", "L" }) Whole("PrenatalRecord." + field, 0, 99);
             Whole("PrenatalRecord.Menarche", 5, 30, "Enter a valid age at menarche.");
             Number("PrenatalRecord.Weight", 1, 300);
@@ -621,7 +592,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             Choice("PrenatalRecord.PrioritySigns_YesNo", yesNo);
             Choice("PrenatalRecord.PatientProblems_YesNo", yesNo);
 
-            // Newborn
             Whole("NewbornRecord.ConsentClientAge", 0, 130);
             Date("NewbornRecord.DateTimeOfAdmission", notFuture: true);
             Date("NewbornRecord.DateTimeDelivered", notFuture: true);
@@ -630,7 +600,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             Date("NewbornRecord.ConsentMidwifeDate");
             Choice("NewbornRecord.PlacentaOut", "complete", "incomplete");
 
-            // Family Planning
             Whole("FamilyPlanningRecord.ClientAge", 0, 130);
             Whole("FamilyPlanningRecord.SpouseAge", 0, 130);
             foreach (var field in new[] { "NoOfLivingChildren", "OH_Gravida", "OH_Para", "OH_Abortion", "OH_LivingChildren" })
@@ -672,7 +641,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return rules;
         }
 
-        // I-save tanan nga checkbox; ang doble nga field kuhaon ang may sulod.
         private void ApplyMultiValueFields(object record, string prefix)
         {
             var type = record.GetType();
@@ -696,12 +664,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
         }
 
-        // I-validate ang record; ibalik ang sayop matag field (ngalan sa form).
         private Dictionary<string, string> ValidateClinicalRecord(object record, string prefix)
         {
             var errors = new Dictionary<string, string>();
 
-            // Sayop sa pag-bind: dili valid nga petsa o numero.
             foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0
                 && e.Key.StartsWith(prefix + ".", StringComparison.OrdinalIgnoreCase)))
             {
@@ -719,7 +685,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     errors[rule.Field] = message;
             }
 
-            // Petsa sa mga row sa table (visits, vitals, medications).
             var rowDates = record switch
             {
                 PrenatalRecord prenatal => prenatal.PrenatalVisits.Select(v => v.RecordDate),
@@ -734,7 +699,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         private static string? CheckClinicalRule(ClinicalFieldRule rule, object? value, object record)
         {
-            // Walay required nga field; blangko = OK.
             if (value == null || (value is string blank && string.IsNullOrWhiteSpace(blank)))
                 return null;
 

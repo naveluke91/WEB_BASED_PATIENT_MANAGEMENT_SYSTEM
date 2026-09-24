@@ -15,21 +15,6 @@
 
 <partial name="_PageAlerts" />
 
-@* Set by SaveService when a consultation is completed, so staff can continue straight to billing. *@
-@if (TempData["BillingConsultationId"] is int billingConsultationId)
-{
-    <div class="page-alerts">
-        <div class="alert alert-light align-items-center" role="status">
-            <i class="bi bi-receipt" aria-hidden="true"></i>
-            <span>The consultation is completed. You can now record its payment.</span>
-            <a asp-controller="Billing" asp-action="Index" asp-route-consultationId="@billingConsultationId"
-               class="btn-primary-dark btn-sm ms-auto">
-                Proceed to Billing <i class="bi bi-arrow-right" aria-hidden="true"></i>
-            </a>
-        </div>
-    </div>
-}
-
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Consultation</h2>
@@ -156,7 +141,6 @@
     </div>
 </div>
 
-<!-- The service is already registered in Services. Starting only needs confirmation. -->
 <div class="modal fade" id="beginConsultationModal" tabindex="-1" aria-labelledby="beginConsultationTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -214,22 +198,9 @@
     </div>
 </div>
 
-<!-- The full service form is kept in Consultation, so a started encounter can be continued. -->
 <div class="modal fade" id="consultationServiceModal" tabindex="-1" aria-hidden="true" data-open="@(Model.OpenConsultation != null ? "true" : "false")">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-clinical">
         <div class="modal-content">
-            @* The service header is intentionally not rendered; only the interview form belongs in this modal.
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title">@(Model.OpenConsultation?.ServiceType ?? "Consultation Service Form")</h5>
-                    @if (Model.OpenConsultation?.Patient != null)
-                    {
-                        <small class="text-muted">@Model.OpenConsultation.Patient.FullName · @Model.OpenConsultation.VisitType · In Progress</small>
-                    }
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            *@
             <div class="modal-body clinical-form-body">
                 @if (Model.OpenConsultation != null)
                 {
@@ -238,8 +209,6 @@
                         <input type="hidden" name="consultationId" value="@Model.OpenConsultation.Id" />
                         <input type="hidden" name="SelectedServices" id="selectedServicesInput" value="@Model.OpenConsultation.ServiceType" />
                         <input type="hidden" name="SelectedPatientId" id="selectedPatientIdInput" value="@Model.OpenConsultation.PatientId" />
-                        <!-- These hidden elements let the shared service-form script
-                             load the registered patient's basic information. -->
                         <div class="d-none" aria-hidden="true">
                             <input type="text" id="patientSearchInput" autocomplete="off" />
                             <div id="patientDropdown"></div>
@@ -269,7 +238,28 @@
     </div>
 </div>
 
-<!-- Completed consultation: read-only record, loaded from ViewRecord by consultation.js. -->
+<div class="modal fade" id="saveRecordConfirmModal" tabindex="-1" aria-labelledby="saveRecordConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div>
+                        <h5 class="modal-title" id="saveRecordConfirmTitle">Save Consultation Record</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to save this consultation record?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-primary-dark" id="saveRecordConfirmBtn">Save Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="consultationRecordModal" tabindex="-1" aria-labelledby="consultationRecordTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-clinical">
         <div class="modal-content">
@@ -292,7 +282,6 @@
 
 @section Scripts {
     <script>
-        // Server-rendered values used by consultation.js
         window.consultationPageData = {
             patients: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 (ViewBag.Patients as List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient> ?? new List<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models.Patient>())
@@ -300,7 +289,6 @@
             initialPatientId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((int?)ViewBag.InitialPatientId)),
             initialPatientName: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialPatientName)),
             initialService: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.InitialService)),
-            // Mga rule ug sayop sa clinical form (gikan sa server).
             fieldRules: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ClinicalRules)),
             clinicalErrors: @Html.Raw(TempData["ClinicalErrors"] as string ?? "null")
         };
