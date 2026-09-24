@@ -224,7 +224,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     .FirstOrDefault(r => r.Id == consultation.RecordId.Value
                         && r.PatientId == consultation.PatientId);
                 if (record != null)
+                {
+                    record.Ack_MethodAccepted = consultation.ServiceType;
                     model.ServiceForm.FamilyPlanningRecord = record;
+                }
             }
         }
 
@@ -257,9 +260,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // The service belongs to this appointment, not to every appointment
                 // of the same patient. A new appointment must never inherit a prior
                 // service selected for that patient.
-                var serviceType = appointment.ServiceType?.Trim() ?? string.Empty;
-                if (!AvailableServices.Contains(serviceType)
-                    || !_context.Services.Any(s => s.AppointmentId == appointment.Id && s.PatientId == patientId))
+                var serviceType = _context.Services
+                    .Where(s => s.AppointmentId == appointment.Id && s.PatientId == patientId)
+                    .Select(s => s.ServiceName)
+                    .FirstOrDefault() ?? string.Empty;
+                if (!AvailableServices.Contains(serviceType))
                 {
                     TempData["ErrorMessage"] = "Please select a service for this appointment before starting consultation.";
                     return RedirectToAction(nameof(Index));

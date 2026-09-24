@@ -40,6 +40,9 @@
         dropdown.style.display = 'none';
     }
 
+    // Two patients can share a name, so the list always shows the Patient ID too.
+    const patientLabel = patient => `${patient.name} — Patient ID ${patient.id}`;
+
     // Select Appointment is always visible. It is enabled only when the
     // selected patient has confirmed appointments that are still available
     // (Services/GetAvailableAppointments). Otherwise it stays disabled and
@@ -114,7 +117,7 @@
     function choosePatient(patient) {
         selectedPatient = patient;
         patientId.value = patient.id;
-        search.value = patient.name;
+        search.value = patientLabel(patient);
         search.style.borderColor = 'var(--brand-action)'; // sunod sa theme (clinic = #468403)
         hideDropdown();
         loadAvailableAppointments(patient);
@@ -132,7 +135,7 @@
             const option = document.createElement('button');
             option.type = 'button';
             option.className = 'w-100 text-start border-0 bg-white px-3 py-2';
-            option.textContent = patient.name;
+            option.textContent = patientLabel(patient);
             option.addEventListener('click', () => choosePatient(patient));
             dropdown.appendChild(option);
         });
@@ -146,7 +149,7 @@
         resetAppointments();
         search.style.borderColor = '#C8D5C0';
         const query = search.value.trim().toLowerCase();
-        showPatients(patients.filter(patient => patient.name.toLowerCase().includes(query)));
+        showPatients(patients.filter(patient => patientLabel(patient).toLowerCase().includes(query)));
     });
 
     document.addEventListener('click', event => {

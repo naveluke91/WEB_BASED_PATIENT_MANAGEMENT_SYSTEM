@@ -30,6 +30,8 @@ builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAcco
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<EmailSender>();
 
+builder.Services.AddHostedService<RescheduledAppointmentStatusService>();
+
 // Password-reset state is server-side and expires quickly.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>

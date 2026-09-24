@@ -15,9 +15,10 @@
     // Users: Admin ra.
     var canManageUsers = User.IsInRole(UserRoles.Admin);
 
-    // Notification bell: upcoming (not cancelled, not already past, not already read
-    // by this account) appointments only. Marking one read never touches the Appointment.
+    // Notification bell: today's and tomorrow's appointments only (not cancelled, not completed,
+    // not already past, not already read by this account). Marking one read never touches the Appointment.
     var now = DateTime.Now;
+    var tomorrow = now.Date.AddDays(1);
     var currentUserAccountId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : (int?)null;
     var readAppointmentIds = currentUserAccountId.HasValue
         ? NotificationDbContext.NotificationReads
@@ -27,7 +28,8 @@
         : new HashSet<int>();
     var upcomingAppointments = User.Identity?.IsAuthenticated == true
         ? NotificationDbContext.Appointments
-            .Where(a => a.Status != "Cancelled" && a.AppointmentDate >= now.Date)
+            .Where(a => a.Status != "Cancelled" && a.AppointmentDate >= now.Date && a.AppointmentDate <= tomorrow
+                && !NotificationDbContext.Consultations.Any(c => c.AppointmentId == a.Id && c.Status == "Completed"))
             .OrderBy(a => a.AppointmentDate).ThenBy(a => a.AppointmentTime)
             .ToList()
             .Where(a => a.AppointmentDate.Date > now.Date || a.AppointmentDate.Date.Add(a.AppointmentTime) >= now)

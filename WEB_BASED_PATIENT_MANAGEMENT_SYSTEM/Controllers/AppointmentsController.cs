@@ -425,6 +425,9 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     existing.AppointmentDate = appointment.AppointmentDate;
                     existing.AppointmentTime = appointment.AppointmentTime;
+
+                    if (reschedDateChanged || reschedTimeChanged)
+                        ClearNotificationReads(id);
                 }
 
                 // Status is set LAST — only reached when every validation above passed.
@@ -503,6 +506,7 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             appointment.AppointmentDate = appointmentDate.Date;
             appointment.AppointmentTime = appointmentTime;
             appointment.Status = "Rescheduled";
+            ClearNotificationReads(id);
             _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
@@ -717,6 +721,10 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return Ok();
         }
+
+        // A read marker belongs to the old schedule, so the new schedule must notify again.
+        private void ClearNotificationReads(int appointmentId) =>
+            _context.NotificationReads.RemoveRange(_context.NotificationReads.Where(r => r.AppointmentId == appointmentId));
 
         // Appointment times are chosen in whole minutes ("HH:mm"), so the
         // reschedule check compares them at that precision.
