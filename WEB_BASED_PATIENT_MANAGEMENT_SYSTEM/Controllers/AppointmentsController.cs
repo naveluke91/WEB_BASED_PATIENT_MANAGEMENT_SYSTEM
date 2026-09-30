@@ -34,7 +34,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
         // -----------------------------------------------------------------------
         // GET /Appointments/SearchPatients?q=Juan
-        // Searches registered Patients by name for the Confirm modal.
+        // Searches registered Patients by name (Patients table) for the
+        // Patient Name autocomplete in the New Appointment modal.
         // -----------------------------------------------------------------------
         [HttpGet]
         public IActionResult SearchPatients(string? q = null)
@@ -61,34 +62,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 .Select(p => new { p.Id, p.FullName, p.ContactNo })
                 .ToList();
             return Json(patients);
-        }
-
-        // -----------------------------------------------------------------------
-        // GET /Appointments/SearchAppointments?q=Juan
-        // "Existing Appointment" = create a new appointment for an ALREADY
-        // REGISTERED patient, so the search source of truth is the Patients
-        // table — NOT previous Appointments. A patient does not need an old
-        // appointment to appear here.
-        // -----------------------------------------------------------------------
-        [HttpGet]
-        public IActionResult SearchAppointments(string? q = null)
-        {
-            var lower = (q ?? "").ToLower().Trim();
-
-            var results = _context.Patients
-                .AsEnumerable()
-                .Where(p => string.IsNullOrEmpty(lower) || p.FullName.ToLower().Contains(lower))
-                .OrderBy(p => p.FullName)
-                .Select(p => new
-                {
-                    patientId   = p.Id,
-                    patientName = p.FullName,
-                    contactNo   = p.ContactNo
-                })
-                .Take(10)
-                .ToList();
-
-            return Json(results);
         }
 
         // -----------------------------------------------------------------------
@@ -128,7 +101,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(Appointment appointment)
         {
-            // I-verify ang PatientId gikan sa form sa Patients table.
+            // I-verify ang PatientId gikan sa form sa Patients table; ang ngalan ug contact
+            // kuhaon sa tinuod nga Patient record, dili sa gi-type sa form.
             Patient? linkedPatient = null;
             if (appointment.PatientId.HasValue)
             {
@@ -139,10 +113,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
                 appointment.PatientName = linkedPatient.FullName;
+                appointment.ContactNo = linkedPatient.ContactNo;
             }
 
             // I-validate pag-usab sa server (ngalan, contact, petsa, oras).
-            var errors = ValidateAppointmentInput(appointment, checkName: linkedPatient == null, checkSchedule: true);
+            var errors = ValidateAppointmentInput(appointment, checkName: linkedPatient == null, checkSchedule: true, checkContact: linkedPatient == null);
 
             if (errors.Count == 0)
             {
@@ -155,6 +130,19 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     TempData["ErrorMessage"] = "That time slot is already booked. Please choose a different time.";
                     return RedirectToAction(nameof(Index));
+                }
+
+                // Walay PatientId: i-link ra kung eksakto ang FullName + ContactNo (dili parehas-ra-og-ngalan).
+                // Walay eksaktong match = wala pa ni-register: PatientId mabilin nga null, walay Patient nga himoon.
+                if (linkedPatient == null)
+                {
+                    var matchedPatient = FindExistingPatient(appointment.PatientName, appointment.ContactNo);
+                    if (matchedPatient != null)
+                    {
+                        appointment.PatientId = matchedPatient.Id;
+                        appointment.PatientName = matchedPatient.FullName;
+                        appointment.ContactNo = matchedPatient.ContactNo;
+                    }
                 }
 
                 // Dili pagsaligan ang ubang field gikan sa form.
@@ -173,6 +161,43 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             TempData["ErrorMessage"] = errors.Values.First();
             return RedirectToAction(nameof(Index));
+        }
+
+        // -----------------------------------------------------------------------
+        // POST /Appointments/RegisterPatient
+        // "Register Patient" sa New Appointment modal: mag-save ra ug bag-ong Patient
+        // (AJAX). Dili mo-save ug appointment; ang PatientId ibalik sa modal.
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RegisterPatient([Bind(Patient.FormFields)] Patient patient)
+        {
+            // Parehas nga rule sa Add Patient; ang edad gikan sa DOB.
+            patient.TrimTextFields();
+            patient.Age = patient.DateOfBirth.HasValue ? Patient.CalculateAge(patient.DateOfBirth.Value) : 0;
+            ModelState.Clear();
+
+            var errors = Patient.ValidateInput(patient);
+            if (errors.Count > 0)
+                return Json(new { success = false, message = errors.Values.First(), errors });
+
+            // Ayaw pag-himo ug doble nga Patient (parehas nga FullName + ContactNo).
+            if (FindExistingPatient(patient.FullName, patient.ContactNo) != null)
+            {
+                const string duplicate = "A patient with this name and contact number is already registered.";
+                return Json(new { success = false, message = duplicate, errors = new Dictionary<string, string> { [nameof(Patient.FullName)] = duplicate } });
+            }
+
+            _context.Patients.Add(patient);
+            _context.SaveChanges();
+
+            return Json(new
+            {
+                success   = true,
+                patientId = patient.Id,
+                fullName  = patient.FullName,
+                contactNo = patient.ContactNo
+            });
         }
 
         // -----------------------------------------------------------------------
@@ -741,7 +766,8 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         private static readonly string[] AllowedStatuses = { "Pending", "Confirmed", "Cancelled", "Rescheduled" };
 
         // I-validate ang ngalan, contact, petsa ug oras; ibalik ang sayop matag field.
-        private Dictionary<string, string> ValidateAppointmentInput(Appointment appointment, bool checkName, bool checkSchedule)
+        // Ang checkName/checkContact i-skip kung ang ngalan ug contact gikan sa Patient record (dili gi-type).
+        private Dictionary<string, string> ValidateAppointmentInput(Appointment appointment, bool checkName, bool checkSchedule, bool checkContact = true)
         {
             var errors = new Dictionary<string, string>();
             appointment.PatientName = appointment.PatientName?.Trim() ?? string.Empty;
@@ -755,10 +781,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     errors[nameof(Appointment.PatientName)] = "Enter a valid name.";
             }
 
-            if (appointment.ContactNo.Length == 0)
-                errors[nameof(Appointment.ContactNo)] = "Contact number is required.";
-            else if (!Patient.IsValidContactNo(appointment.ContactNo))
-                errors[nameof(Appointment.ContactNo)] = "Contact number must contain 11 digits.";
+            if (checkContact)
+            {
+                if (appointment.ContactNo.Length == 0)
+                    errors[nameof(Appointment.ContactNo)] = "Contact number is required.";
+                else if (!Patient.IsValidContactNo(appointment.ContactNo))
+                    errors[nameof(Appointment.ContactNo)] = "Contact number must contain 11 digits.";
+            }
 
             if (checkSchedule)
             {
@@ -774,6 +803,28 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             return errors;
+        }
+
+        // Pangitaa ang existing nga pasyente pinaagi sa FullName + ContactNo (dili ngalan ra).
+        // I-trim ang espasyo ug dili sensitibo sa lettercase ang ngalan. Ibalik ang pasyente
+        // kung eksakto nga usa ra ang match; kung wala o daghan, ibalik ang null.
+        private Patient? FindExistingPatient(string patientName, string contactNo)
+        {
+            static string Normalize(string value) =>
+                string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+            var name = Normalize(patientName);
+            var contact = contactNo.Trim();
+
+            var matches = _context.Patients
+                .AsNoTracking()
+                .Where(p => p.ContactNo.Trim() == contact)
+                .AsEnumerable()
+                .Where(p => string.Equals(Normalize(p.FullName), name, StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .ToList();
+
+            return matches.Count == 1 ? matches[0] : null;
         }
 
         private bool HasBindingError(string key) =>

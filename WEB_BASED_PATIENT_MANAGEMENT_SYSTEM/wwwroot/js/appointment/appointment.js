@@ -1,6 +1,6 @@
 // ============================================================
 // appointment.js — Appointments module (Views/Appointments/Index.cshtml)
-// Time slots, New / Existing / View / Edit appointment modals,
+// Time slots, New (patient autocomplete + Register Patient) / View / Edit modals,
 // confirm-as-new-patient modal, table search and delete confirmation.
 // ============================================================
 
@@ -90,31 +90,14 @@ const fieldByName = form => name => form.querySelector(`[name="${name}"]`);
 
 const newApptForm = document.getElementById('formNewAppointment');
 const newApptValidator = FV.create(newApptForm, () => [
-    { field: document.getElementById('newPatientName'), test: el => FV.rules.personName(el.value) },
-    { field: document.getElementById('newContactNo'), test: el => FV.rules.contact(el.value) },
+    // Napili nga rehistradong pasyente: ang ngalan ug contact gikan sa Patient record, dili na i-validate ang format.
+    { field: document.getElementById('newPatientName'), test: el => document.getElementById('newPatientId').value ? '' : FV.rules.personName(el.value) },
+    { field: document.getElementById('newContactNo'), test: el => document.getElementById('newPatientId').value ? '' : FV.rules.contact(el.value) },
     { field: document.getElementById('newDate'), test: checkApptDate },
     { field: document.getElementById('newTimeSelect'), test: checkApptTime }
 ]);
 newApptForm.addEventListener('submit', e => {
     if (!newApptValidator.validate()) e.preventDefault();
-});
-
-const existApptForm = document.getElementById('formExistingAppointment');
-const existApptValidator = FV.create(existApptForm, () => [
-    {
-        // Kinahanglan napili gikan sa listahan.
-        field: document.getElementById('existSearch'), test: el => {
-            const pickedName = document.getElementById('existPatientName').value;
-            const pickedId = document.getElementById('existPatientId').value;
-            return pickedId && pickedName && el.value.trim() === pickedName ? '' : 'Please select a patient from the list.';
-        }
-    },
-    { field: document.getElementById('existContactNo'), test: el => FV.rules.contact(el.value) },
-    { field: document.getElementById('existDate'), test: checkApptDate },
-    { field: document.getElementById('existTimeSelect'), test: checkApptTime }
-]);
-existApptForm.addEventListener('submit', e => {
-    if (!existApptValidator.validate()) e.preventDefault();
 });
 
 const editApptForm = document.getElementById('formEditAppointment');
@@ -150,7 +133,12 @@ const confirmNewValidator = FV.create(confirmNewForm, () => FV.patientChecks(con
 // NEW APPOINTMENT modal — populate time slots on date change
 // ---------------------------------------------------------------
 document.getElementById('modalNewAppointment').addEventListener('show.bs.modal', function () {
+    // Balik gikan sa Register Patient: ayaw i-reset aron magpabilin ang gi-enter (ngalan, contact, petsa, oras).
+    if (returningFromRegistration) { returningFromRegistration = false; return; }
+
     newApptValidator.reset();
+    hidePatientSuggestions();
+    setPatientStatus('');
     const dateInput = document.getElementById('newDate');
     if (dateInput && dateInput.value) {
         refreshTimeDropdown(
@@ -172,91 +160,181 @@ document.getElementById('newDate').addEventListener('change', function () {
 });
 
 // ---------------------------------------------------------------
-// EXISTING APPOINTMENT modal — search + autofill name & contact
+// NEW APPOINTMENT modal — Patient Name autocomplete (Patients table).
+// Ang napili nga pasyente mo-fill sa contact ug sa hidden PatientId; kung walay
+// match, ipakita ang "not registered" ug ang Register Patient shortcut.
+// Ang server mo-verify gihapon sa PatientId pag-save.
 // ---------------------------------------------------------------
-let searchTimeout = null;
+const newPatientNameInput = document.getElementById('newPatientName');
+const newContactNoInput = document.getElementById('newContactNo');
+const newPatientIdInput = document.getElementById('newPatientId');
+const newPatientSuggestions = document.getElementById('newPatientSuggestions');
+const newPatientStatus = document.getElementById('newPatientStatus');
+const newPatientStatusText = document.getElementById('newPatientStatusText');
+const registerPatientLink = document.getElementById('btnRegisterPatient');
+let patientSearchTimer = null;
+let patientSearchSeq = 0;
+let contactAutofilled = false;
 
-document.getElementById('existSearch').addEventListener('focus', function () {
-    clearTimeout(searchTimeout);
-    fetchExistSuggestions(this.value.trim());
-});
+function setPatientStatus(message, showRegister = false) {
+    newPatientStatusText.textContent = message;
+    registerPatientLink.style.display = showRegister ? 'inline' : 'none';
+    newPatientStatus.style.display = message ? 'block' : 'none';
+}
 
-document.getElementById('existSearch').addEventListener('input', function () {
-    clearTimeout(searchTimeout);
-    // Bag-ong type = wala pay napili nga pasyente.
-    document.getElementById('existPatientId').value = '';
-    document.getElementById('existPatientName').value = '';
-    const q = this.value.trim();
-    searchTimeout = setTimeout(() => fetchExistSuggestions(q), 250);
-});
+function hidePatientSuggestions() {
+    newPatientSuggestions.style.display = 'none';
+    newPatientSuggestions.innerHTML = '';
+}
 
-async function fetchExistSuggestions(q) {
+// Napili ang pasyente: ngalan, contact (dili na usbon) ug PatientId gikan sa Patient record.
+function applyPatientToAppointment(patient) {
+    newPatientNameInput.value = patient.fullName;
+    newContactNoInput.value = patient.contactNo;
+    newContactNoInput.readOnly = true;
+    contactAutofilled = true;
+    newPatientIdInput.value = patient.id;
+    hidePatientSuggestions();
+    newApptValidator.recheck();
+}
+
+// Wala nay napili nga pasyente: tangtangon ang PatientId ug ang na-autofill nga contact.
+function clearSelectedPatient() {
+    newPatientIdInput.value = '';
+    if (contactAutofilled) newContactNoInput.value = '';
+    contactAutofilled = false;
+    newContactNoInput.readOnly = false;
+}
+
+async function searchPatients(q) {
+    const seq = ++patientSearchSeq; // i-ignore ang tigulang nga tubag
     try {
-        const res = await fetch(`/Appointments/SearchAppointments?q=${encodeURIComponent(q)}`);
-        const results = await res.json();
-        renderExistSuggestions(results, q);
+        const res = await fetch(`/Appointments/SearchPatients?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error('Patient search failed');
+        const patients = await res.json();
+        if (seq !== patientSearchSeq) return;
+        renderPatientSuggestions(patients, q);
     } catch (e) {
-        console.warn('Search failed:', e);
+        if (seq !== patientSearchSeq) return;
+        hidePatientSuggestions();
+        console.warn('Patient search failed:', e);
     }
 }
 
-function renderExistSuggestions(results, q = '') {
-    const ul = document.getElementById('existSuggestions');
-    ul.innerHTML = '';
-    if (!results.length) {
-        if (q.length > 0) {
-            const li = document.createElement('li');
-            li.className = 'appt-exist-suggestion-empty';
-            li.textContent = 'No patient found';
-            ul.appendChild(li);
-            ul.style.display = 'block';
-        } else {
-            ul.style.display = 'none';
-        }
+function renderPatientSuggestions(patients, q) {
+    hidePatientSuggestions();
+    if (!patients.length) {
+        // Walay match sa Patients table (ug valid ang ngalan): wala pa ni-register.
+        if (!FV.rules.personName(q)) setPatientStatus('This patient is not currently registered.', true);
         return;
     }
-    results.forEach(r => {
+    patients.forEach((p, i) => {
         const li = document.createElement('li');
-        li.className = 'appt-exist-suggestion-item';
-        li.textContent = r.patientName;
-        li.addEventListener('click', () => selectExistPatient(r));
-        ul.appendChild(li);
+        li.className = 'appt-suggestion-item';
+        li.textContent = `${i + 1}. ${p.fullName}`;
+        li.addEventListener('click', () => applyPatientToAppointment(p));
+        newPatientSuggestions.appendChild(li);
     });
-    ul.style.display = 'block';
+    newPatientSuggestions.style.display = 'block';
 }
 
-function selectExistPatient(r) {
-    document.getElementById('existSuggestions').style.display = 'none';
-    document.getElementById('existSearch').value   = r.patientName;
-    document.getElementById('existPatientName').value = r.patientName;
-    document.getElementById('existContactNo').value   = r.contactNo;
-    document.getElementById('existPatientId').value   = r.patientId ?? '';
-    existApptValidator.recheck();
-}
+// Bisan unsa nga usab sa ngalan = wala nay napili nga pasyente; pangitaa pag-usab kung mihunong na ang user.
+newPatientNameInput.addEventListener('input', function () {
+    clearTimeout(patientSearchTimer);
+    patientSearchSeq++;
+    clearSelectedPatient();
+    hidePatientSuggestions();
+    setPatientStatus('');
+    const q = this.value.trim();
+    if (q) patientSearchTimer = setTimeout(() => searchPatients(q), 400);
+});
+
+newPatientNameInput.addEventListener('focus', function () {
+    const q = this.value.trim();
+    if (q && !newPatientIdInput.value) searchPatients(q);
+});
 
 document.addEventListener('click', function (e) {
-    if (!e.target.closest('#existSearch') && !e.target.closest('#existSuggestions')) {
-        document.getElementById('existSuggestions').style.display = 'none';
+    if (!e.target.closest('#newPatientName') && !e.target.closest('#newPatientSuggestions')) hidePatientSuggestions();
+});
+
+// ---------------------------------------------------------------
+// REGISTER PATIENT modal (gikan sa New Appointment) — Add New Patient nga form;
+// Patient ra ang ma-save, dili ang appointment.
+// ---------------------------------------------------------------
+const newAppointmentModalEl = document.getElementById('modalNewAppointment');
+const registerPatientModalEl = document.getElementById('modalRegisterPatient');
+const registerPatientForm = document.getElementById('formRegisterPatient');
+const registerPatientValidator = FV.create(registerPatientForm, () => FV.patientChecks(registerPatientForm));
+let returningFromRegistration = false;
+let registeredPatient = null;
+
+// Auto-calculate Age gikan sa Date of Birth
+document.getElementById('regDateOfBirth').addEventListener('change', function () {
+    const ageInput = document.getElementById('regAge');
+    if (!this.value) { ageInput.value = ''; return; }
+    const dob = new Date(this.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    ageInput.value = age >= 0 ? age : '';
+});
+
+// Register Patient: i-hide ang New Appointment (magpabilin ang mga value) ug ablihi ang Add New Patient.
+registerPatientLink.addEventListener('click', function () {
+    registerPatientForm.reset();
+    document.getElementById('regAge').value = '';
+    registerPatientValidator.reset();
+    hideModalError('regPatientInlineError');
+    // Ang gi-type nga ngalan ug contact (kung naa) ma-prefill.
+    document.getElementById('regFullName').value = newPatientNameInput.value.trim();
+    document.getElementById('regContactNo').value = newContactNoInput.value.trim();
+    registeredPatient = null;
+
+    newAppointmentModalEl.addEventListener('hidden.bs.modal', () => {
+        bootstrap.Modal.getOrCreateInstance(registerPatientModalEl).show();
+    }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(newAppointmentModalEl).hide();
+});
+
+// Inig sira sa Register Patient (Save, Cancel o X): balik sa New Appointment nga wala mabag-o ang mga value.
+registerPatientModalEl.addEventListener('hidden.bs.modal', function () {
+    returningFromRegistration = true;
+    if (registeredPatient) {
+        applyPatientToAppointment(registeredPatient);
+        setPatientStatus('Patient registered successfully.');
+        registeredPatient = null;
     }
+    bootstrap.Modal.getOrCreateInstance(newAppointmentModalEl).show();
 });
 
-document.getElementById('modalExistingAppointment').addEventListener('show.bs.modal', function () {
-    existApptValidator.reset();
-    document.getElementById('existSearch').value = '';
-    document.getElementById('existPatientName').value = '';
-    document.getElementById('existContactNo').value = '';
-    document.getElementById('existDate').value = '';
-    document.getElementById('existPatientId').value = '';
-    document.getElementById('existTimeSelect').innerHTML = '<option value="">-- Select Time --</option>';
-    document.getElementById('existSuggestions').style.display = 'none';
-});
+registerPatientForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideModalError('regPatientInlineError');
+    if (!registerPatientValidator.validate()) return;
 
-document.getElementById('existDate').addEventListener('change', function () {
-    refreshTimeDropdown(
-        document.getElementById('existTimeSelect'),
-        document.getElementById('existTimeLoading'),
-        this.value
-    );
+    const submitBtn = this.querySelector('[type="submit"]');
+    submitBtn.disabled = true; // dili mag-doble nga Patient kung ma-double click
+    try {
+        const res = await fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            registeredPatient = { id: data.patientId, fullName: data.fullName, contactNo: data.contactNo };
+            bootstrap.Modal.getOrCreateInstance(registerPatientModalEl).hide();
+        } else if (!registerPatientValidator.showErrors(data.errors, fieldByName(this))) {
+            showModalError('regPatientInlineError', data.message || 'Failed to save patient. Please check the fields.');
+        }
+    } catch (err) {
+        console.error('Register patient failed:', err);
+        showModalError('regPatientInlineError', 'An unexpected error occurred while saving. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+    }
 });
 
 // ---------------------------------------------------------------

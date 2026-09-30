@@ -119,27 +119,12 @@
     box-shadow: var(--focus-ring);
 }
 
-/* ---- Existing Appointment modal: patient search suggestions ---- */
-.appt-exist-search-wrap {
+/* ---- New Appointment modal: Patient Name autocomplete + registration hint ---- */
+.appt-search-wrap {
     position: relative;
 }
 
-.appt-exist-search-icon {
-    position: absolute;
-    top: 20px;
-    left: 12px;
-    z-index: 1;
-    transform: translateY(-50%);
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    pointer-events: none;
-}
-
-.appt-exist-search-input {
-    padding-left: 36px !important;
-}
-
-.appt-exist-suggestions {
+.appt-suggestions {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
@@ -156,7 +141,7 @@
     box-shadow: var(--shadow-md);
 }
 
-.appt-exist-suggestion-item {
+.appt-suggestion-item {
     padding: 8px 12px;
     font-size: var(--fs-base);
     color: var(--text-primary);
@@ -165,16 +150,41 @@
     transition: background-color var(--transition);
 }
 
-.appt-exist-suggestion-item:hover {
+.appt-suggestion-item:hover {
     color: var(--brand-dark);
     background: var(--brand-surface-soft);
 }
 
-.appt-exist-suggestion-empty {
-    padding: 8px 12px;
-    font-size: var(--fs-sm);
-    font-style: italic;
+.appt-patient-status {
+    margin-top: 6px;
+    font-size: var(--fs-xs);
     color: var(--text-muted);
-    pointer-events: none;
-    cursor: default;
+}
+
+.appt-register-link {
+    margin: 0 0 0 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--brand-dark);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.appt-register-link:hover {
+    color: var(--brand-action);
+}
+
+.appt-register-link:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+}
+
+/* Top-align the fields so the hint under Patient Name does not push the
+   Contact Number field down (labels here are single-line). */
+#formNewAppointment .row.g-3 > [class*="col-"] {
+    justify-content: flex-start;
 }

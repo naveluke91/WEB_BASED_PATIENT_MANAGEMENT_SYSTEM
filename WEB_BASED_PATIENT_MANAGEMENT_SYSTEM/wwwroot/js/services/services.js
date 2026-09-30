@@ -40,9 +40,6 @@
         dropdown.style.display = 'none';
     }
 
-    const patientNumbers = new Map([...patients].sort((a, b) => a.id - b.id).map((patient, index) => [patient.id, index + 1]));
-    const patientLabel = patient => `${patient.name} — ${patientNumbers.get(patient.id)}`;
-
     // A patient with an available confirmed appointment always registers the
     // service for it (locked when there is only one). Otherwise it is a Walk-In.
     const lockedAppointmentId = document.getElementById('lockedAppointmentIdInput');
@@ -110,7 +107,7 @@
     function choosePatient(patient) {
         selectedPatient = patient;
         patientId.value = patient.id;
-        search.value = patientLabel(patient);
+        search.value = patient.name;
         search.style.borderColor = 'var(--brand-action)'; // sunod sa theme (clinic = #468403)
         hideDropdown();
         loadAvailableAppointments(patient);
@@ -124,11 +121,12 @@
             return;
         }
 
-        matches.forEach(patient => {
+        matches.forEach((patient, index) => {
             const option = document.createElement('button');
             option.type = 'button';
             option.className = 'w-100 text-start border-0 bg-white px-3 py-2';
-            option.textContent = patientLabel(patient);
+            // Ang numero (1. Ngalan) para sa display ra sa dropdown; ang ngalan ra ang mahimong value.
+            option.textContent = `${index + 1}. ${patient.name}`;
             option.addEventListener('click', () => choosePatient(patient));
             dropdown.appendChild(option);
         });
@@ -142,7 +140,7 @@
         resetAppointments();
         search.style.borderColor = '#C8D5C0';
         const query = search.value.trim().toLowerCase();
-        showPatients(patients.filter(patient => patientLabel(patient).toLowerCase().includes(query)));
+        showPatients(patients.filter(patient => patient.name.toLowerCase().includes(query)));
     });
 
     document.addEventListener('click', event => {
