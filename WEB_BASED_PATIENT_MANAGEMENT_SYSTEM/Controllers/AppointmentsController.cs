@@ -101,23 +101,35 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(Appointment appointment)
         {
-            // I-verify ang PatientId gikan sa form sa Patients table; ang ngalan ug contact
-            // kuhaon sa tinuod nga Patient record, dili sa gi-type sa form.
-            Patient? linkedPatient = null;
+            // Rehistradong pasyente ra ang pwede. I-verify ang PatientId gikan sa form sa Patients table;
+            // ang ngalan ug contact kuhaon sa tinuod nga Patient record, dili sa gi-type sa form.
+            Patient? linkedPatient;
             if (appointment.PatientId.HasValue)
             {
                 linkedPatient = _context.Patients.FirstOrDefault(p => p.Id == appointment.PatientId.Value);
-                if (linkedPatient == null)
-                {
-                    TempData["ErrorMessage"] = "Patient not found. Please select the patient from the list again.";
-                    return RedirectToAction(nameof(Index));
-                }
-                appointment.PatientName = linkedPatient.FullName;
-                appointment.ContactNo = linkedPatient.ContactNo;
+                // Na-usab ang ngalan human mapili: dili na valid ang daan nga PatientId.
+                if (linkedPatient != null && !string.Equals(linkedPatient.FullName.Trim(), appointment.PatientName?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    linkedPatient = null;
+            }
+            else
+            {
+                // Walay PatientId: i-link ra kung eksakto ang FullName + ContactNo (dili parehas-ra-og-ngalan).
+                linkedPatient = FindExistingPatient(appointment.PatientName ?? string.Empty, appointment.ContactNo ?? string.Empty);
             }
 
-            // I-validate pag-usab sa server (ngalan, contact, petsa, oras).
-            var errors = ValidateAppointmentInput(appointment, checkName: linkedPatient == null, checkSchedule: true, checkContact: linkedPatient == null);
+            // Wala sa Patients table = wala pa ni-register: dili i-save ang appointment.
+            if (linkedPatient == null)
+            {
+                TempData["ErrorMessage"] = "Patient is not registered.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            appointment.PatientId = linkedPatient.Id;
+            appointment.PatientName = linkedPatient.FullName;
+            appointment.ContactNo = linkedPatient.ContactNo;
+
+            // I-validate pag-usab sa server (petsa, oras); ang ngalan ug contact gikan na sa Patient record.
+            var errors = ValidateAppointmentInput(appointment, checkName: false, checkSchedule: true, checkContact: false);
 
             if (errors.Count == 0)
             {
@@ -130,19 +142,6 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     TempData["ErrorMessage"] = "That time slot is already booked. Please choose a different time.";
                     return RedirectToAction(nameof(Index));
-                }
-
-                // Walay PatientId: i-link ra kung eksakto ang FullName + ContactNo (dili parehas-ra-og-ngalan).
-                // Walay eksaktong match = wala pa ni-register: PatientId mabilin nga null, walay Patient nga himoon.
-                if (linkedPatient == null)
-                {
-                    var matchedPatient = FindExistingPatient(appointment.PatientName, appointment.ContactNo);
-                    if (matchedPatient != null)
-                    {
-                        appointment.PatientId = matchedPatient.Id;
-                        appointment.PatientName = matchedPatient.FullName;
-                        appointment.ContactNo = matchedPatient.ContactNo;
-                    }
                 }
 
                 // Dili pagsaligan ang ubang field gikan sa form.

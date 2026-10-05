@@ -176,8 +176,11 @@ let patientSearchTimer = null;
 let patientSearchSeq = 0;
 let contactAutofilled = false;
 
-function setPatientStatus(message, showRegister = false) {
+// isError: pula ang mensahe ug ang Patient Name (gi-Save nga walay napili nga rehistradong pasyente).
+function setPatientStatus(message, showRegister = false, isError = false) {
     newPatientStatusText.textContent = message;
+    newPatientStatusText.classList.toggle('text-danger', isError);
+    newPatientNameInput.classList.toggle('input-validation-error', isError);
     registerPatientLink.style.display = showRegister ? 'inline' : 'none';
     newPatientStatus.style.display = message ? 'block' : 'none';
 }
@@ -195,6 +198,7 @@ function applyPatientToAppointment(patient) {
     contactAutofilled = true;
     newPatientIdInput.value = patient.id;
     hidePatientSuggestions();
+    setPatientStatus('');
     newApptValidator.recheck();
 }
 
@@ -206,14 +210,14 @@ function clearSelectedPatient() {
     newContactNoInput.readOnly = false;
 }
 
-async function searchPatients(q) {
+async function searchPatients(q, fromSave = false) {
     const seq = ++patientSearchSeq; // i-ignore ang tigulang nga tubag
     try {
         const res = await fetch(`/Appointments/SearchPatients?q=${encodeURIComponent(q)}`);
         if (!res.ok) throw new Error('Patient search failed');
         const patients = await res.json();
         if (seq !== patientSearchSeq) return;
-        renderPatientSuggestions(patients, q);
+        renderPatientSuggestions(patients, q, fromSave);
     } catch (e) {
         if (seq !== patientSearchSeq) return;
         hidePatientSuggestions();
@@ -221,13 +225,17 @@ async function searchPatients(q) {
     }
 }
 
-function renderPatientSuggestions(patients, q) {
+function renderPatientSuggestions(patients, q, fromSave = false) {
     hidePatientSuggestions();
+    // Gikan sa Save (o naa nay sayop gikan sa Save): ipakita isip pula nga sayop.
+    const isError = fromSave || newPatientStatusText.classList.contains('text-danger');
     if (!patients.length) {
         // Walay match sa Patients table (ug valid ang ngalan): wala pa ni-register.
-        if (!FV.rules.personName(q)) setPatientStatus('This patient is not currently registered.', true);
+        if (!FV.rules.personName(q)) setPatientStatus('Patient is not registered.', true, isError);
         return;
     }
+    // Naa'y parehas nga pasyente pero wala mapili gikan sa lista.
+    if (isError) setPatientStatus('Please select the patient from the list.', false, true);
     patients.forEach((p, i) => {
         const li = document.createElement('li');
         li.className = 'appt-suggestion-item';
@@ -247,6 +255,19 @@ newPatientNameInput.addEventListener('input', function () {
     setPatientStatus('');
     const q = this.value.trim();
     if (q) patientSearchTimer = setTimeout(() => searchPatients(q), 400);
+});
+
+// Rehistradong pasyente ra ang ma-save: kung walay napili gikan sa lista (walay PatientId), dili i-submit.
+// Pangitaa pag-usab ang ngalan ug ipakita ang pula nga sayop: "Patient is not registered." + Register Patient,
+// o ang lista kung naa'y parehas nga pasyente.
+newApptForm.addEventListener('submit', function (e) {
+    if (newPatientIdInput.value) return;
+    e.preventDefault();
+    const q = newPatientNameInput.value.trim();
+    if (!FV.rules.personName(q)) {
+        clearTimeout(patientSearchTimer);
+        searchPatients(q, true);
+    }
 });
 
 newPatientNameInput.addEventListener('focus', function () {
