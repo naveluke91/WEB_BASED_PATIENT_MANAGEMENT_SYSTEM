@@ -29,8 +29,16 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         public DateTime? DateTimeDelivered { get; set; }
 
         public string? BedNo { get; set; }
-        public string? MotherName { get; set; }
-        public string? MotherAddress { get; set; }
+
+        // The mother is the linked Patient, so her name and address are read from
+        // Patient (auto-included in ApplicationDbContext) and not stored here.
+        private string? _motherName;
+        [NotMapped]
+        public string? MotherName { get => _motherName ?? Patient?.FullName; set => _motherName = value; }
+
+        private string? _motherAddress;
+        [NotMapped]
+        public string? MotherAddress { get => _motherAddress ?? Patient?.Address; set => _motherAddress = value; }
 
         public string? PlacentaOut { get; set; } // Complete or Incomplete
         public string? ApgarScore { get; set; }

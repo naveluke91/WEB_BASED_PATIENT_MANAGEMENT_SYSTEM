@@ -51,6 +51,17 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [Required]
         [MaxLength(64)]
         public string SecurityStamp { get; set; } = string.Empty;
+
+        // ---- User log (kept on the account itself; there is no separate log table) ----
+
+        // Last successful sign-in.
+        public DateTime? LastLoginAtUtc { get; set; }
+
+        // Last sign-out.
+        public DateTime? LastLogoutAtUtc { get; set; }
+
+        // Last signed-in request made by the account.
+        public DateTime? LastActivityAtUtc { get; set; }
     }
 
     /// <summary>

@@ -149,6 +149,66 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Data
                 .WithMany()
                 .HasForeignKey(r => r.AppointmentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // The clinical records read the patient's details (name, address, LMP,
+            // etc.) from Patient instead of storing copies, so Patient is always
+            // loaded together with them.
+            modelBuilder.Entity<PrenatalRecord>().Navigation(r => r.Patient).AutoInclude();
+            modelBuilder.Entity<NewbornRecord>().Navigation(r => r.Patient).AutoInclude();
+            modelBuilder.Entity<FamilyPlanningRecord>().Navigation(r => r.Patient).AutoInclude();
+
+            // PrenatalRecords and FamilyPlanningRecords keep one JSON column per form
+            // category instead of one column per input. The inputs stay as model
+            // properties (the field lists are in the models) but are not columns.
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.GeneralInfoJson),
+                "General Prenatal Information", PrenatalRecord.GeneralInfoFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.VitalSignsJson),
+                "Vital Signs / Physical Examination", PrenatalRecord.VitalSignsFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.ObstetricInfoJson),
+                "Pregnancy / Obstetric Information", PrenatalRecord.ObstetricInfoFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.MaternalHistoryJson),
+                "Maternal History", PrenatalRecord.MaternalHistoryFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.LaboratoryJson),
+                "Laboratory / Diagnostic Information", PrenatalRecord.LaboratoryFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.RiskAssessmentJson),
+                "Pregnancy Risk / Assessment", PrenatalRecord.RiskAssessmentFields);
+            MapCategory<PrenatalRecord>(modelBuilder, nameof(PrenatalRecord.BirthPlanJson),
+                "Delivery / Follow-up", PrenatalRecord.BirthPlanFields);
+            modelBuilder.Entity<PrenatalRecord>().Property(r => r.PrenatalVisitsJson)
+                .HasComment("Prenatal visit rows (JSON list). Fields per visit: RecordDate, AOG, Weight, "
+                    + "BloodPressure, Temperature, FundalHeight, FetalHeartTone, Remarks");
+
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.ClientInfoJson),
+                "Client Information", FamilyPlanningRecord.ClientInfoFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.FamilyPlanningMethodJson),
+                "Family Planning Method / History", FamilyPlanningRecord.FamilyPlanningMethodFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.MedicalHistoryJson),
+                "I. Medical History", FamilyPlanningRecord.MedicalHistoryFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.ObstetricalHistoryJson),
+                "II. Obstetrical History", FamilyPlanningRecord.ObstetricalHistoryFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.RiskAssessmentJson),
+                "III-IV. Risks for STI and VAW", FamilyPlanningRecord.RiskAssessmentFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.PhysicalExamJson),
+                "V. Physical Examination", FamilyPlanningRecord.PhysicalExamFields);
+            MapCategory<FamilyPlanningRecord>(modelBuilder, nameof(FamilyPlanningRecord.AcknowledgementJson),
+                "Acknowledgement / Consent", FamilyPlanningRecord.AcknowledgementFields);
+        }
+
+        // Stores the category's fields in one JSON column: the fields are not mapped
+        // as columns, and the JSON property's getter/setter (see CategoryJson) is
+        // what EF Core reads and writes. The column's MS_Description lists the
+        // fields, so SSMS shows what each JSON column holds.
+        private static void MapCategory<TEntity>(ModelBuilder modelBuilder, string jsonProperty,
+            string category, string[] fields)
+            where TEntity : class
+        {
+            var entity = modelBuilder.Entity<TEntity>();
+            foreach (var field in fields)
+                entity.Ignore(field);
+
+            entity.Property(jsonProperty)
+                .UsePropertyAccessMode(PropertyAccessMode.Property)
+                .HasComment($"Category: {category} (JSON). Fields: {string.Join(", ", fields)}");
         }
     }
 }
