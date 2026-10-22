@@ -19,6 +19,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/reports/reports.css" asp-append-version="true" />
+
+    @* ==== [ST-REPORT-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/reports.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-REPORT-0] END ==== *@
 }
 
 <div class="page-header">
@@ -28,6 +35,24 @@
     @if (Model.IsGenerated)
     {
         <div class="page-actions">
+            @* ==== [ST-REPORT-1] START — Export CSV button (maablihan sa Excel) ==== *@
+            @*
+            <a asp-action="ExportCsv" asp-route-reportType="@Model.ReportType"
+               asp-route-dateFrom="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" asp-route-dateTo="@(Model.DateTo?.ToString("yyyy-MM-dd"))"
+               asp-route-stFilter="@Context.Request.Query["stFilter"]" class="btn-cancel">
+                <i class="bi bi-filetype-csv" aria-hidden="true"></i> Export CSV
+            </a>
+            *@
+            @* ==== [ST-REPORT-1] END ==== *@
+
+            @* ==== [ST-REPORT-2] START — Export Excel button (.xls gikan sa table nga makita) ==== *@
+            @*
+            <button type="button" class="btn-cancel" id="stExportExcel">
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Export Excel
+            </button>
+            *@
+            @* ==== [ST-REPORT-2] END ==== *@
+
             <button type="button" class="btn-cancel" id="printReport">
                 <i class="bi bi-printer" aria-hidden="true"></i> Print Report
             </button>
@@ -79,23 +104,248 @@
                 <input type="date" name="dateTo" id="dateTo" class="form-control"
                        value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
             </div>
+
+            @* ==== [ST-REPORT-7] START — Dugang filter (mogawas ra ang angay sa napili nga report) ==== *@
+            @*
+            <div class="col-sm-6 col-md">
+                <label for="stReportFilter" class="form-label">Filter</label>
+                <select name="stFilter" id="stReportFilter" class="form-select">
+                    <option value="">All</option>
+                    <optgroup label="Appointment Status" data-report="Appointment">
+                        @foreach (var status in new[] { "Pending", "Confirmed", "Rescheduled", "Cancelled", "Completed", "No-Show" })
+                        {
+                            <option value="@status" selected="@(Context.Request.Query["stFilter"] == status)">@status</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Visit Type" data-report="Consultation">
+                        @foreach (var visit in new[] { "Appointment", "Walk-In" })
+                        {
+                            <option value="@visit" selected="@(Context.Request.Query["stFilter"] == visit)">@visit</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Payment Method" data-report="Payment">
+                        @foreach (var method in new[] { "Cash", "GCash", "Maya" })
+                        {
+                            <option value="@method" selected="@(Context.Request.Query["stFilter"] == method)">@method</option>
+                        }
+                    </optgroup>
+                </select>
+            </div>
+            *@
+            @* ==== [ST-REPORT-7] END ==== *@
+
             @* Sized to its label, so "Generate Report" is never cut off *@
             <div class="col-md-auto">
                 <button type="submit" class="btn-primary-dark report-generate">Generate Report</button>
             </div>
         </div>
+
+        @* ==== [ST-REPORT-6] START — Quick date buttons: Today / This Week / This Month / This Year ==== *@
+        @*
+        <div class="st-date-presets">
+            <span>Quick dates:</span>
+            <button type="button" class="st-chip" data-preset="today">Today</button>
+            <button type="button" class="st-chip" data-preset="week">This Week</button>
+            <button type="button" class="st-chip" data-preset="month">This Month</button>
+            <button type="button" class="st-chip" data-preset="year">This Year</button>
+            <button type="button" class="st-chip" data-preset="clear">Clear</button>
+        </div>
+        *@
+        @* ==== [ST-REPORT-6] END ==== *@
     </form>
 </div>
 
 @if (Model.IsGenerated)
 {
     <div class="content-card report-results">
+        @* ==== [ST-REPORT-10] START — Header sa printed report (clinic name ug logo; makita ra inig print) ==== *@
+        @*
+        <div class="st-print-header">
+            <img src="~/images/espanola-birthing-home-logo.jpg" alt="" />
+            <div>
+                <strong>Española Birthing Home</strong>
+                <span>Patient Management System</span>
+            </div>
+        </div>
+        *@
+        @* ==== [ST-REPORT-10] END ==== *@
+
         <div class="card-header-row">
             <div>
                 <h2 class="card-title">@reportTitle</h2>
                 <p class="report-meta">@rangeText · Generated @Model.GeneratedAt.ToString("MMM dd, yyyy h:mm tt")</p>
             </div>
         </div>
+
+        @* ==== [ST-REPORT-12] START — Chart sa report (Chart.js) ==== *@
+        @*
+        @{
+            var stChartTitle = "";
+            var stChartData = new Dictionary<string, decimal>();
+            if (Model.ReportType == ReportsPageViewModel.PatientReport)
+            {
+                stChartTitle = "Patients by Marital Status";
+                foreach (var group in Model.Patients.GroupBy(p => p.MaritalStatus)) stChartData[group.Key] = group.Count();
+            }
+            else if (Model.ReportType == ReportsPageViewModel.AppointmentReport)
+            {
+                stChartTitle = "Appointments by Status";
+                foreach (var group in Model.Appointments.GroupBy(a => a.Status)) stChartData[group.Key] = group.Count();
+            }
+            else if (Model.ReportType == ReportsPageViewModel.ConsultationReport)
+            {
+                stChartTitle = "Consultations by Service";
+                foreach (var group in Model.Consultations.GroupBy(c => c.ServiceType)) stChartData[group.Key] = group.Count();
+            }
+            else if (Model.ReportType == ReportsPageViewModel.PaymentReport)
+            {
+                stChartTitle = "Amount Collected by Payment Method (₱)";
+                foreach (var group in Model.Payments.GroupBy(p => p.PaymentMethod)) stChartData[group.Key] = group.Sum(p => p.Amount ?? 0);
+            }
+        }
+        @if (stChartData.Count > 0)
+        {
+            <div class="st-chart-box">
+                <h3 class="st-chart-title">@stChartTitle</h3>
+                <canvas id="stReportChart" data-title="@stChartTitle" data-chart="@System.Text.Json.JsonSerializer.Serialize(stChartData)"></canvas>
+            </div>
+        }
+        *@
+        @* ==== [ST-REPORT-12] END ==== *@
+
+        @* ==== [ST-REPORT-3] START — Services Report (table) ==== *@
+        @*
+        @if (Model.ReportType == "Service")
+        {
+            <div class="report-section st-report">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.StServices.Count</strong> @CountLabel(Model.StServices.Count, "service")</span>
+                    <span class="report-stat">Total <strong>&#8369; @Model.StServices.Sum(s => s.Price).ToString("N2")</strong></span>
+                    @foreach (var group in Model.StServices.GroupBy(s => s.ServiceName))
+                    {
+                        <span class="report-stat"><strong>@group.Count()</strong> @group.Key</span>
+                    }
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th>Service</th>
+                                <th>Type</th>
+                                <th class="col-fit">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.StServices.Any())
+                            {
+                                <tr><td colspan="4" class="table-empty">No services found.</td></tr>
+                            }
+                            @foreach (var service in Model.StServices)
+                            {
+                                <tr>
+                                    <td class="cell-name">@(service.Patient?.FullName ?? "Unknown")</td>
+                                    <td>@service.ServiceName</td>
+                                    <td>@(service.AppointmentId.HasValue ? "Appointment" : "Walk-In")</td>
+                                    <td class="col-fit"><span class="report-amount">&#8369; @service.Price.ToString("N2")</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        *@
+        @* ==== [ST-REPORT-3] END ==== *@
+
+        @* ==== [ST-REPORT-4] START — Expected Deliveries (EDC) Report (table) ==== *@
+        @*
+        @if (Model.ReportType == "Delivery")
+        {
+            <div class="report-section st-report">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Patients.Count</strong> expected @(Model.Patients.Count == 1 ? "delivery" : "deliveries")</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th class="col-fit">Age</th>
+                                <th>Contact No.</th>
+                                <th>AOG</th>
+                                <th class="col-fit">EDC</th>
+                                <th class="col-fit">Days Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Patients.Any())
+                            {
+                                <tr><td colspan="6" class="table-empty">No expected deliveries for this period.</td></tr>
+                            }
+                            @foreach (var patient in Model.Patients)
+                            {
+                                var daysLeft = (patient.EDC!.Value.Date - DateTime.Today).Days;
+                                <tr>
+                                    <td class="cell-name">@patient.FullName</td>
+                                    <td class="col-fit">@patient.Age</td>
+                                    <td class="cell-nowrap">@patient.ContactNo</td>
+                                    <td>@(string.IsNullOrEmpty(patient.AOG) ? "—" : patient.AOG)</td>
+                                    <td class="col-fit">@patient.EDC.Value.ToString("MMM dd, yyyy")</td>
+                                    <td class="col-fit">@(daysLeft < 0 ? $"{-daysLeft} day(s) overdue" : daysLeft == 0 ? "Today" : $"{daysLeft} day(s)")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        *@
+        @* ==== [ST-REPORT-4] END ==== *@
+
+        @* ==== [ST-REPORT-5] START — Income per Service Report (table) ==== *@
+        @*
+        @if (Model.ReportType == "Income")
+        {
+            var incomeGroups = Model.Payments
+                .GroupBy(p => p.Consultation?.ServiceType ?? "Unknown")
+                .Select(g => new { Service = g.Key, Count = g.Count(), Total = g.Sum(p => p.Amount ?? 0) })
+                .OrderByDescending(g => g.Total)
+                .ToList();
+            <div class="report-section st-report">
+                <div class="report-summary">
+                    <span class="report-stat"><strong>@Model.Payments.Count</strong> @CountLabel(Model.Payments.Count, "payment")</span>
+                    <span class="report-stat">Total <strong>&#8369; @Model.Payments.Sum(p => p.Amount ?? 0).ToString("N2")</strong></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th class="col-fit">No. of Payments</th>
+                                <th class="col-fit">Total Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!incomeGroups.Any())
+                            {
+                                <tr><td colspan="3" class="table-empty">No payments found for this period.</td></tr>
+                            }
+                            @foreach (var group in incomeGroups)
+                            {
+                                <tr>
+                                    <td class="cell-name">@group.Service</td>
+                                    <td class="col-fit">@group.Count</td>
+                                    <td class="col-fit"><span class="report-amount">&#8369; @group.Total.ToString("N2")</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        *@
+        @* ==== [ST-REPORT-5] END ==== *@
 
         @if (Model.ReportType == ReportsPageViewModel.PatientReport)
         {
@@ -112,6 +362,11 @@
                                 <th>Contact No.</th>
                                 <th>AOG</th>
                                 <th class="col-fit">EDC</th>
+                                @* ==== [ST-REPORT-9] START — Date Registered column sa Patient Report ==== *@
+                                @*
+                                <th class="col-fit">Date Registered</th>
+                                *@
+                                @* ==== [ST-REPORT-9] END ==== *@
                             </tr>
                         </thead>
                         <tbody>
@@ -129,6 +384,11 @@
                                     <td class="cell-nowrap">@patient.ContactNo</td>
                                     <td>@(string.IsNullOrEmpty(patient.AOG) ? "—" : patient.AOG)</td>
                                     <td class="col-fit">@(patient.EDC?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                    @* ==== [ST-REPORT-9] START — Date Registered column sa Patient Report ==== *@
+                                    @*
+                                    <td class="col-fit">@(patient.DateRegistered?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                    *@
+                                    @* ==== [ST-REPORT-9] END ==== *@
                                 </tr>
                             }
                         </tbody>
@@ -145,6 +405,14 @@
                     {
                         <span class="report-stat"><strong>@(Model.Appointments.Count(a => a.Status == status))</strong> @status.ToLowerInvariant()</span>
                     }
+                    @* ==== [ST-APPT-15] START — Ihap sab sa Completed ug No-Show ==== *@
+                    @*
+                    @foreach (var status in new[] { "Completed", "No-Show" })
+                    {
+                        <span class="report-stat"><strong>@(Model.Appointments.Count(a => a.Status == status))</strong> @status.ToLowerInvariant()</span>
+                    }
+                    *@
+                    @* ==== [ST-APPT-15] END ==== *@
                 </div>
                 <div class="table-responsive">
                     <table class="data-table report-table">
@@ -188,6 +456,14 @@
                     <span class="report-stat"><strong>@Model.Consultations.Count</strong> @CountLabel(Model.Consultations.Count, "consultation")</span>
                     <span class="report-stat"><strong>@(Model.Consultations.Count(c => c.Status == "In Progress"))</strong> in progress</span>
                     <span class="report-stat"><strong>@(Model.Consultations.Count(c => c.Status == "Completed"))</strong> completed</span>
+                    @* ==== [ST-REPORT-11] START — Ihap matag service (e.g. 5 Prenatal, 2 DEPO) ==== *@
+                    @*
+                    @foreach (var group in Model.Consultations.GroupBy(c => c.ServiceType).OrderByDescending(g => g.Count()))
+                    {
+                        <span class="report-stat st-service-stat"><strong>@group.Count()</strong> @group.Key</span>
+                    }
+                    *@
+                    @* ==== [ST-REPORT-11] END ==== *@
                 </div>
                 <div class="table-responsive">
                     <table class="data-table report-table">
@@ -232,6 +508,11 @@
                     <span class="report-stat">Total <strong>&#8369; @(Model.Payments.Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
                     <span class="report-stat">Cash <strong>&#8369; @(Model.Payments.Where(p => p.PaymentMethod == "Cash").Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
                     <span class="report-stat">GCash <strong>&#8369; @(Model.Payments.Where(p => p.PaymentMethod == "GCash").Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
+                    @* ==== [ST-BILLING-12] START — Total sa bag-ong payment method (Maya) ==== *@
+                    @*
+                    <span class="report-stat">Maya <strong>&#8369; @(Model.Payments.Where(p => p.PaymentMethod == "Maya").Sum(p => p.Amount ?? 0).ToString("N2"))</strong></span>
+                    *@
+                    @* ==== [ST-BILLING-12] END ==== *@
                 </div>
                 <div class="table-responsive">
                     <table class="data-table report-table">
@@ -272,9 +553,37 @@
                 </div>
             </div>
         }
+
+        @* ==== [ST-REPORT-10] START — "Prepared by" ug pirma sa ubos sa printed report ==== *@
+        @*
+        <div class="st-print-footer">
+            <div>
+                <span class="st-sign-line"></span>
+                <span>Prepared by: @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</span>
+            </div>
+            <div>
+                <span class="st-sign-line"></span>
+                <span>Noted by: Clinic Administrator</span>
+            </div>
+        </div>
+        *@
+        @* ==== [ST-REPORT-10] END ==== *@
     </div>
 }
 
 @section Scripts {
     <script src="~/js/reports/reports.js" asp-append-version="true"></script>
+
+    @* ==== [ST-REPORT-12] START — Chart.js library (para sa chart) ==== *@
+    @*
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    *@
+    @* ==== [ST-REPORT-12] END ==== *@
+
+    @* ==== [ST-REPORT-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/reports.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-REPORT-0] END ==== *@
 }

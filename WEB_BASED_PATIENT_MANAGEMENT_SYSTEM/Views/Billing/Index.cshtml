@@ -17,6 +17,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/billing/billing.css" asp-append-version="true" />
+
+    @* ==== [ST-BILLING-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/billing.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-BILLING-0] END ==== *@
 }
 
 <div class="page-header">
@@ -32,9 +39,125 @@
 
 <partial name="_PageAlerts" />
 
+@* ==== [ST-BILLING-4] START — Summary cards: Today, This Month, All, Cash, GCash ==== *@
+@*
+@{
+    var stToday = DateTime.Today;
+    var stTodayTotal = Model.Transactions.Where(p => p.PaymentDate.Date == stToday).Sum(p => p.Amount ?? 0);
+    var stMonthTotal = Model.Transactions.Where(p => p.PaymentDate.Year == stToday.Year && p.PaymentDate.Month == stToday.Month).Sum(p => p.Amount ?? 0);
+    var stAllTotal = Model.Transactions.Sum(p => p.Amount ?? 0);
+    var stCashTotal = Model.Transactions.Where(p => p.PaymentMethod == "Cash").Sum(p => p.Amount ?? 0);
+    var stGcashTotal = Model.Transactions.Where(p => p.PaymentMethod == "GCash").Sum(p => p.Amount ?? 0);
+}
+<div class="st-cards">
+    <div class="st-card"><span class="st-card-label">Collected Today</span><span class="st-card-value">&#8369; @stTodayTotal.ToString("N2")</span></div>
+    <div class="st-card"><span class="st-card-label">This Month</span><span class="st-card-value">&#8369; @stMonthTotal.ToString("N2")</span></div>
+    <div class="st-card"><span class="st-card-label">All Transactions</span><span class="st-card-value">&#8369; @stAllTotal.ToString("N2")</span></div>
+    <div class="st-card"><span class="st-card-label">Cash</span><span class="st-card-value">&#8369; @stCashTotal.ToString("N2")</span></div>
+    <div class="st-card"><span class="st-card-label">GCash</span><span class="st-card-value">&#8369; @stGcashTotal.ToString("N2")</span></div>
+</div>
+*@
+@* ==== [ST-BILLING-4] END ==== *@
+
+@* ==== [ST-BILLING-5] START — Listahan sa wala pa nabayran (completed consultations) ==== *@
+@*
+<div class="content-card st-unpaid-card">
+    <div class="card-header-row">
+        <h2 class="card-title">Unpaid Consultations (@Model.BillableConsultations.Count)</h2>
+    </div>
+    @if (!Model.BillableConsultations.Any())
+    {
+        <p class="st-unpaid-empty">All completed consultations are paid.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Service</th>
+                        <th class="col-fit">Completed</th>
+                        <th class="col-fit">Service Fee</th>
+                        <th class="col-actions">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var unpaid in Model.BillableConsultations)
+                    {
+                        <tr>
+                            <td class="cell-name">@(unpaid.Patient?.FullName ?? "Unknown")</td>
+                            <td>@unpaid.ServiceType</td>
+                            <td class="col-fit">@((unpaid.CompletedAt ?? unpaid.StartedAt).ToString("MMM dd, yyyy"))</td>
+                            <td class="col-fit">@(Model.ServiceFees.ContainsKey(unpaid.Id) ? "₱ " + Model.ServiceFees[unpaid.Id].ToString("N2") : "—")</td>
+                            <td class="col-actions">
+                                <a asp-action="Index" asp-route-consultationId="@unpaid.Id" class="action-btn action-btn-primary">
+                                    <i class="bi bi-cash-coin" aria-hidden="true"></i> Record Payment
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+*@
+@* ==== [ST-BILLING-5] END ==== *@
+
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Transaction List</h2>
+
+        @* ==== [ST-BILLING-1] START — Filter by Payment Method ==== *@
+        @*
+        <select id="stPayMethodFilter" class="form-select st-filter" aria-label="Filter by payment method">
+            <option value="">All Methods</option>
+            @foreach (var method in Model.PaymentMethods)
+            {
+                <option value="@method">@method</option>
+            }
+        </select>
+        *@
+        @* ==== [ST-BILLING-1] END ==== *@
+
+        @* ==== [ST-BILLING-2] START — Filter by Payment Date (preset o From–To) ==== *@
+        @*
+        <select id="stPayDatePreset" class="form-select st-filter" aria-label="Filter by payment date">
+            <option value="">All Dates</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+        </select>
+        <input type="date" id="stPayFrom" class="form-control st-filter" title="From" aria-label="From" />
+        <input type="date" id="stPayTo" class="form-control st-filter" title="To" aria-label="To" />
+        *@
+        @* ==== [ST-BILLING-2] END ==== *@
+
+        @* ==== [ST-BILLING-3] START — Sort (Ascending / Descending) ==== *@
+        @*
+        <select id="stPaySort" class="form-select st-filter" aria-label="Sort transactions">
+            <option value="date:text:desc">Sort: Newest first</option>
+            <option value="date:text:asc">Sort: Oldest first</option>
+            <option value="amount:number:desc">Sort: Amount (high to low)</option>
+            <option value="amount:number:asc">Sort: Amount (low to high)</option>
+            <option value="patient:text:asc">Sort: Name (A–Z)</option>
+            <option value="patient:text:desc">Sort: Name (Z–A)</option>
+        </select>
+        *@
+        @* ==== [ST-BILLING-3] END ==== *@
+
+        @* ==== [ST-BILLING-6] START — Pagination: pila ka row kada page ==== *@
+        @*
+        <select id="stPayPageSize" class="form-select st-filter" aria-label="Rows per page">
+            <option value="10">Show 10</option>
+            <option value="25">Show 25</option>
+            <option value="50">Show 50</option>
+            <option value="0">Show all</option>
+        </select>
+        *@
+        @* ==== [ST-BILLING-6] END ==== *@
+
         <div class="search-box">
             <i class="bi bi-search" aria-hidden="true"></i>
             <input type="text" id="billingSearch" placeholder="Search by patient or payment method..." aria-label="Search transactions" />
@@ -45,6 +168,11 @@
         <table class="data-table">
             <thead>
                 <tr>
+                    @* ==== [ST-BILLING-14] START — OR No. column ==== *@
+                    @*
+                    <th class="col-fit">OR No.</th>
+                    *@
+                    @* ==== [ST-BILLING-14] END ==== *@
                     <th>Patient Name</th>
                     <th class="col-fit">Consultation Date</th>
                     <th>Consultation Type</th>
@@ -71,7 +199,24 @@
                     var searchText = $"{patientName} {consultation.ServiceType} {payment.PaymentMethod}".ToLowerInvariant();
 
                     <tr class="patient-row" data-search="@searchText">
-                        <td class="cell-name">@patientName</td>
+                        @* ==== [ST-BILLING-14] START — OR No. column ==== *@
+                        @*
+                        <td class="col-fit cell-nowrap">@($"OR-{payment.PaymentDate.Year}-{payment.Id:D5}")</td>
+                        *@
+                        @* ==== [ST-BILLING-14] END ==== *@
+                        <td class="cell-name">
+                            @* ==== [ST-BILLING-0] START — SETUP: datos sa row nga gamiton sa skilltestjs/billing.js ==== *@
+                            @*
+                            <span class="st-data" hidden
+                                  data-id="@payment.Id"
+                                  data-patient="@patientName"
+                                  data-method="@payment.PaymentMethod"
+                                  data-date="@payment.PaymentDate.ToString("yyyy-MM-dd")"
+                                  data-amount="@((payment.Amount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))"></span>
+                            *@
+                            @* ==== [ST-BILLING-0] END ==== *@
+                            @patientName
+                        </td>
                         <td class="col-fit">@ConsultationDate(consultation)</td>
                         <td>
                             @consultation.ServiceType
@@ -95,6 +240,63 @@
                                         data-payment-method="@payment.PaymentMethod">
                                     <i class="bi bi-eye" aria-hidden="true"></i><span class="action-label">View</span>
                                 </button>
+
+                                @* ==== [ST-BILLING-8] START — Datos sa Amount Received ug Change (para sa View modal) ==== *@
+                                @*
+                                <span class="st-pay-tendered" hidden
+                                      data-tendered="@(payment.AmountTendered?.ToString("N2") ?? "")"
+                                      data-change="@(payment.AmountTendered.HasValue ? (payment.AmountTendered.Value - (payment.Amount ?? 0)).ToString("N2") : "")"></span>
+                                *@
+                                @* ==== [ST-BILLING-8] END ==== *@
+
+                                @* ==== [ST-BILLING-9] START — Datos sa GCash Reference No. (para sa View modal) ==== *@
+                                @*
+                                <span class="st-pay-reference" hidden data-reference="@payment.ReferenceNumber"></span>
+                                *@
+                                @* ==== [ST-BILLING-9] END ==== *@
+
+                                @* ==== [ST-BILLING-10] START — Datos sa Discount (para sa View modal) ==== *@
+                                @*
+                                <span class="st-pay-discount" hidden data-discount="@payment.DiscountType"></span>
+                                *@
+                                @* ==== [ST-BILLING-10] END ==== *@
+
+                                @* ==== [ST-BILLING-11] START — Datos sa Received By (para sa View modal) ==== *@
+                                @*
+                                <span class="st-pay-received" hidden data-received="@payment.ReceivedBy"></span>
+                                *@
+                                @* ==== [ST-BILLING-11] END ==== *@
+
+                                @* ==== [ST-BILLING-16] START — Edit Payment button (Admin ra) ==== *@
+                                @*
+                                @if (User.IsInRole(UserRoles.Admin))
+                                {
+                                    <button type="button" class="action-btn st-edit-payment" title="Edit Payment"
+                                            data-bs-toggle="modal" data-bs-target="#stEditPaymentModal"
+                                            data-payment-id="@payment.Id"
+                                            data-patient-name="@patientName"
+                                            data-amount="@((payment.Amount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                            data-payment-method="@payment.PaymentMethod">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i><span class="action-label">Edit</span>
+                                    </button>
+                                }
+                                *@
+                                @* ==== [ST-BILLING-16] END ==== *@
+
+                                @* ==== [ST-BILLING-15] START — Void Payment button (Admin ra) ==== *@
+                                @*
+                                @if (User.IsInRole(UserRoles.Admin))
+                                {
+                                    <form asp-action="Void" asp-route-id="@payment.Id" method="post" onsubmit="confirmDelete(event, this);"
+                                          data-delete-message="Void this payment? The transaction will be removed and the consultation will be unpaid again.">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="action-btn delete-btn" title="Void Payment">
+                                            <i class="bi bi-x-circle" aria-hidden="true"></i><span class="action-label">Void</span>
+                                        </button>
+                                    </form>
+                                }
+                                *@
+                                @* ==== [ST-BILLING-15] END ==== *@
                             </div>
                         </td>
                     </tr>
@@ -102,7 +304,57 @@
             </tbody>
         </table>
     </div>
+
+    @* ==== [ST-BILLING-6] START — Pagination buttons (gi-fill sa skilltestjs/billing.js) ==== *@
+    @*
+    <div id="stPayPager" class="st-pager"></div>
+    *@
+    @* ==== [ST-BILLING-6] END ==== *@
 </div>
+
+@* ==== [ST-BILLING-16] START — Edit Payment modal (Admin ra) ==== *@
+@*
+<div class="modal fade" id="stEditPaymentModal" tabindex="-1" aria-labelledby="stEditPaymentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="EditPayment" method="post" id="stEditPaymentForm">
+                <input type="hidden" name="id" id="stEditPaymentId" />
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <div>
+                            <h5 class="modal-title" id="stEditPaymentLabel">Edit Payment</h5>
+                            <p class="modal-subtitle" id="stEditPaymentSubtitle"></p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="stEditPaymentAmount" class="form-label">Amount (&#8369;)</label>
+                            <input type="number" name="amount" id="stEditPaymentAmount" class="form-control" min="0.01" max="99999999.99" step="0.01" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="stEditPaymentMethod" class="form-label">Payment Method</label>
+                            <select name="paymentMethod" id="stEditPaymentMethod" class="form-select" required>
+                                @foreach (var method in Model.PaymentMethods)
+                                {
+                                    <option value="@method">@method</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-dark"><i class="bi bi-check-lg" aria-hidden="true"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+*@
+@* ==== [ST-BILLING-16] END ==== *@
 
 <partial name="~/Views/Billing/Modals/_AddPaymentModal.cshtml" model="Model" />
 <partial name="~/Views/Billing/Modals/_ViewPaymentModal.cshtml" />
@@ -129,4 +381,11 @@
         };
     </script>
     <script src="~/js/billing/billing.js" asp-append-version="true"></script>
+
+    @* ==== [ST-BILLING-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/billing.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-BILLING-0] END ==== *@
 }

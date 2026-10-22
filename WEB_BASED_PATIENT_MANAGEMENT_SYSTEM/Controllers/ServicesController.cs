@@ -25,7 +25,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 ["NORIFAM"] = 410m,
                 ["IUD Insertion"] = IudPrice,
                 ["IUD Removal"] = IudPrice,
-                ["Anti-Tetanus Injection"] = 200m
+                ["Anti-Tetanus Injection"] = 200m,
+
+                // ==== [ST-SERVICE-9] START — Bag-ong service: Pap Smear (₱300) ====
+                // Naa pa sab sa: ConsultationController.AvailableServices, _RegisterServiceModal,
+                // _ServiceActionModals ug Consultation/Index.cshtml (parehas nga #9).
+                /*
+                ["Pap Smear"] = 300m,
+                */
+                // ==== [ST-SERVICE-9] END ====
             };
 
         private readonly ApplicationDbContext _context;
@@ -50,6 +58,36 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 .OrderByDescending(s => s.Id)
                 .ToList();
 
+            // ==== [ST-SERVICE-5] START — Status sa matag service: Waiting / In Progress / Completed / Paid ====
+            /*
+            var stConsultations = _context.Consultations.AsNoTracking()
+                .Select(c => new { c.Id, c.ServiceId, c.AppointmentId, c.Status })
+                .ToList();
+            var stPaidConsultationIds = _context.Payments.AsNoTracking()
+                .Select(p => p.ConsultationId)
+                .ToHashSet();
+
+            var stServiceStatus = new Dictionary<int, string>();
+            foreach (var service in services)
+            {
+                var consultation = stConsultations.FirstOrDefault(c => c.ServiceId == service.Id
+                    || (service.AppointmentId.HasValue && c.AppointmentId == service.AppointmentId));
+
+                stServiceStatus[service.Id] = consultation == null ? "Waiting"
+                    : consultation.Status != "Completed" ? consultation.Status
+                    : stPaidConsultationIds.Contains(consultation.Id) ? "Paid" : "Completed";
+            }
+            ViewBag.StServiceStatus = stServiceStatus;
+            */
+            // ==== [ST-SERVICE-5] END ====
+
+            // ==== [ST-SERVICE-10] START — Ipadala ang presyo gikan sa ServicePrices ngadto sa page ====
+            // Aron ang presyo sa mga tile kay gikan sa usa ra ka lugar (kini nga dictionary).
+            /*
+            ViewBag.StServicePrices = ServicePrices;
+            */
+            // ==== [ST-SERVICE-10] END ====
+
             return View(services);
         }
 
@@ -65,6 +103,43 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(int patientId, int? appointmentId, string? serviceName)
         {
+            // ==== [ST-SERVICE-11] START — Daghang service sa usa ka registration (Walk-In ra) ====
+            // Ang JS mo-send og "Prenatal|Anti-Tetanus Injection" (gibulag sa "|").
+            /*
+            if (!appointmentId.HasValue && serviceName != null && serviceName.Contains('|'))
+            {
+                if (!_context.Patients.Any(patient => patient.Id == patientId))
+                {
+                    TempData["ErrorMessage"] = "Please select a registered patient.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (AvailableAppointments(patientId).Any())
+                {
+                    TempData["ErrorMessage"] = "This patient has a confirmed appointment. Please register the service for that appointment.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var stNewServices = new List<Service>();
+                foreach (var name in serviceName.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct())
+                {
+                    if (!TryGetService(name, out var stName, out var stPrice))
+                    {
+                        TempData["ErrorMessage"] = "Please select a valid service.";
+                        return RedirectToAction(nameof(Index));
+                    }
+                    stNewServices.Add(new Service { PatientId = patientId, ServiceName = stName, Price = stPrice });
+                }
+
+                _context.Services.AddRange(stNewServices);
+                _context.SaveChanges();
+
+                TempData["SuccessMessage"] = $"{stNewServices.Count} services registered successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            */
+            // ==== [ST-SERVICE-11] END ====
+
             if (!TryGetService(serviceName, out var canonicalServiceName, out var price))
             {
                 TempData["ErrorMessage"] = "Please select a valid service.";

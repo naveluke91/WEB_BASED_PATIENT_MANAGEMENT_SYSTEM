@@ -5,6 +5,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/consultation/consultation.css" asp-append-version="true" />
+
+    @* ==== [ST-CONSULT-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/consultation.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-CONSULT-0] END ==== *@
 }
 
 <div class="page-header">
@@ -18,11 +25,69 @@
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Consultation</h2>
+
+        @* ==== [ST-CONSULT-2] START — Filter by Date ==== *@
+        @*
+        <select id="stConsultDatePreset" class="form-select st-filter" aria-label="Filter by date">
+            <option value="">All Dates</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+        </select>
+        *@
+        @* ==== [ST-CONSULT-2] END ==== *@
+
+        @* ==== [ST-CONSULT-4] START — Filter by Visit Type ug Service ==== *@
+        @*
+        <select id="stConsultVisitFilter" class="form-select st-filter" aria-label="Filter by visit type">
+            <option value="">All Visit Types</option>
+            <option value="Appointment">Appointment</option>
+            <option value="Walk-In">Walk-In</option>
+        </select>
+        <select id="stConsultServiceFilter" class="form-select st-filter" aria-label="Filter by service">
+            <option value="">All Services</option>
+            @foreach (var name in Model.Queue.Select(q => q.ServiceType).Where(s => s != "—").Distinct().OrderBy(s => s))
+            {
+                <option value="@name">@name</option>
+            }
+        </select>
+        *@
+        @* ==== [ST-CONSULT-4] END ==== *@
+
+        @* ==== [ST-CONSULT-3] START — Sort (Ascending / Descending) ==== *@
+        @*
+        <select id="stConsultSort" class="form-select st-filter" aria-label="Sort consultations">
+            <option value="">Sort: Default (by status)</option>
+            <option value="date:text:desc">Sort: Date (newest first)</option>
+            <option value="date:text:asc">Sort: Date (oldest first)</option>
+            <option value="name:text:asc">Sort: Name (A–Z)</option>
+            <option value="name:text:desc">Sort: Name (Z–A)</option>
+        </select>
+        *@
+        @* ==== [ST-CONSULT-3] END ==== *@
+
+        @* ==== [ST-CONSULT-5] START — Pagination: pila ka row kada page ==== *@
+        @*
+        <select id="stConsultPageSize" class="form-select st-filter" aria-label="Rows per page">
+            <option value="10">Show 10</option>
+            <option value="25">Show 25</option>
+            <option value="50">Show 50</option>
+            <option value="0">Show all</option>
+        </select>
+        *@
+        @* ==== [ST-CONSULT-5] END ==== *@
+
         <div class="search-box">
             <i class="bi bi-search" aria-hidden="true"></i>
             <input type="text" id="consultationSearch" placeholder="Search patient by name or contact..." aria-label="Search consultations" />
         </div>
     </div>
+
+    @* ==== [ST-CONSULT-1] START — Status tabs: All / Waiting / In Progress / Completed (naay ihap) ==== *@
+    @*
+    <div class="st-chips" id="stConsultTabs"></div>
+    *@
+    @* ==== [ST-CONSULT-1] END ==== *@
 
     <div class="table-responsive">
         <table class="data-table">
@@ -30,8 +95,18 @@
                 <tr>
                     <th>Name</th>
                     <th>Contact</th>
+                    @* ==== [ST-CONSULT-2] START — Date column ==== *@
+                    @*
+                    <th class="col-fit">Date</th>
+                    *@
+                    @* ==== [ST-CONSULT-2] END ==== *@
                     <th>Visit Type</th>
                     <th>Service</th>
+                    @* ==== [ST-CONSULT-7] START — Attended By column ==== *@
+                    @*
+                    <th>Attended By</th>
+                    *@
+                    @* ==== [ST-CONSULT-7] END ==== *@
                     <th class="col-status">Status</th>
                     <th class="col-actions">Action</th>
                 </tr>
@@ -52,7 +127,13 @@
                         {
                             "Normal Delivery Fee & Newborn Care Package", "Prenatal", "Implant",
                             "Implant Removal", "DEPO", "NORIFAM", "IUD Insertion", "IUD Removal",
-                            "Anti-Tetanus Injection"
+                            "Anti-Tetanus Injection",
+
+                            // ==== [ST-SERVICE-9] START — Bag-ong service: Pap Smear ====
+                            /*
+                            "Pap Smear",
+                            */
+                            // ==== [ST-SERVICE-9] END ====
                         }.Contains(item.ServiceType);
                         var displayStatus = string.IsNullOrWhiteSpace(item.Status)
                             ? (item.AppointmentId.HasValue ? "Waiting" : "In Progress")
@@ -65,8 +146,25 @@
                             _ => "status-pill-waiting"
                         };
                         <tr class="patient-row" data-name="@item.PatientName.ToLower()" data-contact="@item.ContactNo">
-                            <td class="cell-name">@item.PatientName</td>
+                            <td class="cell-name">
+                                @* ==== [ST-CONSULT-0] START — SETUP: datos sa row nga gamiton sa skilltestjs/consultation.js ==== *@
+                                @*
+                                <span class="st-data" hidden
+                                      data-status="@displayStatus"
+                                      data-date="@((item.SortDate.Year < 2000 ? DateTime.Today : item.SortDate).ToString("yyyy-MM-dd"))"
+                                      data-sortdate="@item.SortDate.ToString("yyyy-MM-dd HH:mm")"
+                                      data-visittype="@displayVisitType"
+                                      data-service="@item.ServiceType"></span>
+                                *@
+                                @* ==== [ST-CONSULT-0] END ==== *@
+                                @item.PatientName
+                            </td>
                             <td class="cell-nowrap cell-center">@item.ContactNo</td>
+                            @* ==== [ST-CONSULT-2] START — Date column (walk-in nga naghulat = karon) ==== *@
+                            @*
+                            <td class="col-fit cell-nowrap">@((item.SortDate.Year < 2000 ? DateTime.Today : item.SortDate).ToString("MMM dd, yyyy"))</td>
+                            *@
+                            @* ==== [ST-CONSULT-2] END ==== *@
                             <td class="cell-center">
                                 <span class="visit-type">
                                     <i class="bi @(item.AppointmentId.HasValue ? "bi-calendar2-check" : "bi-person-walking")" aria-hidden="true"></i>
@@ -74,6 +172,11 @@
                                 </span>
                             </td>
                             <td>@(hasSelectedService ? item.ServiceType : "-")</td>
+                            @* ==== [ST-CONSULT-7] START — Attended By column ==== *@
+                            @*
+                            <td>@(string.IsNullOrWhiteSpace(item.AttendedBy) ? "—" : item.AttendedBy)</td>
+                            *@
+                            @* ==== [ST-CONSULT-7] END ==== *@
                             <td class="col-status"><span class="status-pill @statusPillClass">@displayStatus</span></td>
                             <td class="col-actions">
                                 <div class="action-btns">
@@ -142,6 +245,20 @@
                                                 <i class="bi bi-receipt" aria-hidden="true"></i> Proceed to Billing
                                             </a>
                                         }
+
+                                        @* ==== [ST-CONSULT-16] START — "Reopen" (Admin ra): ablihan balik ang completed record aron ma-edit ==== *@
+                                        @*
+                                        @if (User.IsInRole(UserRoles.Admin))
+                                        {
+                                            <form asp-action="Reopen" asp-route-id="@item.ConsultationId" method="post" onsubmit="confirmDelete(event, this);"
+                                                  data-delete-message="Reopen this completed consultation so the record can be edited?">
+                                                <button type="submit" class="action-btn" title="Reopen to edit the record">
+                                                    <i class="bi bi-unlock" aria-hidden="true"></i> Reopen
+                                                </button>
+                                            </form>
+                                        }
+                                        *@
+                                        @* ==== [ST-CONSULT-16] END ==== *@
                                     }
                                 </div>
                             </td>
@@ -151,6 +268,12 @@
             </tbody>
         </table>
     </div>
+
+    @* ==== [ST-CONSULT-5] START — Pagination buttons (gi-fill sa skilltestjs/consultation.js) ==== *@
+    @*
+    <div id="stConsultPager" class="st-pager"></div>
+    *@
+    @* ==== [ST-CONSULT-5] END ==== *@
 </div>
 
 <div class="modal fade" id="beginConsultationModal" tabindex="-1" aria-labelledby="beginConsultationTitle" aria-hidden="true">
@@ -198,6 +321,11 @@
                             <option value="IUD Insertion">IUD Insertion</option>
                             <option value="IUD Removal">IUD Removal</option>
                             <option value="Anti-Tetanus Injection">Anti-Tetanus Injection</option>
+                            @* ==== [ST-SERVICE-9] START — Bag-ong service: Pap Smear ==== *@
+                            @*
+                            <option value="Pap Smear">Pap Smear</option>
+                            *@
+                            @* ==== [ST-SERVICE-9] END ==== *@
                         </select>
                     </div>
                 </div>
@@ -287,6 +415,13 @@
             </div>
             <div class="modal-body clinical-form-body" id="consultationRecordBody"></div>
             <div class="modal-footer">
+                @* ==== [ST-CONSULT-15] START — Print Record button ==== *@
+                @*
+                <button type="button" class="btn-cancel" id="stPrintRecord">
+                    <i class="bi bi-printer" aria-hidden="true"></i> Print Record
+                </button>
+                *@
+                @* ==== [ST-CONSULT-15] END ==== *@
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -307,4 +442,11 @@
         };
     </script>
     <script src="~/js/consultation/consultation.js" asp-append-version="true"></script>
+
+    @* ==== [ST-CONSULT-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/consultation.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-CONSULT-0] END ==== *@
 }

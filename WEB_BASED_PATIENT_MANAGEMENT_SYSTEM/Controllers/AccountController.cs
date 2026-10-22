@@ -79,9 +79,36 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var username = model.Username.Trim();
             var account = _context.UserAccounts.FirstOrDefault(u =>
                 u.Username == username && (u.Role == UserRoles.Admin || u.Role == UserRoles.Staff));
+
+            // ==== [ST-ACCOUNT-5] START — Lockout: kung naka-lock pa ang account, dili pasudlon ====
+            /*
+            if (account != null && account.LockoutEndUtc > DateTime.UtcNow)
+            {
+                var minutesLeft = (int)Math.Ceiling((account.LockoutEndUtc.Value - DateTime.UtcNow).TotalMinutes);
+                ModelState.AddModelError(string.Empty, $"Too many failed attempts. Please try again in {minutesLeft} minute(s).");
+                return View(model);
+            }
+            */
+            // ==== [ST-ACCOUNT-5] END ====
+
             var result = account == null
                 ? PasswordVerificationResult.Failed
                 : _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.Password);
+
+            // ==== [ST-ACCOUNT-5] START — Lockout: ihap ang sayop nga password (5 ka sayop = lock 5 minutes) ====
+            /*
+            if (account != null && result == PasswordVerificationResult.Failed)
+            {
+                account.FailedLoginAttempts++;
+                if (account.FailedLoginAttempts >= 5)
+                {
+                    account.LockoutEndUtc = DateTime.UtcNow.AddMinutes(5);
+                    account.FailedLoginAttempts = 0;
+                }
+                _context.SaveChanges();
+            }
+            */
+            // ==== [ST-ACCOUNT-5] END ====
 
             if (account == null || result == PasswordVerificationResult.Failed)
             {
@@ -90,6 +117,27 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 return View(model);
             }
 
+            // ==== [ST-ACCOUNT-5] START — Lockout: sakto na ang password, i-reset ang ihap ====
+            /*
+            if (account.FailedLoginAttempts > 0 || account.LockoutEndUtc != null)
+            {
+                account.FailedLoginAttempts = 0;
+                account.LockoutEndUtc = null;
+                _context.SaveChanges();
+            }
+            */
+            // ==== [ST-ACCOUNT-5] END ====
+
+            // ==== [ST-USER-6] START — Dili makasulod ang na-deactivate nga account ====
+            /*
+            if (account.IsDisabled)
+            {
+                ModelState.AddModelError(string.Empty, "This account is deactivated. Please contact the Admin.");
+                return View(model);
+            }
+            */
+            // ==== [ST-USER-6] END ====
+
             if (result == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 account.PasswordHash = _passwordHasher.HashPassword(account, model.Password);
@@ -97,6 +145,30 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             }
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account));
+
+            // ==== [ST-ACCOUNT-4] START — Remember Me: dili ma-logout bisan i-close ang browser (14 days) ====
+            /*
+            if (model.RememberMe)
+            {
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account),
+                    new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14) });
+            }
+            */
+            // ==== [ST-ACCOUNT-4] END ====
+
+            // ==== [ST-ACCOUNT-2] START — I-save ang Last Login ====
+            /*
+            account.LastLoginAtUtc = DateTime.UtcNow;
+            account.LastActivityAtUtc = DateTime.UtcNow;
+            _context.SaveChanges();
+            */
+            // ==== [ST-ACCOUNT-2] END ====
+
+            // ==== [ST-USER-8] START — Audit trail: Login ====
+            /*
+            StAudit.Log(_context, account.Username, "Login", $"{account.FullName} signed in.");
+            */
+            // ==== [ST-USER-8] END ====
 
             // A temporary password must be changed before the account can be used.
             if (account.MustChangePassword)
@@ -165,9 +237,68 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            // ==== [ST-ACCOUNT-2] START — I-save ang Last Logout ====
+            /*
+            var loggingOut = CurrentAccount();
+            if (loggingOut != null)
+            {
+                loggingOut.LastLogoutAtUtc = DateTime.UtcNow;
+                _context.SaveChanges();
+            }
+            */
+            // ==== [ST-ACCOUNT-2] END ====
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }
+
+        // ==== [ST-ACCOUNT-3] START — Change Password para sa naka-login (My Account) ====
+        // GET/POST /Account/MyPassword — kinahanglan ang current password.
+        /*
+        [HttpGet]
+        public IActionResult MyPassword()
+        {
+            return View(new StChangeMyPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MyPassword(StChangeMyPasswordViewModel model)
+        {
+            var account = CurrentAccount();
+            if (account == null)
+                return RedirectToAction(nameof(Login));
+
+            if (string.IsNullOrEmpty(model.CurrentPassword)
+                || _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, model.CurrentPassword) == PasswordVerificationResult.Failed)
+                ModelState.AddModelError(nameof(model.CurrentPassword), "Current password is incorrect.");
+
+            var passwordError = BasicPasswordError(model.NewPassword);
+            if (passwordError != null)
+                ModelState.AddModelError(nameof(model.NewPassword), passwordError);
+            else if (model.NewPassword == model.CurrentPassword)
+                ModelState.AddModelError(nameof(model.NewPassword), AuthMessages.NewPasswordNotCurrent);
+
+            if (string.IsNullOrEmpty(model.ConfirmPassword))
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.Required);
+            else if (model.ConfirmPassword != model.NewPassword)
+                ModelState.AddModelError(nameof(model.ConfirmPassword), AuthMessages.PasswordMismatch);
+
+            if (!ModelState.IsValid)
+                return View(new StChangeMyPasswordViewModel());
+
+            account.PasswordHash = _passwordHasher.HashPassword(account, model.NewPassword!);
+            // Bag-ong security stamp = ma-logout ang ubang session (ubang computer).
+            account.SecurityStamp = NewSecurityStamp();
+            _context.SaveChanges();
+
+            // I-sign in balik kay nausab ang security stamp.
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CreatePrincipal(account));
+            TempData["SuccessMessage"] = "Your password was changed successfully.";
+            return RedirectToAction("Index", "Patients");
+        }
+        */
+        // ==== [ST-ACCOUNT-3] END ====
 
         // -----------------------------------------------------------------------
         // Password recovery: username + registered email -> code -> new password
@@ -422,6 +553,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (string.IsNullOrWhiteSpace(model.Password))
                 ModelState.AddModelError(nameof(UserFormViewModel.Password), "Password is required.");
 
+            // ==== [ST-ACCOUNT-6] START — Strong password rule sab sa first Admin setup ====
+            /*
+            else if (BasicPasswordError(model.Password) is string setupPasswordError)
+                ModelState.AddModelError(nameof(UserFormViewModel.Password), setupPasswordError);
+            */
+            // ==== [ST-ACCOUNT-6] END ====
+
             if (string.IsNullOrWhiteSpace(model.Email))
                 ModelState.AddModelError(nameof(UserFormViewModel.Email), "Email address is required.");
             else if (!IsValidEmail(NormalizeEmail(model.Email)))
@@ -485,6 +623,15 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             if (string.IsNullOrWhiteSpace(password)) return AuthMessages.Required;
             if (password.Length < 8) return AuthMessages.PasswordMin8;
             if (password.Length > 100) return AuthMessages.PasswordMax;
+
+            // ==== [ST-ACCOUNT-6] START — Strong password: uppercase, lowercase, number ug symbol ====
+            /*
+            if (!password.Any(char.IsUpper) || !password.Any(char.IsLower)
+                || !password.Any(char.IsDigit) || password.All(char.IsLetterOrDigit))
+                return "Use at least 1 uppercase letter, 1 lowercase letter, 1 number and 1 symbol.";
+            */
+            // ==== [ST-ACCOUNT-6] END ====
+
             return null;
         }
 

@@ -35,6 +35,44 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 .OrderBy(p => p.FullName)
                 .ToList();
 
+            // ==== [ST-PATIENT-16] START — Archive: itago ang archived (o ipakita ra sila kung ?showArchived=true) ====
+            /*
+            bool showArchived = Request.Query["showArchived"] == "true";
+            patients = patients.Where(p => p.IsArchived == showArchived).ToList();
+            ViewBag.StShowArchived = showArchived;
+            */
+            // ==== [ST-PATIENT-16] END ====
+
+            // ==== [ST-PATIENT-10] START — Age ug AOG nga mo-update (i-compute gikan sa DOB ug LMP karon) ====
+            // Dili ni i-save sa database; para sa display ra (walay SaveChanges dinhi).
+            /*
+            foreach (var p in patients)
+            {
+                if (p.DateOfBirth.HasValue) p.Age = Patient.CalculateAge(p.DateOfBirth.Value);
+                p.AOG = Patient.StAogFromLmp(p.LMP) ?? p.AOG;
+            }
+            */
+            // ==== [ST-PATIENT-10] END ====
+
+            // ==== [ST-PATIENT-2] START — Sort (Ascending / Descending) gikan sa ?sortOrder= ====
+            // OrderBy = ascending (A–Z, 1–9, karaan una); OrderByDescending = descending.
+            /*
+            string sortOrder = Request.Query["sortOrder"].ToString();
+            patients = sortOrder switch
+            {
+                "name_desc"       => patients.OrderByDescending(p => p.FullName).ToList(),
+                "age_asc"         => patients.OrderBy(p => p.Age).ToList(),
+                "age_desc"        => patients.OrderByDescending(p => p.Age).ToList(),
+                "edc_asc"         => patients.OrderBy(p => p.EDC ?? DateTime.MaxValue).ToList(),
+                "edc_desc"        => patients.OrderByDescending(p => p.EDC ?? DateTime.MinValue).ToList(),
+                "registered_desc" => patients.OrderByDescending(p => p.DateRegistered ?? DateTime.MinValue).ToList(),
+                "registered_asc"  => patients.OrderBy(p => p.DateRegistered ?? DateTime.MaxValue).ToList(),
+                _                 => patients // default: Name A–Z (gikan sa query sa taas)
+            };
+            ViewBag.StSortOrder = sortOrder;
+            */
+            // ==== [ST-PATIENT-2] END ====
+
             return View(patients);
         }
 
@@ -61,11 +99,41 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             ModelState.Clear();
             var errors = Patient.ValidateInput(patient);
 
+            // ==== [ST-PATIENT-11] START — Duplicate check: parehas nga Full Name + Contact No. ====
+            /*
+            if (StIsDuplicatePatient(patient))
+                errors.TryAdd(nameof(Patient.FullName), "A patient with this name and contact number is already registered.");
+            */
+            // ==== [ST-PATIENT-11] END ====
+
+            // ==== [ST-PATIENT-12] START — Bag-ong field: Blood Type (dropdown, optional) ====
+            // Ang [Bind(Patient.FormFields)] dili mo-apil sa BloodType, so basahon gikan sa Request.Form.
+            /*
+            patient.BloodType = string.IsNullOrWhiteSpace(Request.Form["BloodType"]) ? null : Request.Form["BloodType"].ToString().Trim();
+            if (patient.BloodType != null && !Patient.BloodTypes.Contains(patient.BloodType))
+                errors.TryAdd("BloodType", "Please select a valid blood type.");
+            */
+            // ==== [ST-PATIENT-12] END ====
+
+            // ==== [ST-PATIENT-13] START — Bag-ong field: Email Address (optional) ====
+            /*
+            patient.Email = string.IsNullOrWhiteSpace(Request.Form["Email"]) ? null : Request.Form["Email"].ToString().Trim().ToLowerInvariant();
+            if (patient.Email != null && (patient.Email.Length > 256 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(patient.Email)))
+                errors.TryAdd("Email", "Enter a valid email address.");
+            */
+            // ==== [ST-PATIENT-13] END ====
+
             if (errors.Count == 0)
             {
                 // I-add ang bag-ong pasyente sa database ug i-save
                 _context.Patients.Add(patient);
                 _context.SaveChanges();
+
+                // ==== [ST-USER-8] START — Audit trail: Add Patient ====
+                /*
+                StAudit.Log(_context, User.Identity?.Name, "Add Patient", $"Added patient \"{patient.FullName}\" (ID {patient.Id}).");
+                */
+                // ==== [ST-USER-8] END ====
 
                 TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was added.";
                 return RedirectToAction(nameof(Index));
@@ -109,6 +177,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
             if (patient == null) return NotFound();
 
+            // ==== [ST-PATIENT-10] START — Age ug AOG nga updated sa View/Edit modal ====
+            /*
+            if (patient.DateOfBirth.HasValue) patient.Age = Patient.CalculateAge(patient.DateOfBirth.Value);
+            patient.AOG = Patient.StAogFromLmp(patient.LMP) ?? patient.AOG;
+            */
+            // ==== [ST-PATIENT-10] END ====
+
             return Json(new
             {
                 id = patient.Id,
@@ -137,6 +212,121 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 occupationRaw = string.IsNullOrEmpty(patient.Occupation) ? "" : patient.Occupation
             });
         }
+
+        // ==== [ST-PATIENT-12] START — GET /Patients/StBloodType/5 (para sa Edit ug View modal) ====
+        /*
+        [HttpGet]
+        public IActionResult StBloodType(int id)
+        {
+            var patient = _context.Patients.AsNoTracking().FirstOrDefault(p => p.Id == id);
+            if (patient == null) return NotFound();
+            return Json(new { bloodType = patient.BloodType ?? "" });
+        }
+        */
+        // ==== [ST-PATIENT-12] END ====
+
+        // ==== [ST-PATIENT-13] START — GET /Patients/StEmail/5 (para sa Edit ug View modal) ====
+        /*
+        [HttpGet]
+        public IActionResult StEmail(int id)
+        {
+            var patient = _context.Patients.AsNoTracking().FirstOrDefault(p => p.Id == id);
+            if (patient == null) return NotFound();
+            return Json(new { email = patient.Email ?? "" });
+        }
+        */
+        // ==== [ST-PATIENT-13] END ====
+
+        // ==== [ST-PATIENT-14] START — GET /Patients/History/5: tanang record sa usa ka pasyente ====
+        // Appointments, Services, Consultations ug Payments — para sa View Details modal.
+        /*
+        [HttpGet]
+        public IActionResult History(int id)
+        {
+            if (!_context.Patients.Any(p => p.Id == id)) return NotFound();
+
+            var appointments = _context.Appointments.AsNoTracking()
+                .Where(a => a.PatientId == id)
+                .OrderByDescending(a => a.AppointmentDate).ThenByDescending(a => a.AppointmentTime)
+                .ToList()
+                .Select(a => new { date = a.AppointmentDate.ToString("MMM dd, yyyy"), time = a.FormattedTime, status = a.Status, service = a.ServiceType ?? "—" });
+
+            var services = _context.Services.AsNoTracking()
+                .Where(s => s.PatientId == id)
+                .OrderByDescending(s => s.Id)
+                .Select(s => new { service = s.ServiceName, price = s.Price, type = s.AppointmentId == null ? "Walk-In" : "Appointment" })
+                .ToList();
+
+            var consultations = _context.Consultations.AsNoTracking()
+                .Where(c => c.PatientId == id)
+                .OrderByDescending(c => c.StartedAt)
+                .ToList()
+                .Select(c => new { date = (c.CompletedAt ?? c.StartedAt).ToString("MMM dd, yyyy"), service = c.ServiceType, visitType = c.VisitType, status = c.Status });
+
+            var payments = _context.Payments.AsNoTracking()
+                .Where(p => p.Consultation != null && p.Consultation.PatientId == id)
+                .Include(p => p.Consultation)
+                .OrderByDescending(p => p.PaymentDate)
+                .ToList()
+                .Select(p => new { date = p.PaymentDate.ToString("MMM dd, yyyy"), service = p.Consultation?.ServiceType ?? "—", amount = p.Amount ?? 0, method = p.PaymentMethod });
+
+            return Json(new { appointments, services, consultations, payments });
+        }
+        */
+        // ==== [ST-PATIENT-14] END ====
+
+        // ==== [ST-PATIENT-16] START — POST /Patients/Archive/5 ug /Patients/Restore/5 ====
+        // Archive = itago sa listahan pero dili i-delete (ma-restore pa).
+        /*
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Archive(int id)
+        {
+            var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
+            if (patient == null) return NotFound();
+
+            patient.IsArchived = true;
+            patient.ArchivedAt = DateTime.Now;
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was archived.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Restore(int id)
+        {
+            var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
+            if (patient == null) return NotFound();
+
+            patient.IsArchived = false;
+            patient.ArchivedAt = null;
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was restored.";
+            return RedirectToAction(nameof(Index), new { showArchived = "true" });
+        }
+        */
+        // ==== [ST-PATIENT-16] END ====
+
+        // ==== [ST-PATIENT-11] START — Helper: naa na bay pasyente nga parehas og ngalan ug contact? ====
+        /*
+        private bool StIsDuplicatePatient(Patient patient)
+        {
+            static string Normalize(string? value) =>
+                string.Join(' ', (value ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+
+            var name = Normalize(patient.FullName);
+            var contact = (patient.ContactNo ?? string.Empty).Trim();
+
+            return _context.Patients.AsNoTracking()
+                .Where(p => p.Id != patient.Id && p.ContactNo == contact)
+                .AsEnumerable()
+                .Any(p => Normalize(p.FullName) == name);
+        }
+        */
+        // ==== [ST-PATIENT-11] END ====
 
         /// <summary>
         /// GET — Ipakita ang detalye sa usa ka pasyente base sa Id.
@@ -181,6 +371,29 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             ModelState.Clear();
             var errors = Patient.ValidateInput(patient);
 
+            // ==== [ST-PATIENT-11] START — Duplicate check (dili apil ang kaugalingon nga record) ====
+            /*
+            if (StIsDuplicatePatient(patient))
+                errors.TryAdd(nameof(Patient.FullName), "A patient with this name and contact number is already registered.");
+            */
+            // ==== [ST-PATIENT-11] END ====
+
+            // ==== [ST-PATIENT-12] START — Blood Type validation ====
+            /*
+            patient.BloodType = string.IsNullOrWhiteSpace(patient.BloodType) ? null : patient.BloodType.Trim();
+            if (patient.BloodType != null && !Patient.BloodTypes.Contains(patient.BloodType))
+                errors.TryAdd("BloodType", "Please select a valid blood type.");
+            */
+            // ==== [ST-PATIENT-12] END ====
+
+            // ==== [ST-PATIENT-13] START — Email validation ====
+            /*
+            patient.Email = string.IsNullOrWhiteSpace(patient.Email) ? null : patient.Email.Trim().ToLowerInvariant();
+            if (patient.Email != null && (patient.Email.Length > 256 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(patient.Email)))
+                errors.TryAdd("Email", "Enter a valid email address.");
+            */
+            // ==== [ST-PATIENT-13] END ====
+
             if (errors.Count == 0)
             {
                 // Pangitaon ang existing nga record sa database
@@ -203,8 +416,26 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 existing.TFAL = patient.TFAL;
                 existing.Occupation = patient.Occupation;
 
+                // ==== [ST-PATIENT-12] START — I-save ang Blood Type ====
+                /*
+                existing.BloodType = patient.BloodType;
+                */
+                // ==== [ST-PATIENT-12] END ====
+
+                // ==== [ST-PATIENT-13] START — I-save ang Email ====
+                /*
+                existing.Email = patient.Email;
+                */
+                // ==== [ST-PATIENT-13] END ====
+
                 // I-save ang mga pagbag-o sa database
                 _context.SaveChanges();
+
+                // ==== [ST-USER-8] START — Audit trail: Edit Patient ====
+                /*
+                StAudit.Log(_context, User.Identity?.Name, "Edit Patient", $"Updated patient \"{existing.FullName}\" (ID {existing.Id}).");
+                */
+                // ==== [ST-USER-8] END ====
 
                 TempData["SuccessMessage"] = $"Patient \"{patient.FullName}\" was updated.";
                 return RedirectToAction(nameof(Index));
@@ -219,6 +450,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         /// <summary>
         /// GET — Ipakita ang confirmation page para sa pag-delete sa pasyente.
         /// </summary>
+        // ==== [ST-PATIENT-17] START — Admin ra ang maka-delete og pasyente ====
+        /*
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = UserRoles.Admin)]
+        */
+        // ==== [ST-PATIENT-17] END ====
         [HttpGet]
         public IActionResult Delete(int id)
         {
@@ -232,6 +468,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         /// <summary>
         /// POST — I-delete ang pasyente ug tanan niyang related records gikan sa database.
         /// </summary>
+        // ==== [ST-PATIENT-17] START — Admin ra ang maka-delete og pasyente ====
+        /*
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = UserRoles.Admin)]
+        */
+        // ==== [ST-PATIENT-17] END ====
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
@@ -267,6 +508,12 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 _context.Patients.Remove(patient);
                 _context.SaveChanges();
                 transaction.Commit();
+
+                // ==== [ST-USER-8] START — Audit trail: Delete Patient ====
+                /*
+                StAudit.Log(_context, User.Identity?.Name, "Delete Patient", $"Deleted patient \"{patient.FullName}\" (ID {id}) and related records.");
+                */
+                // ==== [ST-USER-8] END ====
             }
             catch
             {

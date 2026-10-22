@@ -24,6 +24,12 @@
 
     <link rel="stylesheet" href="~/css/account/account.css" asp-append-version="true" />
 
+    @* ==== [ST-ACCOUNT-0] START — SETUP: i-load ang skilltestcss/account.css sa Login/Account pages ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/account.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-ACCOUNT-0] END ==== *@
+
 </head>
 
 <body class="auth-body">
@@ -41,6 +47,12 @@
             @RenderBody()
         </div>
     </main>
+
+    @* ==== [ST-ACCOUNT-0] START — SETUP: i-load ang skilltestjs/account.js sa Login/Account pages ==== *@
+    @*
+    <script src="~/js/skilltestjs/account.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-ACCOUNT-0] END ==== *@
 
 </body>
 </html>

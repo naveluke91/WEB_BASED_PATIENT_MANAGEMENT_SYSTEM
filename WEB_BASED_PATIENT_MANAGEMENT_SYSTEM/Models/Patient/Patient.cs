@@ -141,6 +141,64 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
         public DateTime? DateRegistered { get; set; } = DateTime.Now;
 
+        // ==== [ST-PATIENT-3] START — Patient No. (e.g. PT-0001) gikan sa Id ====
+        // [NotMapped] = dili column sa database, so walay migration.
+        /*
+        [NotMapped]
+        public string PatientNo => $"PT-{Id:D4}";
+        */
+        // ==== [ST-PATIENT-3] END ====
+
+        // ==== [ST-PATIENT-12] START — Bag-ong field: Blood Type ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PatientBloodType   →   Update-Database
+        /*
+        [MaxLength(5)]
+        [Display(Name = "Blood Type")]
+        public string? BloodType { get; set; }
+
+        public static readonly string[] BloodTypes = { "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-" };
+        */
+        // ==== [ST-PATIENT-12] END ====
+
+        // ==== [ST-PATIENT-13] START — Bag-ong field: Email Address ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PatientEmail   →   Update-Database
+        /*
+        [MaxLength(256)]
+        [EmailAddress]
+        [Display(Name = "Email Address")]
+        public string? Email { get; set; }
+        */
+        // ==== [ST-PATIENT-13] END ====
+
+        // ==== [ST-PATIENT-16] START — Archive (soft delete) ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PatientArchive   →   Update-Database
+        /*
+        public bool IsArchived { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+        */
+        // ==== [ST-PATIENT-16] END ====
+
+        // ==== [ST-PATIENT-10] START — I-compute ang AOG gikan sa LMP karon nga adlaw ====
+        // Ibalik ang "14 weeks 2 days"; null kung walay LMP o lapas na 42 weeks (nanganak na siguro).
+        /*
+        public static string? StAogFromLmp(DateTime? lmp)
+        {
+            if (!lmp.HasValue) return null;
+            var days = (DateTime.Today - lmp.Value.Date).Days;
+            if (days < 0 || days > 42 * 7) return null;
+
+            var weeks = days / 7;
+            var extraDays = days % 7;
+            var text = $"{weeks} week{(weeks == 1 ? "" : "s")}";
+            return extraDays == 0 ? text : $"{text} {extraDays} day{(extraDays == 1 ? "" : "s")}";
+        }
+        */
+        // ==== [ST-PATIENT-10] END ====
+
         /// <summary>
         /// Navigation property — lista sa tanan nga prenatal records niining pasyente.
         /// Gigamit sa EF Core para sa one-to-many relationship.

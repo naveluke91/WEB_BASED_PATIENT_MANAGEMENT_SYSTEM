@@ -5,6 +5,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/appointment/appointment.css" asp-append-version="true" />
+
+    @* ==== [ST-APPT-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/appointment.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-APPT-0] END ==== *@
 }
 
 <!-- Page header -->
@@ -13,6 +20,13 @@
         <h1>Appointments</h1>
     </div>
     <div class="page-actions">
+        @* ==== [ST-APPT-18] START — Calendar View toggle button ==== *@
+        @*
+        <button type="button" class="btn-cancel" id="stCalendarToggle">
+            <i class="bi bi-calendar3" aria-hidden="true"></i> Calendar View
+        </button>
+        *@
+        @* ==== [ST-APPT-18] END ==== *@
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalNewAppointment">
             <i class="bi bi-calendar2-plus" aria-hidden="true"></i> New Appointment
         </button>
@@ -21,15 +35,88 @@
 
 <partial name="_PageAlerts" />
 
+@* ==== [ST-APPT-18] START — Calendar View (gi-fill sa skilltestjs/appointment.js) ==== *@
+@*
+<div class="content-card st-calendar-card" id="stCalendar" hidden>
+
+    <div class="card-header-row">
+        <button type="button" class="btn-cancel" id="stCalendarPrev" aria-label="Previous month"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+        <h2 class="card-title" id="stCalendarTitle"></h2>
+        <button type="button" class="btn-cancel" id="stCalendarNext" aria-label="Next month"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    </div>
+    <div class="st-calendar-grid" id="stCalendarGrid"></div>
+</div>
+*@
+@* ==== [ST-APPT-18] END ==== *@
+
 <!-- Appointments table card -->
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Appointment List</h2>
+
+        @* ==== [ST-APPT-1] START — Filter by Status ==== *@
+        @*
+        <select id="stApptStatusFilter" class="form-select st-filter" aria-label="Filter by status">
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Rescheduled">Rescheduled</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+            <option value="No-Show">No-Show</option>
+        </select>
+        *@
+        @* ==== [ST-APPT-1] END ==== *@
+
+        @* ==== [ST-APPT-2] START — Filter by Date (preset o specific nga petsa) ==== *@
+        @*
+        <select id="stApptDatePreset" class="form-select st-filter" aria-label="Filter by date">
+            <option value="">All Dates</option>
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="past">Past</option>
+        </select>
+        <input type="date" id="stApptDate" class="form-control st-filter" title="Specific date" aria-label="Specific date" />
+        *@
+        @* ==== [ST-APPT-2] END ==== *@
+
+        @* ==== [ST-APPT-3] START — Sort (Ascending / Descending) ==== *@
+        @*
+        <select id="stApptSort" class="form-select st-filter" aria-label="Sort appointments">
+            <option value="datetime:text:asc">Sort: Date (oldest first)</option>
+            <option value="datetime:text:desc">Sort: Date (newest first)</option>
+            <option value="name:text:asc">Sort: Name (A–Z)</option>
+            <option value="name:text:desc">Sort: Name (Z–A)</option>
+            <option value="status:text:asc">Sort: Status</option>
+        </select>
+        *@
+        @* ==== [ST-APPT-3] END ==== *@
+
+        @* ==== [ST-APPT-7] START — Pagination: pila ka row kada page ==== *@
+        @*
+        <select id="stApptPageSize" class="form-select st-filter" aria-label="Rows per page">
+            <option value="10">Show 10</option>
+            <option value="25">Show 25</option>
+            <option value="50">Show 50</option>
+            <option value="0">Show all</option>
+        </select>
+        *@
+        @* ==== [ST-APPT-7] END ==== *@
+
         <div class="search-box">
             <i class="bi bi-search" aria-hidden="true"></i>
             <input type="text" id="apptSearch" placeholder="Search appointments..." aria-label="Search appointments" />
         </div>
     </div>
+
+    @* ==== [ST-APPT-4] START — Count chips matag status (i-click para i-filter) ==== *@
+    @*
+    <div class="st-chips" id="stApptChips"></div>
+    *@
+    @* ==== [ST-APPT-4] END ==== *@
 
     <div class="table-responsive">
         <table class="data-table" id="apptTable">
@@ -39,6 +126,11 @@
                     <th>Contact</th>
                     <th class="col-fit">Date</th>
                     <th class="col-fit">Time</th>
+                    @* ==== [ST-APPT-6] START — Service column ==== *@
+                    @*
+                    <th>Service</th>
+                    *@
+                    @* ==== [ST-APPT-6] END ==== *@
                     <th class="col-status">Status</th>
                     <th class="col-actions">Actions</th>
                     <th class="col-fit">In Process</th>
@@ -56,10 +148,28 @@
                     <tr class="patient-row"
                         data-name="@appt.PatientName.ToLower()"
                         data-contact="@appt.ContactNo">
-                        <td class="cell-name">@appt.PatientName</td>
+                        <td class="cell-name">
+                            @* ==== [ST-APPT-0] START — SETUP: datos sa row nga gamiton sa skilltestjs/appointment.js ==== *@
+                            @*
+                            <span class="st-data" hidden
+                                  data-id="@appt.Id"
+                                  data-status="@appt.Status"
+                                  data-date="@appt.AppointmentDate.ToString("yyyy-MM-dd")"
+                                  data-datetime="@(appt.AppointmentDate.ToString("yyyy-MM-dd") + " " + appt.AppointmentTime.ToString("hh\\:mm"))"
+                                  data-time="@appt.FormattedTime"
+                                  data-service="@appt.ServiceType"></span>
+                            *@
+                            @* ==== [ST-APPT-0] END ==== *@
+                            @appt.PatientName
+                        </td>
                         <td class="cell-nowrap cell-center">@appt.ContactNo</td>
                         <td class="col-fit">@appt.AppointmentDate.ToString("MM/dd/yy")</td>
                         <td class="col-fit">@appt.FormattedTime</td>
+                        @* ==== [ST-APPT-6] START — Service column ==== *@
+                        @*
+                        <td>@(string.IsNullOrWhiteSpace(appt.ServiceType) ? "—" : appt.ServiceType)</td>
+                        *@
+                        @* ==== [ST-APPT-6] END ==== *@
 
                         <!-- STATUS BADGE (NON-CLICKABLE) -->
                         <td class="col-status">
@@ -100,6 +210,32 @@
                                         <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
                                     </button>
                                 </form>
+
+                                @* ==== [ST-APPT-15] START — "No-Show" button (lapas na nga Pending/Confirmed nga wala mi-abot) ==== *@
+                                @*
+                                @if ((appt.Status == "Pending" || appt.Status == "Confirmed") && appt.AppointmentDate.Date < DateTime.Today)
+                                {
+                                    <form asp-action="MarkNoShow" asp-route-id="@appt.Id" method="post">
+                                        <button type="submit" class="action-btn" title="Mark as No-Show" aria-label="Mark @appt.PatientName as no-show">
+                                            <i class="bi bi-person-x" aria-hidden="true"></i><span class="action-label">No-Show</span>
+                                        </button>
+                                    </form>
+                                }
+                                *@
+                                @* ==== [ST-APPT-15] END ==== *@
+
+                                @* ==== [ST-APPT-19] START — "Send Reminder" email button (kinahanglan ang ST-PATIENT-13 Email) ==== *@
+                                @*
+                                @if ((appt.Status == "Pending" || appt.Status == "Confirmed" || appt.Status == "Rescheduled") && appt.AppointmentDate.Date >= DateTime.Today)
+                                {
+                                    <form asp-action="SendReminder" asp-route-id="@appt.Id" method="post">
+                                        <button type="submit" class="action-btn" title="Send email reminder" aria-label="Send reminder to @appt.PatientName">
+                                            <i class="bi bi-envelope" aria-hidden="true"></i><span class="action-label">Remind</span>
+                                        </button>
+                                    </form>
+                                }
+                                *@
+                                @* ==== [ST-APPT-19] END ==== *@
                             </div>
                         </td>
 
@@ -122,6 +258,12 @@
             </tbody>
         </table>
     </div>
+
+    @* ==== [ST-APPT-7] START — Pagination buttons (gi-fill sa skilltestjs/appointment.js) ==== *@
+    @*
+    <div id="stApptPager" class="st-pager"></div>
+    *@
+    @* ==== [ST-APPT-7] END ==== *@
 </div>
 
 <!-- =====================================================================
@@ -174,6 +316,15 @@
                                 <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Checking available slots...
                             </div>
                         </div>
+                        @* ==== [ST-APPT-8] START — Notes / Reason for visit ==== *@
+                        @*
+                        <div class="col-12">
+                            <label for="newNotes" class="form-label">Notes / Reason for Visit <span class="text-muted">(optional)</span></label>
+                            <textarea name="Notes" id="newNotes" class="form-control" rows="2" maxlength="500"
+                                      placeholder="e.g. Follow-up check-up, first prenatal visit"></textarea>
+                        </div>
+                        *@
+                        @* ==== [ST-APPT-8] END ==== *@
                         <input type="hidden" name="PatientId" id="newPatientId" value="" />
                     </div>
                 </div>
@@ -224,9 +375,32 @@
                             <span id="viewStatusBadge" class="status-badge status-pending">Pending</span>
                         </div>
                     </div>
+                    @* ==== [ST-APPT-9] START — Dugang detalye: Service, Booked On, Notes ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>Service</label>
+                        <div class="detail-value" id="stViewService">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Booked On</label>
+                        <div class="detail-value" id="stViewCreatedAt">—</div>
+                    </div>
+                    <div class="detail-item detail-item-full">
+                        <label>Notes</label>
+                        <div class="detail-value st-view-notes" id="stViewNotes">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-APPT-9] END ==== *@
                 </div>
             </div>
             <div class="modal-footer">
+                @* ==== [ST-APPT-20] START — Print Appointment Slip button ==== *@
+                @*
+                <button type="button" class="btn-cancel" id="stPrintAppointment">
+                    <i class="bi bi-printer" aria-hidden="true"></i> Print Slip
+                </button>
+                *@
+                @* ==== [ST-APPT-20] END ==== *@
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -319,6 +493,25 @@
                                  role="alert"
                                  style="display:none;"></div>
                         </div>
+
+                        @* ==== [ST-APPT-17] START — Reason for cancellation (makita ra kung Cancelled) ==== *@
+                        @*
+                        <div class="col-12" id="stCancelReasonSection" hidden>
+                            <label for="stCancelReason" class="form-label">Reason for Cancellation</label>
+                            <textarea name="CancelReason" id="stCancelReason" class="form-control" rows="2" maxlength="200"
+                                      placeholder="e.g. Patient is sick, patient requested to cancel"></textarea>
+                        </div>
+                        *@
+                        @* ==== [ST-APPT-17] END ==== *@
+
+                        @* ==== [ST-APPT-8] START — Notes / Reason for visit ==== *@
+                        @*
+                        <div class="col-12">
+                            <label for="editNotes" class="form-label">Notes / Reason for Visit <span class="text-muted">(optional)</span></label>
+                            <textarea name="Notes" id="editNotes" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+                        *@
+                        @* ==== [ST-APPT-8] END ==== *@
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -555,4 +748,11 @@
 
 @section Scripts {
     <script src="~/js/appointment/appointment.js" asp-append-version="true"></script>
+
+    @* ==== [ST-APPT-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/appointment.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-APPT-0] END ==== *@
 }

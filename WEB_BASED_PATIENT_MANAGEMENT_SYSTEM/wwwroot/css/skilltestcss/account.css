@@ -1,0 +1,121 @@
+/* ============================================================
+   skilltestcss/account.css — Styles sa SKILL TEST features sa
+   Login / Account pages (gi-load sa _AuthLayout ug _Layout).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+   ============================================================ */
+
+
+/* ==== [ST-ACCOUNT-1] START — Show/Hide password (eye icon) ==== */
+/*
+.st-password-wrap {
+    position: relative;
+}
+
+.st-password-wrap .form-control {
+    padding-right: 42px;
+}
+
+.st-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.st-password-toggle:hover {
+    color: var(--text-primary);
+    background: var(--bg-muted);
+}
+*/
+/* ==== [ST-ACCOUNT-1] END ==== */
+
+
+/* ==== [ST-ACCOUNT-3] START — "Change Password" link sa topbar ug ang page ==== */
+/*
+.st-topbar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: var(--space-3);
+    padding: 6px 10px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.st-topbar-link:hover {
+    color: var(--brand-text);
+    background: var(--brand-surface-soft);
+}
+
+.st-mypassword-card {
+    max-width: 520px;
+}
+
+@media (max-width: 767.98px) {
+    .st-topbar-link span {
+        display: none;
+    }
+}
+*/
+/* ==== [ST-ACCOUNT-3] END ==== */
+
+
+/* ==== [ST-ACCOUNT-4] START — "Remember me" checkbox ==== */
+/*
+.st-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.st-remember .form-check-input {
+    margin: 0;
+}
+*/
+/* ==== [ST-ACCOUNT-4] END ==== */
+
+
+/* ==== [ST-ACCOUNT-7] START — Password strength meter ==== */
+/*
+.st-strength {
+    margin-top: 6px;
+}
+
+.st-strength-bar {
+    height: 6px;
+    overflow: hidden;
+    background: var(--bg-muted);
+    border-radius: var(--radius-pill);
+}
+
+.st-strength-bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    transition: width 0.2s ease;
+}
+
+.st-strength-bar span.weak { background: #D92D20; }
+.st-strength-bar span.fair { background: #F79009; }
+.st-strength-bar span.good { background: #84CC16; }
+.st-strength-bar span.strong { background: var(--brand-action); }
+
+.st-strength-text {
+    color: var(--text-muted);
+}
+*/
+/* ==== [ST-ACCOUNT-7] END ==== */

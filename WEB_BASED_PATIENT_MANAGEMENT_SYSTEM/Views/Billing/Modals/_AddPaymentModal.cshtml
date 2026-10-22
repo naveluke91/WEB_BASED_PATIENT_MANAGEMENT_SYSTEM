@@ -83,6 +83,43 @@
                                     }
                                 </select>
                             </div>
+
+                            @* ==== [ST-BILLING-10] START — Discount (Senior Citizen / PWD = 20% off) ==== *@
+                            @*
+                            <div class="col-md-6">
+                                <label for="stDiscountType" class="form-label">Discount</label>
+                                <select name="DiscountType" id="stDiscountType" class="form-select">
+                                    <option value="">None</option>
+                                    <option value="Senior">Senior Citizen (20%)</option>
+                                    <option value="PWD">PWD (20%)</option>
+                                </select>
+                            </div>
+                            *@
+                            @* ==== [ST-BILLING-10] END ==== *@
+
+                            @* ==== [ST-BILLING-8] START — Amount Received ug Change (para sa Cash ra) ==== *@
+                            @*
+                            <div class="col-md-6 st-cash-only" hidden>
+                                <label for="stAmountTendered" class="form-label">Amount Received (&#8369;)</label>
+                                <input type="number" name="AmountTendered" id="stAmountTendered" class="form-control"
+                                       min="0" max="99999999.99" step="0.01" placeholder="0.00" />
+                            </div>
+                            <div class="col-md-6 st-cash-only" hidden>
+                                <span class="form-label d-block">Change</span>
+                                <div class="st-change" id="stChange">&#8369; 0.00</div>
+                            </div>
+                            *@
+                            @* ==== [ST-BILLING-8] END ==== *@
+
+                            @* ==== [ST-BILLING-9] START — GCash Reference Number (para sa GCash ra) ==== *@
+                            @*
+                            <div class="col-md-6 st-gcash-only" hidden>
+                                <label for="stReferenceNumber" class="form-label">GCash Reference No.</label>
+                                <input type="text" name="ReferenceNumber" id="stReferenceNumber" class="form-control"
+                                       maxlength="13" inputmode="numeric" placeholder="13-digit reference number" />
+                            </div>
+                            *@
+                            @* ==== [ST-BILLING-9] END ==== *@
                         </div>
                     </div>
                 </div>

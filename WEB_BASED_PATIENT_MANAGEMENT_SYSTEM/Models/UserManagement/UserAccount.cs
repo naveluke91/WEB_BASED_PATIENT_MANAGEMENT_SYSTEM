@@ -62,6 +62,25 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
         // Last signed-in request made by the account.
         public DateTime? LastActivityAtUtc { get; set; }
+
+        // ==== [ST-ACCOUNT-5] START — Lockout human sa 5 ka sayop nga login ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_AccountLockout   →   Update-Database
+        /*
+        public int FailedLoginAttempts { get; set; }
+
+        public DateTime? LockoutEndUtc { get; set; }
+        */
+        // ==== [ST-ACCOUNT-5] END ====
+
+        // ==== [ST-USER-6] START — Activate / Deactivate account ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_UserIsDisabled   →   Update-Database
+        // (false = active. Gigamit ang "IsDisabled" aron ang existing accounts magpabilin nga active.)
+        /*
+        public bool IsDisabled { get; set; }
+        */
+        // ==== [ST-USER-6] END ====
     }
 
     /// <summary>

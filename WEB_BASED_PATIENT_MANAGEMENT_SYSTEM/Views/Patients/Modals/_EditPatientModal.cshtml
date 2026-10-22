@@ -63,6 +63,30 @@
                                 <label for="editContactNo" class="form-label">Contact No.</label>
                                 <input type="text" name="ContactNo" id="editContactNo" class="form-control" placeholder="Enter contact number" required />
                             </div>
+
+                            @* ==== [ST-PATIENT-12] START — Blood Type (dropdown) ==== *@
+                            @*
+                            <div class="col-md-4">
+                                <label for="editBloodType" class="form-label">Blood Type</label>
+                                <select name="BloodType" id="editBloodType" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    @foreach (var bloodType in Patient.BloodTypes)
+                                    {
+                                        <option value="@bloodType">@bloodType</option>
+                                    }
+                                </select>
+                            </div>
+                            *@
+                            @* ==== [ST-PATIENT-12] END ==== *@
+
+                            @* ==== [ST-PATIENT-13] START — Email Address ==== *@
+                            @*
+                            <div class="col-md-8">
+                                <label for="editEmail" class="form-label">Email Address</label>
+                                <input type="email" name="Email" id="editEmail" class="form-control" maxlength="256" placeholder="name@example.com" />
+                            </div>
+                            *@
+                            @* ==== [ST-PATIENT-13] END ==== *@
                         </div>
                     </div>
 

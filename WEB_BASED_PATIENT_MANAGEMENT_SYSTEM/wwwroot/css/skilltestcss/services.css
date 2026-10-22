@@ -1,0 +1,32 @@
+/* ============================================================
+   skilltestcss/services.css — Styles sa SKILL TEST features sa
+   SERVICES page (Views/Services/Index.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+
+   Ang filter dropdowns ug pagination kay naa na sa st-core.css,
+   so ang ubang feature walay kaugalingon nga CSS.
+   ============================================================ */
+
+
+/* ==== [ST-SERVICE-7] START — Total sa presyo ==== */
+/*
+.st-service-total {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--brand-text);
+    white-space: nowrap;
+}
+*/
+/* ==== [ST-SERVICE-7] END ==== */
+
+
+/* ==== [ST-SERVICE-11] START — Checkbox para sa daghang service ==== */
+/*
+.st-multi-service {
+    margin-bottom: var(--space-3);
+    font-size: var(--fs-sm);
+}
+*/
+/* ==== [ST-SERVICE-11] END ==== */

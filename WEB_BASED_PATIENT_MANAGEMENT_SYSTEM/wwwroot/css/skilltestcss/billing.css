@@ -1,0 +1,50 @@
+/* ============================================================
+   skilltestcss/billing.css — Styles sa SKILL TEST features sa
+   PAYMENT/BILLING page (Views/Billing/Index.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+
+   Ang filter dropdowns, summary cards ug pagination kay naa na sa st-core.css,
+   so ang ubang feature walay kaugalingon nga CSS.
+   ============================================================ */
+
+
+/* ==== [ST-BILLING-5] START — Unpaid Consultations card ==== */
+/*
+.st-unpaid-card {
+    margin-bottom: var(--space-5);
+    border-left: 4px solid var(--warning-text);
+}
+
+.st-unpaid-empty {
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    color: var(--text-muted);
+}
+*/
+/* ==== [ST-BILLING-5] END ==== */
+
+
+/* ==== [ST-BILLING-8] START — Change (sukli) ==== */
+/*
+.st-change {
+    display: flex;
+    align-items: center;
+    height: var(--control-height);
+    padding: 0 12px;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border: 1px solid #C9E7A0;
+    border-radius: var(--radius-md);
+}
+
+.st-change.st-change-short {
+    color: var(--danger);
+    background: var(--danger-surface);
+    border-color: var(--danger-border);
+}
+*/
+/* ==== [ST-BILLING-8] END ==== */

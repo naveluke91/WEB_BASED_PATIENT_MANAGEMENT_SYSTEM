@@ -13,7 +13,29 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
         // Local page to return to after signing in.
         public string? ReturnUrl { get; set; }
+
+        // ==== [ST-ACCOUNT-4] START — "Remember me" checkbox sa Login ====
+        /*
+        public bool RememberMe { get; set; }
+        */
+        // ==== [ST-ACCOUNT-4] END ====
     }
+
+    // ==== [ST-ACCOUNT-3] START — Form sa Change Password (My Account) ====
+    /*
+    public class StChangeMyPasswordViewModel
+    {
+        [DataType(DataType.Password)]
+        public string? CurrentPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        public string? ConfirmPassword { get; set; }
+    }
+    */
+    // ==== [ST-ACCOUNT-3] END ====
 
     public class ChangePasswordViewModel
     {

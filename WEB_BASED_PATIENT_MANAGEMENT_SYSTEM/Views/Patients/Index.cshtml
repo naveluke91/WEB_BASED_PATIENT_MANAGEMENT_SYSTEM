@@ -7,7 +7,25 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/patient/patient.css" asp-append-version="true" />
+
+    @* ==== [ST-PATIENT-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/patient.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-PATIENT-0] END ==== *@
 }
+
+@* ==== [ST-PATIENT-17] START — Admin ra ang maka-delete: itago ang Delete button sa Staff ==== *@
+@*
+@if (!User.IsInRole(UserRoles.Admin))
+{
+    <style>
+        #patientTableBody .delete-btn { display: none; }
+    </style>
+}
+*@
+@* ==== [ST-PATIENT-17] END ==== *@
 
 <!-- Page header -->
 <div class="page-header">
@@ -15,6 +33,18 @@
         <h1>Patients</h1>
     </div>
     <div class="page-actions">
+        @* ==== [ST-PATIENT-16] START — Toggle: ipakita ang Archived o ang Active nga pasyente ==== *@
+        @*
+        @if (ViewBag.StShowArchived == true)
+        {
+            <a asp-action="Index" class="btn-cancel"><i class="bi bi-people" aria-hidden="true"></i> Show Active Patients</a>
+        }
+        else
+        {
+            <a asp-action="Index" asp-route-showArchived="true" class="btn-cancel"><i class="bi bi-archive" aria-hidden="true"></i> Show Archived</a>
+        }
+        *@
+        @* ==== [ST-PATIENT-16] END ==== *@
         <button type="button" class="btn-primary-dark" data-bs-toggle="modal" data-bs-target="#modalAddPatient">
             <i class="bi bi-person-plus" aria-hidden="true"></i> Add New Patient
         </button>
@@ -27,6 +57,86 @@
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Patient List</h2>
+
+        @* ==== [ST-PATIENT-5] START — Count: "Showing X of Y patients" ==== *@
+        @*
+        <span id="stPatientCount" class="st-patient-count"></span>
+        *@
+        @* ==== [ST-PATIENT-5] END ==== *@
+
+        @* ==== [ST-PATIENT-1] START — Filter by Marital Status (dropdown) ==== *@
+        @*
+        <select id="stMaritalFilter" class="form-select st-filter" aria-label="Filter by marital status">
+            <option value="">All Marital Status</option>
+            @foreach (var status in Patient.MaritalStatuses)
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+        *@
+        @* ==== [ST-PATIENT-1] END ==== *@
+
+        @* ==== [ST-PATIENT-6] START — Filter by Trimester / Due this month ==== *@
+        @*
+        <select id="stTrimesterFilter" class="form-select st-filter" aria-label="Filter by trimester">
+            <option value="">All Trimesters</option>
+            <option value="1">1st Trimester (0–13 wks)</option>
+            <option value="2">2nd Trimester (14–27 wks)</option>
+            <option value="3">3rd Trimester (28+ wks)</option>
+            <option value="due-month">Due this month (EDC)</option>
+        </select>
+        *@
+        @* ==== [ST-PATIENT-6] END ==== *@
+
+        @* ==== [ST-PATIENT-9] START — Filter by Date Registered (From – To) ==== *@
+        @*
+        <input type="date" id="stRegisteredFrom" class="form-control st-filter" title="Registered from" aria-label="Registered from" />
+        <input type="date" id="stRegisteredTo" class="form-control st-filter" title="Registered to" aria-label="Registered to" />
+        *@
+        @* ==== [ST-PATIENT-9] END ==== *@
+
+        @* ==== [ST-PATIENT-2] START — Sort (Ascending / Descending) — server-side, ?sortOrder= ==== *@
+        @*
+        <form method="get" asp-action="Index" class="st-sort-form">
+            @if (ViewBag.StShowArchived == true)
+            {
+                <input type="hidden" name="showArchived" value="true" />
+            }
+            <select name="sortOrder" class="form-select st-filter" aria-label="Sort patients" onchange="this.form.submit()">
+                @{
+                    var stCurrentSort = Context.Request.Query["sortOrder"].ToString();
+                    var stSortOptions = new (string Value, string Label)[]
+                    {
+                        ("", "Sort: Name (A–Z)"),
+                        ("name_desc", "Sort: Name (Z–A)"),
+                        ("age_asc", "Sort: Age (youngest first)"),
+                        ("age_desc", "Sort: Age (oldest first)"),
+                        ("edc_asc", "Sort: EDC (nearest first)"),
+                        ("edc_desc", "Sort: EDC (farthest first)"),
+                        ("registered_desc", "Sort: Newest registered"),
+                        ("registered_asc", "Sort: Oldest registered")
+                    };
+                }
+                @foreach (var option in stSortOptions)
+                {
+                    <option value="@option.Value" selected="@(option.Value == stCurrentSort)">@option.Label</option>
+                }
+            </select>
+        </form>
+        *@
+        @* ==== [ST-PATIENT-2] END ==== *@
+
+        @* ==== [ST-PATIENT-4] START — Pagination: pila ka row kada page ==== *@
+        @*
+        <select id="stPatientPageSize" class="form-select st-filter" aria-label="Rows per page">
+            <option value="10">Show 10</option>
+            <option value="25">Show 25</option>
+            <option value="50">Show 50</option>
+            <option value="0">Show all</option>
+        </select>
+        *@
+        @* ==== [ST-PATIENT-4] END ==== *@
+
         <!-- Search patients by name, ID, or contact -->
         <div class="search-box">
             <i class="bi bi-search" aria-hidden="true"></i>
@@ -39,11 +149,21 @@
         <table class="data-table">
             <thead>
                 <tr>
+                    @* ==== [ST-PATIENT-3] START — Patient No. column ==== *@
+                    @*
+                    <th class="col-fit">Patient No.</th>
+                    *@
+                    @* ==== [ST-PATIENT-3] END ==== *@
                     <th>Patient Name</th>
                     <th class="col-fit">Age</th>
                     <th>Contact</th>
                     <th>Age of Gestation (AOG)</th>
                     <th>Estimated Date of Confinement (EDC)</th>
+                    @* ==== [ST-PATIENT-9] START — Date Registered column ==== *@
+                    @*
+                    <th class="col-fit">Date Registered</th>
+                    *@
+                    @* ==== [ST-PATIENT-9] END ==== *@
                     <th class="col-actions">Action</th>
                 </tr>
             </thead>
@@ -60,11 +180,41 @@
                         data-name="@patient.FullName.ToLower()"
                         data-contact="@patient.ContactNo"
                         data-id="@patient.Id">
-                        <td class="cell-name">@patient.FullName</td>
+                        @* ==== [ST-PATIENT-3] START — Patient No. column ==== *@
+                        @*
+                        <td class="col-fit cell-nowrap">@patient.PatientNo</td>
+                        *@
+                        @* ==== [ST-PATIENT-3] END ==== *@
+                        <td class="cell-name">
+                            @* ==== [ST-PATIENT-0] START — SETUP: datos sa row nga gamiton sa skilltestjs/patient.js ==== *@
+                            @*
+                            <span class="st-data" hidden
+                                  data-marital="@patient.MaritalStatus"
+                                  data-age="@patient.Age"
+                                  data-lmp="@(patient.LMP?.ToString("yyyy-MM-dd"))"
+                                  data-edc="@(patient.EDC?.ToString("yyyy-MM-dd"))"
+                                  data-registered="@(patient.DateRegistered?.ToString("yyyy-MM-dd"))"
+                                  data-patientno="PT-@patient.Id.ToString("D4")"></span>
+                            *@
+                            @* ==== [ST-PATIENT-0] END ==== *@
+                            @patient.FullName
+                        </td>
                         <td class="col-fit">@patient.Age</td>
                         <td class="cell-nowrap cell-center">@patient.ContactNo</td>
                         <td class="cell-center">@patient.AOG</td>
-                        <td class="cell-nowrap cell-center">@(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")</td>
+                        <td class="cell-nowrap cell-center">
+                            @(patient.EDC?.ToString("MMMM dd, yyyy") ?? "—")
+                            @* ==== [ST-PATIENT-7] START — Lugar sa "Due soon" badge ==== *@
+                            @*
+                            <span class="st-edc-badge"></span>
+                            *@
+                            @* ==== [ST-PATIENT-7] END ==== *@
+                        </td>
+                        @* ==== [ST-PATIENT-9] START — Date Registered column ==== *@
+                        @*
+                        <td class="col-fit cell-nowrap">@(patient.DateRegistered?.ToString("MMM dd, yyyy") ?? "—")</td>
+                        *@
+                        @* ==== [ST-PATIENT-9] END ==== *@
                         <td class="col-actions">
                             <div class="action-btns">
                                 <!-- View details in modal -->
@@ -88,6 +238,28 @@
                                         <i class="bi bi-trash" aria-hidden="true"></i><span class="action-label">Delete</span>
                                     </button>
                                 </form>
+
+                                @* ==== [ST-PATIENT-16] START — Archive / Restore button ==== *@
+                                @*
+                                @if (patient.IsArchived)
+                                {
+                                    <form asp-action="Restore" asp-route-id="@patient.Id" method="post">
+                                        <button type="submit" class="action-btn" title="Restore" aria-label="Restore @patient.FullName">
+                                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span class="action-label">Restore</span>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Archive" asp-route-id="@patient.Id" method="post" onsubmit="confirmDelete(event, this);"
+                                          data-delete-message="Archive this patient? The patient will be hidden from the list but can be restored later.">
+                                        <button type="submit" class="action-btn" title="Archive" aria-label="Archive @patient.FullName">
+                                            <i class="bi bi-archive" aria-hidden="true"></i><span class="action-label">Archive</span>
+                                        </button>
+                                    </form>
+                                }
+                                *@
+                                @* ==== [ST-PATIENT-16] END ==== *@
                             </div>
                         </td>
                     </tr>
@@ -95,6 +267,12 @@
             </tbody>
         </table>
     </div>
+
+    @* ==== [ST-PATIENT-4] START — Pagination buttons (gi-fill sa skilltestjs/patient.js) ==== *@
+    @*
+    <div id="stPatientPager" class="st-pager"></div>
+    *@
+    @* ==== [ST-PATIENT-4] END ==== *@
 
     @* Pagination — commented out for now
     <div class="pagination-row">
@@ -175,6 +353,30 @@
                                 <label for="addContactNo" class="form-label">Contact No.</label>
                                 <input type="text" name="ContactNo" id="addContactNo" class="form-control" placeholder="Enter contact number" required />
                             </div>
+
+                            @* ==== [ST-PATIENT-12] START — Blood Type (dropdown) ==== *@
+                            @*
+                            <div class="col-md-4">
+                                <label for="addBloodType" class="form-label">Blood Type</label>
+                                <select name="BloodType" id="addBloodType" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    @foreach (var bloodType in Patient.BloodTypes)
+                                    {
+                                        <option value="@bloodType">@bloodType</option>
+                                    }
+                                </select>
+                            </div>
+                            *@
+                            @* ==== [ST-PATIENT-12] END ==== *@
+
+                            @* ==== [ST-PATIENT-13] START — Email Address ==== *@
+                            @*
+                            <div class="col-md-8">
+                                <label for="addEmail" class="form-label">Email Address</label>
+                                <input type="email" name="Email" id="addEmail" class="form-control" maxlength="256" placeholder="name@example.com" />
+                            </div>
+                            *@
+                            @* ==== [ST-PATIENT-13] END ==== *@
                         </div>
                     </div>
 
@@ -276,6 +478,22 @@
                             <label>Occupation</label>
                             <div class="detail-value" id="viewDetailOccupation">—</div>
                         </div>
+                        @* ==== [ST-PATIENT-12] START — Blood Type sa View Details ==== *@
+                        @*
+                        <div class="detail-item">
+                            <label>Blood Type</label>
+                            <div class="detail-value" id="viewDetailBloodType">—</div>
+                        </div>
+                        *@
+                        @* ==== [ST-PATIENT-12] END ==== *@
+                        @* ==== [ST-PATIENT-13] START — Email sa View Details ==== *@
+                        @*
+                        <div class="detail-item">
+                            <label>Email Address</label>
+                            <div class="detail-value" id="viewDetailEmail">—</div>
+                        </div>
+                        *@
+                        @* ==== [ST-PATIENT-13] END ==== *@
                     </div>
                 </div>
                 <div class="form-section">
@@ -307,8 +525,24 @@
                         </div>
                     </div>
                 </div>
+
+                @* ==== [ST-PATIENT-14] START — Patient History (appointments, services, consultations, payments) ==== *@
+                @*
+                <div class="form-section st-history">
+                    <h6 class="form-section-heading">Patient History</h6>
+                    <div id="stPatientHistory" class="st-history-body">Loading...</div>
+                </div>
+                *@
+                @* ==== [ST-PATIENT-14] END ==== *@
             </div>
             <div class="modal-footer">
+                @* ==== [ST-PATIENT-15] START — Print Patient Record button ==== *@
+                @*
+                <button type="button" class="btn-cancel" id="stPrintPatient">
+                    <i class="bi bi-printer" aria-hidden="true"></i> Print
+                </button>
+                *@
+                @* ==== [ST-PATIENT-15] END ==== *@
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -318,6 +552,14 @@
 
 @section Scripts {
     <script src="~/js/patient/patient.js" asp-append-version="true"></script>
+
+    @* ==== [ST-PATIENT-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/patient.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-PATIENT-0] END ==== *@
+
     <script>
         // Datos ug sayop gikan sa server (kung naa).
         const patientFormState = @Html.Raw(TempData["PatientForm"] as string ?? "null");

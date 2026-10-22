@@ -45,5 +45,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         [MaxLength(30)]
         public string? RecordType { get; set; }
         public int? RecordId { get; set; }
+
+        // ==== [ST-CONSULT-7] START — Kinsa ang nag-attend sa consultation (midwife/staff) ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_ConsultationAttendedBy   →   Update-Database
+        /*
+        [MaxLength(150)]
+        public string? AttendedBy { get; set; }
+        */
+        // ==== [ST-CONSULT-7] END ====
     }
 }

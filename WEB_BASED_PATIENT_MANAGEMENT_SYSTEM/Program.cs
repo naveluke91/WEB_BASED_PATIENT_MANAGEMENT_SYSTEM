@@ -32,6 +32,12 @@ builder.Services.AddSingleton<EmailSender>();
 
 builder.Services.AddHostedService<RescheduledAppointmentStatusService>();
 
+// ==== [ST-APPT-16] START — Background service: lapas na nga Pending → "No-Show" ====
+/*
+builder.Services.AddHostedService<StNoShowAppointmentService>();
+*/
+// ==== [ST-APPT-16] END ====
+
 // Password-reset state is server-side and expires quickly.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -53,6 +59,13 @@ builder.Services
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+
+        // ==== [ST-GENERAL-6] START — Session timeout: 30 minutes imbes 8 hours ====
+        // (Kini ang server part; ang JS part kay naa sa skilltestjs/general.js.)
+        /*
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        */
+        // ==== [ST-GENERAL-6] END ====
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         // Secure cookie kung HTTPS (production).
@@ -83,6 +96,17 @@ builder.Services
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return;
             }
+
+            // ==== [ST-USER-6] START — Ang na-deactivate nga account ma-logout dayon ====
+            /*
+            if (account.IsDisabled)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+            */
+            // ==== [ST-USER-6] END ====
 
             if (principal.FindFirst(ClaimTypes.Role)?.Value != account.Role
                 || principal.FindFirst(ClaimTypes.Name)?.Value != account.Username
@@ -179,6 +203,35 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
+// ==== [ST-ACCOUNT-2] START — I-save ang "Last Activity" sa naka-login nga account ====
+// (Usa ka beses kada minuto ra aron dili bug-at sa database.)
+/*
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true
+        && int.TryParse(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var activeAccountId))
+    {
+        var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+        var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
+        await db.UserAccounts
+            .Where(u => u.Id == activeAccountId && (u.LastActivityAtUtc == null || u.LastActivityAtUtc < oneMinuteAgo))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastActivityAtUtc, DateTime.UtcNow));
+    }
+
+    await next();
+});
+*/
+// ==== [ST-ACCOUNT-2] END ====
+
+// ==== [ST-DASHBOARD-5] START — Dashboard na ang default page (inig open sa "/") ====
+// Kini nga route nauna, so ang "/" moadto sa Dashboard. Ang /Patients nagana gihapon.
+/*
+app.MapControllerRoute(
+    name: "st-dashboard-default",
+    pattern: "{controller=Dashboard}/{action=Index}/{id?}");
+*/
+// ==== [ST-DASHBOARD-5] END ====
 
 // Default route — mag-sugod sa Patients Index page
 app.MapControllerRoute(

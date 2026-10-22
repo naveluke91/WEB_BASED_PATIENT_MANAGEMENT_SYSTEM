@@ -43,6 +43,15 @@
                     <div class="form-section">
                         <h2 class="form-section-heading">Select Service</h2>
 
+                        @* ==== [ST-SERVICE-11] START — Checkbox: pwede mopili og daghang service (Walk-In ra) ==== *@
+                        @*
+                        <div class="form-check st-multi-service">
+                            <input type="checkbox" class="form-check-input" id="stMultiService" />
+                            <label class="form-check-label" for="stMultiService">Select more than one service (Walk-In only)</label>
+                        </div>
+                        *@
+                        @* ==== [ST-SERVICE-11] END ==== *@
+
                         <div class="svc-section-label">General Services</div>
                         <div class="svc-grid svc-grid-general">
                             <button type="button" class="svc-tile svc-tile-wide" data-service="Normal Delivery Fee &amp; Newborn Care Package" data-price="15000">
@@ -65,6 +74,12 @@
                             <button type="button" class="svc-tile" data-service="IUD Insertion" data-price="@(ServicesController.IudPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))"><span class="svc-name">IUD Insertion</span><span class="svc-price">PHP @(ServicesController.IudPrice.ToString("N2"))</span></button>
                             <button type="button" class="svc-tile" data-service="IUD Removal" data-price="@(ServicesController.IudPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))"><span class="svc-name">IUD Removal</span><span class="svc-price">PHP @(ServicesController.IudPrice.ToString("N2"))</span></button>
                             <button type="button" class="svc-tile" data-service="Anti-Tetanus Injection" data-price="200"><span class="svc-name">Anti-Tetanus Injection</span><span class="svc-price">PHP 200.00</span></button>
+
+                            @* ==== [ST-SERVICE-9] START — Bag-ong service tile: Pap Smear ==== *@
+                            @*
+                            <button type="button" class="svc-tile" data-service="Pap Smear" data-price="300"><span class="svc-name">Pap Smear</span><span class="svc-price">PHP 300.00</span></button>
+                            *@
+                            @* ==== [ST-SERVICE-9] END ==== *@
                         </div>
                     </div>
                 </div>

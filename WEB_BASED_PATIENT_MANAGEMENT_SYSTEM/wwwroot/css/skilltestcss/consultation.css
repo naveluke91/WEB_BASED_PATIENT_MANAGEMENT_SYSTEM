@@ -1,0 +1,51 @@
+/* ============================================================
+   skilltestcss/consultation.css — Styles sa SKILL TEST features sa
+   CONSULTATION page (Views/Consultation/Index.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+
+   Ang filter dropdowns, tabs (chips) ug pagination kay naa na sa st-core.css,
+   so ang ubang feature walay kaugalingon nga CSS.
+   ============================================================ */
+
+
+/* ==== [ST-CONSULT-6] START — Queue number badge ==== */
+/*
+.st-queue-no {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 1px 8px;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: #fff;
+    background: var(--brand-action);
+    border-radius: var(--radius-pill);
+}
+*/
+/* ==== [ST-CONSULT-6] END ==== */
+
+
+/* ==== [ST-CONSULT-9] START — BMI result ==== */
+/*
+.st-bmi {
+    margin-left: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--info-text);
+}
+*/
+/* ==== [ST-CONSULT-9] END ==== */
+
+
+/* ==== [ST-CONSULT-10] START — Warning sa abnormal vital signs ==== */
+/*
+.st-vital-warning {
+    margin-left: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--danger);
+    white-space: nowrap;
+}
+*/
+/* ==== [ST-CONSULT-10] END ==== */

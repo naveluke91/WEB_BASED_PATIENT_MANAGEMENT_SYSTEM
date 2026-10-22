@@ -16,8 +16,32 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
             (PatientReport, "Patient Report"),
             (AppointmentReport, "Appointment Report"),
             (ConsultationReport, "Consultation Report"),
-            (PaymentReport, "Payment/Billing Report")
+            (PaymentReport, "Payment/Billing Report"),
+
+            // ==== [ST-REPORT-3] START — Bag-ong report type: Services Report ====
+            /*
+            ("Service", "Services Report"),
+            */
+            // ==== [ST-REPORT-3] END ====
+
+            // ==== [ST-REPORT-4] START — Bag-ong report type: Expected Deliveries (EDC) ====
+            /*
+            ("Delivery", "Expected Deliveries (EDC) Report"),
+            */
+            // ==== [ST-REPORT-4] END ====
+
+            // ==== [ST-REPORT-5] START — Bag-ong report type: Income per Service ====
+            /*
+            ("Income", "Income per Service Report"),
+            */
+            // ==== [ST-REPORT-5] END ====
         };
+
+        // ==== [ST-REPORT-3] START — Mga row sa Services Report ====
+        /*
+        public List<Service> StServices { get; set; } = new();
+        */
+        // ==== [ST-REPORT-3] END ====
 
         public string? ReportType { get; set; }
         public DateTime? DateFrom { get; set; }

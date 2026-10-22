@@ -1,0 +1,86 @@
+/* ============================================================
+   skilltestcss/notification.css — Styles sa SKILL TEST features sa
+   Notification bell (gi-load sa Views/Shared/_Layout.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker.
+   ============================================================ */
+
+
+/* ==== [ST-NOTIF-1] START — Highlight sa appointment row gikan sa notification ==== */
+/*
+.data-table tbody tr.st-row-highlight td {
+    background: var(--warning-surface);
+    animation: st-row-flash 1.2s ease 2;
+}
+
+@keyframes st-row-flash {
+    50% { background: #FFE8A3; }
+}
+*/
+/* ==== [ST-NOTIF-1] END ==== */
+
+
+/* ==== [ST-NOTIF-2] START — "Mark all as read" button ==== */
+/*
+.st-notif-mark-all {
+    display: block;
+    width: 100%;
+    padding: 6px 16px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-align: right;
+    color: var(--brand-text);
+    background: var(--bg-subtle);
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer;
+}
+
+.st-notif-mark-all:hover {
+    text-decoration: underline;
+}
+*/
+/* ==== [ST-NOTIF-2] END ==== */
+
+
+/* ==== [ST-NOTIF-3] START — "Due to deliver" nga listahan ==== */
+/*
+.st-notif-subheader {
+    padding: 8px 16px 4px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.st-notif-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+*/
+/* ==== [ST-NOTIF-3] END ==== */
+
+
+/* ==== [ST-NOTIF-4] START — Billing notification ==== */
+/*
+.st-notif-subheader {
+    padding: 8px 16px 4px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.st-notif-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+*/
+/* ==== [ST-NOTIF-4] END ==== */

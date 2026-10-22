@@ -35,5 +35,44 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
 
         [Display(Name = "Payment Date")]
         public DateTime PaymentDate { get; set; } = DateTime.Now;
+
+        // ==== [ST-BILLING-8] START — Amount Received (Cash) — ang change = AmountTendered − Amount ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PaymentAmountTendered   →   Update-Database
+        /*
+        [Column(TypeName = "decimal(10,2)")]
+        [Display(Name = "Amount Received")]
+        public decimal? AmountTendered { get; set; }
+        */
+        // ==== [ST-BILLING-8] END ====
+
+        // ==== [ST-BILLING-9] START — GCash Reference Number ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PaymentReferenceNumber   →   Update-Database
+        /*
+        [MaxLength(30)]
+        [Display(Name = "Reference No.")]
+        public string? ReferenceNumber { get; set; }
+        */
+        // ==== [ST-BILLING-9] END ====
+
+        // ==== [ST-BILLING-10] START — Discount: "Senior" o "PWD" (null = walay discount) ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PaymentDiscount   →   Update-Database
+        /*
+        [MaxLength(20)]
+        public string? DiscountType { get; set; }
+        */
+        // ==== [ST-BILLING-10] END ====
+
+        // ==== [ST-BILLING-11] START — Received By (staff nga nidawat sa bayad) ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_PaymentReceivedBy   →   Update-Database
+        /*
+        [MaxLength(150)]
+        [Display(Name = "Received By")]
+        public string? ReceivedBy { get; set; }
+        */
+        // ==== [ST-BILLING-11] END ====
     }
 }

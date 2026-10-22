@@ -131,6 +131,32 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             // I-validate pag-usab sa server (petsa, oras); ang ngalan ug contact gikan na sa Patient record.
             var errors = ValidateAppointmentInput(appointment, checkName: false, checkSchedule: true, checkContact: false);
 
+            // ==== [ST-APPT-8] START — Notes / Reason for visit (max 500 characters) ====
+            /*
+            appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes) ? null : appointment.Notes.Trim();
+            if (appointment.Notes?.Length > 500)
+                errors.TryAdd(nameof(Appointment.Notes), "Notes must be 500 characters or less.");
+            */
+            // ==== [ST-APPT-8] END ====
+
+            // ==== [ST-APPT-13] START — Limit: pila ra ka appointment kada adlaw ====
+            /*
+            const int stMaxAppointmentsPerDay = 4;
+            if (errors.Count == 0 && _context.Appointments.Count(a => a.AppointmentDate == appointment.AppointmentDate.Date
+                    && a.Status != "Cancelled") >= stMaxAppointmentsPerDay)
+                errors.TryAdd(nameof(Appointment.AppointmentDate),
+                    $"This day is already full (maximum of {stMaxAppointmentsPerDay} appointments). Please choose another date.");
+            */
+            // ==== [ST-APPT-13] END ====
+
+            // ==== [ST-APPT-14] START — Dili pwede ang parehas nga pasyente kaduha sa usa ka adlaw ====
+            /*
+            if (errors.Count == 0 && _context.Appointments.Any(a => a.PatientId == appointment.PatientId
+                    && a.AppointmentDate == appointment.AppointmentDate.Date && a.Status != "Cancelled"))
+                errors.TryAdd(nameof(Appointment.PatientName), "This patient already has an appointment on that day.");
+            */
+            // ==== [ST-APPT-14] END ====
+
             if (errors.Count == 0)
             {
                 bool conflict = _context.Appointments
@@ -296,11 +322,39 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // ==== [ST-APPT-15] START — Ang "Completed" nga appointment dili na ma-edit ====
+                /*
+                if (existing.Status == "Completed")
+                {
+                    const string completedError = "Completed appointments can no longer be edited.";
+                    if (isAjax) return Json(new { success = false, message = completedError });
+                    TempData["ErrorMessage"] = completedError;
+                    return RedirectToAction(nameof(Index));
+                }
+                */
+                // ==== [ST-APPT-15] END ====
+
                 // I-validate pag-usab sa server; ang Cancelled dili na i-check ang petsa/oras.
                 bool isCancelled = appointment.Status == "Cancelled";
                 var errors = ValidateAppointmentInput(appointment, checkName: true, checkSchedule: !isCancelled);
                 if (!AllowedStatuses.Contains(appointment.Status))
                     errors.TryAdd(nameof(Appointment.Status), "Please select a valid status.");
+
+                // ==== [ST-APPT-8] START — Notes / Reason for visit (max 500 characters) ====
+                /*
+                appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes) ? null : appointment.Notes.Trim();
+                if (appointment.Notes?.Length > 500)
+                    errors.TryAdd(nameof(Appointment.Notes), "Notes must be 500 characters or less.");
+                */
+                // ==== [ST-APPT-8] END ====
+
+                // ==== [ST-APPT-17] START — Kinahanglan ang rason kung i-Cancel ====
+                /*
+                var stCancelReason = Request.Form["CancelReason"].ToString().Trim();
+                if (isCancelled && existing.Status != "Cancelled" && stCancelReason.Length == 0)
+                    errors.TryAdd("CancelReason", "Please enter the reason for cancellation.");
+                */
+                // ==== [ST-APPT-17] END ====
 
                 // -----------------------------------------------------------------
                 // PROBLEM 1: "Rescheduled" requires a new date OR a new time (or both).
@@ -453,6 +507,23 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     if (reschedDateChanged || reschedTimeChanged)
                         ClearNotificationReads(id);
                 }
+
+                // ==== [ST-APPT-8] START — I-save ang Notes ====
+                /*
+                existing.Notes = appointment.Notes;
+                */
+                // ==== [ST-APPT-8] END ====
+
+                // ==== [ST-APPT-17] START — I-save ang rason sa pag-cancel (idugang sa Notes) ====
+                /*
+                if (isCancelled && existing.Status != "Cancelled")
+                {
+                    var reasonLine = $"Cancelled: {Request.Form["CancelReason"].ToString().Trim()}";
+                    existing.Notes = string.IsNullOrWhiteSpace(existing.Notes) ? reasonLine : $"{existing.Notes}\n{reasonLine}";
+                    if (existing.Notes.Length > 500) existing.Notes = existing.Notes[^500..];
+                }
+                */
+                // ==== [ST-APPT-17] END ====
 
                 // Status is set LAST — only reached when every validation above passed.
                 existing.Status = appointment.Status;
@@ -746,6 +817,121 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             return Ok();
         }
 
+        // ==== [ST-NOTIF-2] START — POST /Appointments/MarkAllNotificationsRead ====
+        // I-mark as read ang tanang appointment notification (karon ug ugma) para sa naka-login ra.
+        /*
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkAllNotificationsRead()
+        {
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userAccountId))
+                return Forbid();
+
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            var alreadyRead = _context.NotificationReads
+                .Where(r => r.UserAccountId == userAccountId)
+                .Select(r => r.AppointmentId)
+                .ToHashSet();
+
+            var unreadIds = _context.Appointments
+                .Where(a => a.Status != "Cancelled" && a.AppointmentDate >= today && a.AppointmentDate <= tomorrow)
+                .Select(a => a.Id)
+                .ToList()
+                .Where(id => !alreadyRead.Contains(id));
+
+            foreach (var appointmentId in unreadIds)
+            {
+                _context.NotificationReads.Add(new NotificationRead
+                {
+                    UserAccountId = userAccountId,
+                    AppointmentId = appointmentId,
+                    ReadAtUtc = DateTime.UtcNow
+                });
+            }
+            _context.SaveChanges();
+
+            return Ok();
+        }
+        */
+        // ==== [ST-NOTIF-2] END ====
+
+        // ==== [ST-APPT-9] START — GET /Appointments/StDetails/5: Service, Notes, Booked On ====
+        /*
+        [HttpGet]
+        public IActionResult StDetails(int id)
+        {
+            var appointment = _context.Appointments.AsNoTracking().FirstOrDefault(a => a.Id == id);
+            if (appointment == null) return NotFound();
+
+            return Json(new
+            {
+                service = string.IsNullOrWhiteSpace(appointment.ServiceType) ? "—" : appointment.ServiceType,
+                notes = string.IsNullOrWhiteSpace(appointment.Notes) ? "—" : appointment.Notes,
+                createdAt = appointment.CreatedAt.ToString("MMM dd, yyyy h:mm tt")
+            });
+        }
+        */
+        // ==== [ST-APPT-9] END ====
+
+        // ==== [ST-APPT-15] START — POST /Appointments/MarkNoShow/5 ====
+        // Ang lapas na nga Pending/Confirmed nga wala mi-abot (walay consultation) → "No-Show".
+        /*
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkNoShow(int id)
+        {
+            var appointment = _context.Appointments.FirstOrDefault(a => a.Id == id);
+            if (appointment == null) return NotFound();
+
+            if ((appointment.Status != "Pending" && appointment.Status != "Confirmed")
+                || appointment.AppointmentDate.Date >= DateTime.Today
+                || _context.Consultations.Any(c => c.AppointmentId == id))
+            {
+                TempData["ErrorMessage"] = "Only a past Pending or Confirmed appointment without a consultation can be marked as No-Show.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            appointment.Status = "No-Show";
+            appointment.InProcess = false;
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Appointment for \"{appointment.PatientName}\" was marked as No-Show.";
+            return RedirectToAction(nameof(Index));
+        }
+        */
+        // ==== [ST-APPT-15] END ====
+
+        // ==== [ST-APPT-19] START — POST /Appointments/SendReminder/5: email reminder sa pasyente ====
+        // KINAHANGLAN: [ST-PATIENT-13] (Patient Email) ug ang Gmail App Password sa User Secrets.
+        /*
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendReminder(int id)
+        {
+            var appointment = _context.Appointments.Include(a => a.Patient).FirstOrDefault(a => a.Id == id);
+            if (appointment == null) return NotFound();
+
+            var email = appointment.Patient?.Email;
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                TempData["ErrorMessage"] = $"\"{appointment.PatientName}\" has no email address. Add it in Patients → Edit.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var emailSender = HttpContext.RequestServices.GetRequiredService<WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Services.EmailSender>();
+            var sent = await emailSender.SendAppointmentReminderAsync(email, appointment.PatientName,
+                appointment.AppointmentDate, appointment.FormattedTime, appointment.ServiceType);
+
+            if (sent)
+                TempData["SuccessMessage"] = $"Reminder sent to {email}.";
+            else
+                TempData["ErrorMessage"] = "The reminder could not be sent. Please check the email settings.";
+            return RedirectToAction(nameof(Index));
+        }
+        */
+        // ==== [ST-APPT-19] END ====
+
         // A read marker belongs to the old schedule, so the new schedule must notify again.
         private void ClearNotificationReads(int appointmentId) =>
             _context.NotificationReads.RemoveRange(_context.NotificationReads.Where(r => r.AppointmentId == appointmentId));
@@ -758,7 +944,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
         // Mga oras nga pwede (parehas sa ALL_SLOTS sa appointment.js).
         private static readonly TimeSpan[] AllowedTimeSlots =
         {
-            new(9, 0, 0), new(10, 0, 0), new(11, 0, 0), new(13, 0, 0), new(14, 0, 0), new(15, 0, 0)
+            new(9, 0, 0), new(10, 0, 0), new(11, 0, 0), new(13, 0, 0), new(14, 0, 0), new(15, 0, 0),
+
+            // ==== [ST-APPT-10] START — Bag-ong time slot: 4:00 PM (naa sab sa skilltestjs/appointment.js) ====
+            /*
+            new(16, 0, 0),
+            */
+            // ==== [ST-APPT-10] END ====
         };
 
         // Mga status nga gidawat sa Edit.
@@ -799,6 +991,33 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 // Valid ra nga oras.
                 if (HasBindingError(nameof(Appointment.AppointmentTime)) || !AllowedTimeSlots.Contains(appointment.AppointmentTime))
                     errors[nameof(Appointment.AppointmentTime)] = "Please select a valid time.";
+
+                // ==== [ST-APPT-11] START — Pwede na ang appointment karon nga adlaw (same-day), basta dili pa lapas ang oras ====
+                /*
+                if (errors.TryGetValue(nameof(Appointment.AppointmentDate), out var stDateError)
+                    && stDateError == "Please select a date from tomorrow onward."
+                    && appointment.AppointmentDate.Date == DateTime.Today)
+                {
+                    errors.Remove(nameof(Appointment.AppointmentDate));
+                    if (DateTime.Today.Add(appointment.AppointmentTime) <= DateTime.Now)
+                        errors.TryAdd(nameof(Appointment.AppointmentTime), "That time has already passed. Please choose a later time.");
+                }
+                */
+                // ==== [ST-APPT-11] END ====
+
+                // ==== [ST-APPT-12] START — Sirado ang clinic kung Sunday ug holiday ====
+                /*
+                var stHolidays = new[] { (1, 1), (4, 9), (5, 1), (6, 12), (8, 21), (11, 1), (11, 30), (12, 25), (12, 30), (12, 31) };
+                var stDate = appointment.AppointmentDate.Date;
+                if (!errors.ContainsKey(nameof(Appointment.AppointmentDate)) && stDate != default)
+                {
+                    if (stDate.DayOfWeek == DayOfWeek.Sunday)
+                        errors[nameof(Appointment.AppointmentDate)] = "The clinic is closed on Sundays. Please choose another date.";
+                    else if (stHolidays.Contains((stDate.Month, stDate.Day)))
+                        errors[nameof(Appointment.AppointmentDate)] = "The clinic is closed on this holiday. Please choose another date.";
+                }
+                */
+                // ==== [ST-APPT-12] END ====
             }
 
             return errors;

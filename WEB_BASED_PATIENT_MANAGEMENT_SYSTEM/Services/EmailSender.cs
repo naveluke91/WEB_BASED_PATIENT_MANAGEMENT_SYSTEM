@@ -60,6 +60,29 @@ Patient Management System
             return SendAsync(recipient, "Password Reset Verification Code", body);
         }
 
+        // ==== [ST-APPT-19] START — Email reminder sa appointment ====
+        /*
+        public Task<bool> SendAppointmentReminderAsync(string recipient, string patientName, DateTime date, string time, string? service)
+        {
+            var body = $"""
+Hello {patientName},
+
+This is a reminder of your appointment at Española Birthing Home:
+
+Date: {date:MMMM dd, yyyy}
+Time: {time}
+Service: {(string.IsNullOrWhiteSpace(service) ? "To be confirmed" : service)}
+
+Please arrive 15 minutes early. If you cannot come, please contact the clinic.
+
+Española Birthing Home
+""";
+
+            return SendAsync(recipient, "Appointment Reminder", body);
+        }
+        */
+        // ==== [ST-APPT-19] END ====
+
         private async Task<bool> SendAsync(string recipient, string subject, string body)
         {
             // Key names only, never the values.

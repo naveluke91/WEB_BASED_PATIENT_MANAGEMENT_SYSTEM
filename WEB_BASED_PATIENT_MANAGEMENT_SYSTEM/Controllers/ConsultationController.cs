@@ -19,7 +19,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             "NORIFAM",
             "IUD Insertion",
             "IUD Removal",
-            "Anti-Tetanus Injection"
+            "Anti-Tetanus Injection",
+
+            // ==== [ST-SERVICE-9] START — Bag-ong service: Pap Smear (mogamit sa Family Planning form) ====
+            /*
+            "Pap Smear",
+            */
+            // ==== [ST-SERVICE-9] END ====
         };
 
         private readonly ApplicationDbContext _context;
@@ -54,7 +60,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     Status = c.Status,
                     RecordType = c.RecordType,
                     RecordId = c.RecordId,
-                    SortDate = c.CompletedAt ?? c.StartedAt
+                    SortDate = c.CompletedAt ?? c.StartedAt,
+
+                    // ==== [ST-CONSULT-7] START — Kinsa ang nag-attend (midwife/staff) ====
+                    /*
+                    AttendedBy = c.AttendedBy,
+                    */
+                    // ==== [ST-CONSULT-7] END ====
                 })
                 .ToList();
 
@@ -354,6 +366,18 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     RecordDate = DateTime.Today,
                     SelectedServices = serviceName
                 };
+
+                // ==== [ST-CONSULT-8] START — Follow-up: i-copy ang mga previous prenatal visit sa pasyente ====
+                // Aron ang "Prenatal Visits" table dili magsugod nga blangko matag consultation.
+                /*
+                record.PrenatalVisitsJson = _context.PrenatalRecords.AsNoTracking()
+                    .Where(r => r.PatientId == patientId && r.PrenatalVisitsJson != null)
+                    .OrderByDescending(r => r.Id)
+                    .Select(r => r.PrenatalVisitsJson)
+                    .FirstOrDefault();
+                */
+                // ==== [ST-CONSULT-8] END ====
+
                 _context.PrenatalRecords.Add(record);
                 _context.SaveChanges();
                 return ("Prenatal", record.Id);
@@ -365,6 +389,13 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                 {
                     PatientId = patientId
                 };
+
+                // ==== [ST-CONSULT-12] START — Auto Case No. sa Newborn (e.g. NB-2026-0001) ====
+                /*
+                record.CaseNo = $"NB-{DateTime.Now:yyyy}-{_context.NewbornRecords.Count() + 1:D4}";
+                */
+                // ==== [ST-CONSULT-12] END ====
+
                 _context.NewbornRecords.Add(record);
                 _context.SaveChanges();
                 return ("Newborn", record.Id);
@@ -502,6 +533,19 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
                     consultation.CompletedAt = DateTime.Now;
                     if (consultation.Appointment != null)
                         consultation.Appointment.InProcess = false;
+
+                    // ==== [ST-APPT-15] START — Human sa consultation, ang appointment mahimong "Completed" ====
+                    /*
+                    if (consultation.Appointment != null)
+                        consultation.Appointment.Status = "Completed";
+                    */
+                    // ==== [ST-APPT-15] END ====
+
+                    // ==== [ST-CONSULT-7] START — I-save kinsa ang nag-attend (ang naka-login nga staff) ====
+                    /*
+                    consultation.AttendedBy = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name;
+                    */
+                    // ==== [ST-CONSULT-7] END ====
                 }
 
                 _context.SaveChanges();
@@ -519,6 +563,32 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // ==== [ST-CONSULT-16] START — POST /Consultation/Reopen/5 (Admin ra) ====
+        // Ang Completed nga consultation mahimong "In Progress" balik aron ma-edit ang record.
+        /*
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = UserRoles.Admin)]
+        public IActionResult Reopen(int id)
+        {
+            var consultation = _context.Consultations.FirstOrDefault(c => c.Id == id);
+            if (consultation == null) return NotFound();
+
+            if (consultation.Status != "Completed")
+            {
+                TempData["ErrorMessage"] = "Only a completed consultation can be reopened.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            consultation.Status = "In Progress";
+            consultation.CompletedAt = null;
+            _context.SaveChanges();
+
+            return RedirectToAction(nameof(Index), new { openConsultationId = consultation.Id });
+        }
+        */
+        // ==== [ST-CONSULT-16] END ====
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -621,6 +691,20 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Controllers
             Date("NewbornRecord.ConsentClientDate");
             Date("NewbornRecord.ConsentMidwifeDate");
             Choice("NewbornRecord.PlacentaOut", "complete", "incomplete");
+
+            // ==== [ST-CONSULT-11] START — Dropdown: Newborn Gender ug Prenatal Blood Type (valid options ra) ====
+            // (Ang JS sa skilltestjs/consultation.js mo-ilis sa text box ngadto sa dropdown.)
+            /*
+            Choice("NewbornRecord.Gender", "Male", "Female");
+            Choice("PrenatalRecord.BloodType", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-");
+            */
+            // ==== [ST-CONSULT-11] END ====
+
+            // ==== [ST-CONSULT-13] START — APGAR score: 0 hangtod 10 (pwede "8/9" para sa 1 ug 5 minutes) ====
+            /*
+            Pattern("NewbornRecord.ApgarScore", @"^(10|[0-9])(\s?/\s?(10|[0-9]))?$", "Use a score from 0 to 10 (example: 8/9).");
+            */
+            // ==== [ST-CONSULT-13] END ====
             Whole("NewbornRecord.Vitals[].HeartRate", 40, 250);
             Whole("NewbornRecord.Vitals[].RespiratoryRate", 10, 120);
             Number("NewbornRecord.Vitals[].Temperature", 30, 45);

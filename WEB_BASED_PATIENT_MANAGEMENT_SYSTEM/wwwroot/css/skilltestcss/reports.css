@@ -1,0 +1,145 @@
+/* ============================================================
+   skilltestcss/reports.css — Styles sa SKILL TEST features sa
+   REPORTS page (Views/Reports/Index.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+   ============================================================ */
+
+
+/* ==== [ST-REPORT-3] START — Services Report: itago ang default nga section sa ubos ==== */
+/*
+.st-report ~ .report-section {
+    display: none;
+}
+*/
+/* ==== [ST-REPORT-3] END ==== */
+
+
+/* ==== [ST-REPORT-4] START — Expected Deliveries Report: itago ang default nga section sa ubos ==== */
+/*
+.st-report ~ .report-section {
+    display: none;
+}
+*/
+/* ==== [ST-REPORT-4] END ==== */
+
+
+/* ==== [ST-REPORT-5] START — Income per Service Report: itago ang default nga section sa ubos ==== */
+/*
+.st-report ~ .report-section {
+    display: none;
+}
+*/
+/* ==== [ST-REPORT-5] END ==== */
+
+
+/* ==== [ST-REPORT-6] START — Quick date buttons ==== */
+/*
+.st-date-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+*/
+/* ==== [ST-REPORT-6] END ==== */
+
+
+/* ==== [ST-REPORT-8] START — Clickable column headers (sort) ==== */
+/*
+.report-table th.st-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.report-table th.st-sortable:hover {
+    color: var(--brand-text);
+}
+
+.report-table th[data-sort-dir="asc"]::after {
+    content: " ▲";
+}
+
+.report-table th[data-sort-dir="desc"]::after {
+    content: " ▼";
+}
+*/
+/* ==== [ST-REPORT-8] END ==== */
+
+
+/* ==== [ST-REPORT-10] START — Header ug "Prepared by" (makita ra inig print) ==== */
+/*
+.st-print-header,
+.st-print-footer {
+    display: none;
+}
+
+@media print {
+    .st-print-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 0 12px;
+        border-bottom: 2px solid #000;
+    }
+
+    .st-print-header img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+    }
+
+    .st-print-header strong {
+        display: block;
+        font-size: 18px;
+    }
+
+    .st-print-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 40px;
+        margin-top: 48px;
+    }
+
+    .st-print-footer > div {
+        display: flex;
+        flex-direction: column;
+        width: 40%;
+        font-size: 13px;
+    }
+
+    .st-sign-line {
+        display: block;
+        height: 32px;
+        border-bottom: 1px solid #000;
+    }
+}
+*/
+/* ==== [ST-REPORT-10] END ==== */
+
+
+/* ==== [ST-REPORT-12] START — Chart box ==== */
+/*
+.st-chart-box {
+    height: 300px;
+    padding: var(--space-4) var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.st-chart-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--fs-md);
+    font-weight: 600;
+}
+
+@media print {
+    .st-chart-box {
+        break-inside: avoid;
+    }
+}
+*/
+/* ==== [ST-REPORT-12] END ==== */

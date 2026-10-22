@@ -44,10 +44,66 @@
                         <label>Payment Date</label>
                         <div class="detail-value" id="viewPaymentDate">—</div>
                     </div>
+
+                    @* ==== [ST-BILLING-14] START — OR No. sa View modal ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>OR No.</label>
+                        <div class="detail-value" id="stViewOrNo">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-BILLING-14] END ==== *@
+
+                    @* ==== [ST-BILLING-8] START — Amount Received ug Change sa View modal ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>Amount Received</label>
+                        <div class="detail-value" id="stViewTendered">—</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Change</label>
+                        <div class="detail-value" id="stViewChange">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-BILLING-8] END ==== *@
+
+                    @* ==== [ST-BILLING-9] START — GCash Reference No. sa View modal ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>GCash Reference No.</label>
+                        <div class="detail-value" id="stViewReference">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-BILLING-9] END ==== *@
+
+                    @* ==== [ST-BILLING-10] START — Discount sa View modal ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>Discount</label>
+                        <div class="detail-value" id="stViewDiscount">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-BILLING-10] END ==== *@
+
+                    @* ==== [ST-BILLING-11] START — Received By sa View modal ==== *@
+                    @*
+                    <div class="detail-item">
+                        <label>Received By</label>
+                        <div class="detail-value" id="stViewReceivedBy">—</div>
+                    </div>
+                    *@
+                    @* ==== [ST-BILLING-11] END ==== *@
                 </div>
             </div>
 
             <div class="modal-footer">
+                @* ==== [ST-BILLING-13] START — Print Receipt button ==== *@
+                @*
+                <button type="button" class="btn-cancel" id="stPrintReceipt">
+                    <i class="bi bi-printer" aria-hidden="true"></i> Print Receipt
+                </button>
+                *@
+                @* ==== [ST-BILLING-13] END ==== *@
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

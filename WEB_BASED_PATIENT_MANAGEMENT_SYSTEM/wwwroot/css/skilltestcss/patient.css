@@ -1,0 +1,75 @@
+/* ============================================================
+   skilltestcss/patient.css — Styles sa SKILL TEST features sa
+   PATIENTS page (Views/Patients/Index.cshtml).
+
+   PARA MA-ON: tangtanga ang "/*" nga linya ubos sa START marker ug ang
+   closing nga linya (star + slash) ibabaw sa END marker (parehas sa JS nga numero).
+
+   Ang filter dropdowns, pagination ug badges kay naa na sa st-core.css,
+   so ang mga feature nga wala diri (#1, #3, #4, #6–#9, #12, #13, #16, #17)
+   walay kaugalingon nga CSS.
+   ============================================================ */
+
+
+/* ==== [ST-PATIENT-2] START — Sort dropdown (form) ==== */
+/*
+.st-sort-form {
+    display: flex;
+    margin: 0;
+}
+*/
+/* ==== [ST-PATIENT-2] END ==== */
+
+
+/* ==== [ST-PATIENT-5] START — "Showing X of Y patients" ==== */
+/*
+.st-patient-count {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+*/
+/* ==== [ST-PATIENT-5] END ==== */
+
+
+/* ==== [ST-PATIENT-14] START — Patient History sa View Details modal ==== */
+/*
+.st-history-title {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.st-history-title:first-child {
+    margin-top: 0;
+}
+
+.st-history-empty {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.st-history-table {
+    width: 100%;
+    font-size: var(--fs-sm);
+    border-collapse: collapse;
+}
+
+.st-history-table th,
+.st-history-table td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.st-history-table th {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--bg-subtle);
+}
+*/
+/* ==== [ST-PATIENT-14] END ==== */

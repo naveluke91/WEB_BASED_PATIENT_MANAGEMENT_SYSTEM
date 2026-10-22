@@ -43,5 +43,14 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         /// </summary>
         public int? AppointmentId { get; set; }
         public Appointment? Appointment { get; set; }
+
+        // ==== [ST-SERVICE-6] START — Petsa kung kanus-a gi-register ang service ====
+        // KINAHANGLAN OG MIGRATION human i-uncomment:
+        //   Add-Migration ST_ServiceDateRegistered   →   Update-Database
+        // (= DateTime.Now: kusang ma-set inig himo og bag-ong Service.)
+        /*
+        public DateTime? DateRegistered { get; set; } = DateTime.Now;
+        */
+        // ==== [ST-SERVICE-6] END ====
     }
 }

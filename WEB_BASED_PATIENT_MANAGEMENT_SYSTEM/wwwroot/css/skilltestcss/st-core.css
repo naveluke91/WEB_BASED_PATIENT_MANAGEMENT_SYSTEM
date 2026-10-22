@@ -1,0 +1,189 @@
+/* ============================================================
+   st-core.css — [ST-CORE] Styles sa ST helpers (st-core.js).
+
+   ACTIVE ni nga file pero WALAY EPEKTO sa system: ang mga selector
+   kay para ra sa mga "st-" nga class nga mogawas lang kung naay
+   ST feature nga gi-uncomment. DILI ni kinahanglan i-uncomment.
+   ============================================================ */
+
+/* Kung naay ST filter/sort sa card header: title sa wala, controls sa tuo */
+.card-header-row:has(.st-filter) .card-title {
+    margin-right: auto;
+}
+
+.card-header-row:has(.st-filter) {
+    justify-content: flex-end;
+}
+
+/* Dropdown / input nga filter sa card header */
+.st-filter {
+    width: auto;
+    min-width: 150px;
+    height: var(--control-height);
+    font-size: var(--fs-base);
+    border-color: var(--border);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-subtle);
+}
+
+.st-filter:focus {
+    border-color: var(--brand-action);
+    box-shadow: var(--focus-ring);
+}
+
+input.st-filter {
+    min-width: 140px;
+}
+
+/* Pagination ubos sa table */
+.st-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.st-pager:empty {
+    display: none;
+}
+
+.st-pager-info {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.st-pager-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.st-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.st-page-btn:hover:not(:disabled) {
+    background: var(--brand-surface-soft);
+}
+
+.st-page-btn.active {
+    color: #fff;
+    background: var(--brand-action);
+    border-color: var(--brand-action);
+}
+
+.st-page-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Gagmay nga summary chips / cards nga gamiton sa daghang module */
+.st-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.st-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+}
+
+.st-chip strong {
+    color: var(--text-primary);
+}
+
+.st-chip.active {
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border-color: #C9E7A0;
+}
+
+.st-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.st-card {
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.st-card-label {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.st-card-value {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--fs-2xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Gamay nga badge sulod sa table cell */
+.st-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.st-badge-danger {
+    color: var(--danger);
+    background: var(--danger-surface);
+    border: 1px solid var(--danger-border);
+}
+
+.st-badge-warning {
+    color: var(--warning-text);
+    background: var(--warning-surface);
+    border: 1px solid var(--warning-border);
+}
+
+.st-badge-info {
+    color: var(--info-text);
+    background: var(--info-surface);
+    border: 1px solid var(--info-border);
+}
+
+.st-badge-success {
+    color: var(--brand-text);
+    background: var(--brand-surface);
+    border: 1px solid #C9E7A0;
+}

@@ -5,6 +5,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/services/services.css" asp-append-version="true" />
+
+    @* ==== [ST-SERVICE-0] START — SETUP: i-load ang skill test CSS (i-uncomment una ni) ==== *@
+    @*
+    <link rel="stylesheet" href="~/css/skilltestcss/st-core.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/skilltestcss/services.css" asp-append-version="true" />
+    *@
+    @* ==== [ST-SERVICE-0] END ==== *@
 }
 
 <div class="page-header">
@@ -24,6 +31,60 @@
 <div class="content-card">
     <div class="card-header-row">
         <h2 class="card-title">Services Record List</h2>
+
+        @* ==== [ST-SERVICE-7] START — Total sa presyo sa makita nga services ==== *@
+        @*
+        <span id="stServiceTotal" class="st-service-total"></span>
+        *@
+        @* ==== [ST-SERVICE-7] END ==== *@
+
+        @* ==== [ST-SERVICE-1] START — Filter by Service (dropdown) ==== *@
+        @*
+        <select id="stServiceFilter" class="form-select st-filter" aria-label="Filter by service">
+            <option value="">All Services</option>
+            @foreach (var name in Model.Select(s => s.ServiceName).Distinct().OrderBy(n => n))
+            {
+                <option value="@name">@name</option>
+            }
+        </select>
+        *@
+        @* ==== [ST-SERVICE-1] END ==== *@
+
+        @* ==== [ST-SERVICE-2] START — Filter by Type: Walk-In / Appointment ==== *@
+        @*
+        <select id="stServiceTypeFilter" class="form-select st-filter" aria-label="Filter by type">
+            <option value="">All Types</option>
+            <option value="Walk-In">Walk-In</option>
+            <option value="Appointment">Appointment</option>
+        </select>
+        *@
+        @* ==== [ST-SERVICE-2] END ==== *@
+
+        @* ==== [ST-SERVICE-3] START — Sort (Ascending / Descending) ==== *@
+        @*
+        <select id="stServiceSort" class="form-select st-filter" aria-label="Sort services">
+            <option value="id:number:desc">Sort: Newest first</option>
+            <option value="id:number:asc">Sort: Oldest first</option>
+            <option value="name:text:asc">Sort: Name (A–Z)</option>
+            <option value="name:text:desc">Sort: Name (Z–A)</option>
+            <option value="service:text:asc">Sort: Service (A–Z)</option>
+            <option value="price:number:asc">Sort: Price (low to high)</option>
+            <option value="price:number:desc">Sort: Price (high to low)</option>
+        </select>
+        *@
+        @* ==== [ST-SERVICE-3] END ==== *@
+
+        @* ==== [ST-SERVICE-8] START — Pagination: pila ka row kada page ==== *@
+        @*
+        <select id="stServicePageSize" class="form-select st-filter" aria-label="Rows per page">
+            <option value="10">Show 10</option>
+            <option value="25">Show 25</option>
+            <option value="50">Show 50</option>
+            <option value="0">Show all</option>
+        </select>
+        *@
+        @* ==== [ST-SERVICE-8] END ==== *@
+
         <div class="search-box">
             <i class="bi bi-search" aria-hidden="true"></i>
             <input type="text" id="servicesSearch" placeholder="Search by patient name..." aria-label="Search services by patient name" />
@@ -36,7 +97,22 @@
                 <tr>
                     <th>Name</th>
                     <th>Service</th>
+                    @* ==== [ST-SERVICE-2] START — Type column ==== *@
+                    @*
+                    <th class="col-fit">Type</th>
+                    *@
+                    @* ==== [ST-SERVICE-2] END ==== *@
                     <th class="col-fit">Price</th>
+                    @* ==== [ST-SERVICE-6] START — Date Registered column ==== *@
+                    @*
+                    <th class="col-fit">Date Registered</th>
+                    *@
+                    @* ==== [ST-SERVICE-6] END ==== *@
+                    @* ==== [ST-SERVICE-5] START — Status column ==== *@
+                    @*
+                    <th class="col-status">Status</th>
+                    *@
+                    @* ==== [ST-SERVICE-5] END ==== *@
                     <th class="col-actions">Action</th>
                 </tr>
             </thead>
@@ -50,9 +126,44 @@
                 @foreach (var service in Model)
                 {
                     <tr class="patient-row" data-name="@(service.Patient?.FullName?.ToLowerInvariant() ?? string.Empty)">
-                        <td class="cell-name">@(service.Patient?.FullName ?? "Unknown")</td>
+                        <td class="cell-name">
+                            @* ==== [ST-SERVICE-0] START — SETUP: datos sa row nga gamiton sa skilltestjs/services.js ==== *@
+                            @*
+                            <span class="st-data" hidden
+                                  data-id="@service.Id"
+                                  data-service="@service.ServiceName"
+                                  data-type="@(service.AppointmentId.HasValue ? "Appointment" : "Walk-In")"
+                                  data-price="@service.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"></span>
+                            *@
+                            @* ==== [ST-SERVICE-0] END ==== *@
+                            @(service.Patient?.FullName ?? "Unknown")
+                        </td>
                         <td>@service.ServiceName</td>
+                        @* ==== [ST-SERVICE-2] START — Type column ==== *@
+                        @*
+                        <td class="col-fit">@(service.AppointmentId.HasValue ? "Appointment" : "Walk-In")</td>
+                        *@
+                        @* ==== [ST-SERVICE-2] END ==== *@
                         <td class="col-fit"><span class="price-tag">&#8369; @service.Price.ToString("N2")</span></td>
+                        @* ==== [ST-SERVICE-6] START — Date Registered column ==== *@
+                        @*
+                        <td class="col-fit cell-nowrap">@(service.DateRegistered?.ToString("MMM dd, yyyy") ?? "—")</td>
+                        *@
+                        @* ==== [ST-SERVICE-6] END ==== *@
+                        @* ==== [ST-SERVICE-5] START — Status column ==== *@
+                        @*
+                        @{
+                            var stStatus = (ViewBag.StServiceStatus as Dictionary<int, string>)?.GetValueOrDefault(service.Id) ?? "Waiting";
+                            var stStatusClass = stStatus switch
+                            {
+                                "In Progress" => "status-pill-inprogress",
+                                "Completed" or "Paid" => "status-pill-completed",
+                                _ => "status-pill-waiting"
+                            };
+                        }
+                        <td class="col-status"><span class="status-pill @stStatusClass">@stStatus</span></td>
+                        *@
+                        @* ==== [ST-SERVICE-5] END ==== *@
                         <td class="col-actions">
                             <div class="action-btns">
                                 <button type="button" class="action-btn js-view-service" title="View Details"
@@ -89,6 +200,12 @@
             </tbody>
         </table>
     </div>
+
+    @* ==== [ST-SERVICE-8] START — Pagination buttons (gi-fill sa skilltestjs/services.js) ==== *@
+    @*
+    <div id="stServicePager" class="st-pager"></div>
+    *@
+    @* ==== [ST-SERVICE-8] END ==== *@
 </div>
 
 <partial name="~/Views/Services/Modals/_RegisterServiceModal.cshtml" />
@@ -105,4 +222,19 @@
         };
     </script>
     <script src="~/js/services/services.js" asp-append-version="true"></script>
+
+    @* ==== [ST-SERVICE-10] START — Presyo gikan sa ServicePrices (ServicesController) ==== *@
+    @*
+    <script>
+        window.stServicePrices = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((object?)ViewBag.StServicePrices));
+    </script>
+    *@
+    @* ==== [ST-SERVICE-10] END ==== *@
+
+    @* ==== [ST-SERVICE-0] START — SETUP: i-load ang skill test JS (i-uncomment una ni) ==== *@
+    @*
+    <script src="~/js/skilltestjs/st-core.js" asp-append-version="true"></script>
+    <script src="~/js/skilltestjs/services.js" asp-append-version="true"></script>
+    *@
+    @* ==== [ST-SERVICE-0] END ==== *@
 }

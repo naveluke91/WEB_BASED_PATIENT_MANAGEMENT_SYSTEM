@@ -30,5 +30,11 @@ namespace WEB_BASED_PATIENT_MANAGEMENT_SYSTEM.Models
         // Set when a completed consultation already has a payment (Billing).
         public int? PaymentId { get; set; }
         public DateTime SortDate { get; set; }
+
+        // ==== [ST-CONSULT-7] START — Kinsa ang nag-attend (para sa table) ====
+        /*
+        public string? AttendedBy { get; set; }
+        */
+        // ==== [ST-CONSULT-7] END ====
     }
 }
